@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(npm run dev:*)",
+      "mcp__Supabase__list_projects",
+      "mcp__Supabase__list_tables",
+      "mcp__Supabase__execute_sql",
+      "Bash(timeout:*)",
+      "Bash(PORT=3002 npm run dev)",
+      "mcp__Sequential_Thinking__sequentialthinking",
+      "Bash(grep:*)",
+      "Bash(move:*)",
+      "Bash(PORT=3006 npm run dev)",
+      "Bash(lsof:*)",
+      "mcp__Supabase__apply_migration",
+      "Bash(npm run install:all:*)",
+      "Bash(chmod:*)",
+      "Bash(del temp-add-subscription.js)",
+      "Bash(cmd /c:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\GouveiaRx\\Downloads\\Neuro"
+    ]
+  }
+}

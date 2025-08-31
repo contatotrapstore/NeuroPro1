@@ -1,0 +1,377 @@
+import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import { supabase } from '../services/supabase';
+import { useAuth } from './AuthContext';
+
+interface Message {
+  id: string;
+  conversation_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+interface Conversation {
+  id: string;
+  user_id: string;
+  assistant_id: string;
+  title: string;
+  thread_id: string;
+  created_at: string;
+  updated_at: string;
+  assistants?: {
+    name: string;
+    icon: string;
+    color_theme: string;
+  };
+}
+
+interface ChatState {
+  conversations: Conversation[];
+  currentConversation: Conversation | null;
+  messages: Message[];
+  isLoading: boolean;
+  error: string | null;
+  isTyping: boolean;
+}
+
+type ChatAction =
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_CONVERSATIONS'; payload: Conversation[] }
+  | { type: 'SET_CURRENT_CONVERSATION'; payload: Conversation | null }
+  | { type: 'SET_MESSAGES'; payload: Message[] }
+  | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'SET_TYPING'; payload: boolean }
+  | { type: 'ADD_CONVERSATION'; payload: Conversation };
+
+const initialState: ChatState = {
+  conversations: [],
+  currentConversation: null,
+  messages: [],
+  isLoading: false,
+  error: null,
+  isTyping: false,
+};
+
+function chatReducer(state: ChatState, action: ChatAction): ChatState {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, isLoading: false };
+    case 'SET_CONVERSATIONS':
+      return { ...state, conversations: action.payload };
+    case 'SET_CURRENT_CONVERSATION':
+      return { ...state, currentConversation: action.payload };
+    case 'SET_MESSAGES':
+      return { ...state, messages: action.payload };
+    case 'ADD_MESSAGE':
+      return { ...state, messages: [...state.messages, action.payload] };
+    case 'SET_TYPING':
+      return { ...state, isTyping: action.payload };
+    case 'ADD_CONVERSATION':
+      return { 
+        ...state, 
+        conversations: [action.payload, ...state.conversations],
+        currentConversation: action.payload 
+      };
+    default:
+      return state;
+  }
+}
+
+interface ChatContextType {
+  state: ChatState;
+  createConversation: (assistantId: string, title?: string) => Promise<Conversation | null>;
+  loadConversations: () => Promise<void>;
+  selectConversation: (conversationId: string) => Promise<void>;
+  sendMessage: (content: string) => Promise<void>;
+  loadMessages: (conversationId: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
+  clearError: () => void;
+}
+
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
+export function ChatProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(chatReducer, initialState);
+  const { user } = useAuth();
+
+  // Criar nova conversa
+  const createConversation = async (assistantId: string, title?: string): Promise<Conversation | null> => {
+    if (!user) return null;
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.session.access_token}`
+        },
+        body: JSON.stringify({
+          assistant_id: assistantId,
+          title
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao criar conversa');
+      }
+
+      dispatch({ type: 'ADD_CONVERSATION', payload: result.data });
+      return result.data;
+
+    } catch (error: any) {
+      console.error('Erro ao criar conversa:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      return null;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Carregar conversas do usuário
+  const loadConversations = async (): Promise<void> => {
+    if (!user) return;
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations`, {
+        headers: {
+          'Authorization': `Bearer ${session.session.access_token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao carregar conversas');
+      }
+
+      dispatch({ type: 'SET_CONVERSATIONS', payload: result.data });
+
+    } catch (error: any) {
+      console.error('Erro ao carregar conversas:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Selecionar conversa
+  const selectConversation = async (conversationId: string): Promise<void> => {
+    if (!user) return;
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations/${conversationId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.session.access_token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao carregar conversa');
+      }
+
+      dispatch({ type: 'SET_CURRENT_CONVERSATION', payload: result.data });
+      await loadMessages(conversationId);
+
+    } catch (error: any) {
+      console.error('Erro ao selecionar conversa:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Enviar mensagem
+  const sendMessage = async (content: string): Promise<void> => {
+    if (!user || !state.currentConversation) return;
+
+    try {
+      dispatch({ type: 'SET_TYPING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      // Adicionar mensagem do usuário otimisticamente
+      const userMessage: Message = {
+        id: `temp-${Date.now()}`,
+        conversation_id: state.currentConversation.id,
+        role: 'user',
+        content,
+        created_at: new Date().toISOString()
+      };
+      dispatch({ type: 'ADD_MESSAGE', payload: userMessage });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations/${state.currentConversation.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.session.access_token}`
+        },
+        body: JSON.stringify({ content })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao enviar mensagem');
+      }
+
+      // Recarregar mensagens para obter as versões corretas do servidor
+      await loadMessages(state.currentConversation.id);
+
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    } finally {
+      dispatch({ type: 'SET_TYPING', payload: false });
+    }
+  };
+
+  // Carregar mensagens de uma conversa
+  const loadMessages = async (conversationId: string): Promise<void> => {
+    if (!user) return;
+
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations/${conversationId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${session.session.access_token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao carregar mensagens');
+      }
+
+      dispatch({ type: 'SET_MESSAGES', payload: result.data });
+
+    } catch (error: any) {
+      console.error('Erro ao carregar mensagens:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    }
+  };
+
+  // Deletar conversa
+  const deleteConversation = async (conversationId: string): Promise<void> => {
+    if (!user) return;
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.session.access_token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao deletar conversa');
+      }
+
+      // Recarregar conversas
+      await loadConversations();
+      
+      // Limpar conversa atual se foi deletada
+      if (state.currentConversation?.id === conversationId) {
+        dispatch({ type: 'SET_CURRENT_CONVERSATION', payload: null });
+        dispatch({ type: 'SET_MESSAGES', payload: [] });
+      }
+
+    } catch (error: any) {
+      console.error('Erro ao deletar conversa:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Limpar erro
+  const clearError = (): void => {
+    dispatch({ type: 'SET_ERROR', payload: null });
+  };
+
+  // Carregar conversas quando usuário fizer login
+  useEffect(() => {
+    if (user) {
+      // Debounce to prevent multiple rapid calls
+      const timeoutId = setTimeout(() => {
+        loadConversations();
+      }, 250);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user]);
+
+  const value: ChatContextType = {
+    state,
+    createConversation,
+    loadConversations,
+    selectConversation,
+    sendMessage,
+    loadMessages,
+    deleteConversation,
+    clearError,
+  };
+
+  return (
+    <ChatContext.Provider value={value}>
+      {children}
+    </ChatContext.Provider>
+  );
+}
+
+export function useChat() {
+  const context = useContext(ChatContext);
+  if (context === undefined) {
+    throw new Error('useChat must be used within a ChatProvider');
+  }
+  return context;
+}

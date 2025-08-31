@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Viewport otimizado para todas as telas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    
+    <!-- Meta tags SEO -->
+    <meta name="description" content="NeuroIA Lab - Plataforma SaaS para Psicólogos com 14 Assistentes de IA Especializados. Revolucione sua prática clínica com inteligência artificial." />
+    <meta name="keywords" content="psicologia, inteligência artificial, assistentes, AI, saúde mental, terapia, clínica" />
+    <meta name="author" content="NeuroIA Lab" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="NeuroIA Lab - Assistentes de IA para Psicologia" />
+    <meta property="og:description" content="Plataforma SaaS para Psicólogos com 14 Assistentes de IA Especializados" />
+    <meta property="og:site_name" content="NeuroIA Lab" />
+    
+    <!-- Performance e Core Web Vitals -->
+    <meta name="theme-color" content="#2D5A1F" />
+    <meta name="color-scheme" content="light" />
+    
+    <!-- Preload fonts críticos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <title>NeuroIA Lab - Assistentes de IA para Psicologia</title>
+    
+    <!-- Prevent FOUC -->
+    <style>
+      html { background-color: #F8FAF6; }
+      body { background-color: #F8FAF6; }
+      #root { min-height: 100vh; }
+      .loading-splash {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, #F8FAF6 0%, #FFFFFF 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid #E5E7EB;
+        border-top: 3px solid #2D5A1F;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body class="h-full antialiased">
+    <!-- Loading splash -->
+    <div id="loading-splash" class="loading-splash">
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove loading splash after app loads -->
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const splash = document.getElementById('loading-splash');
+          if (splash) {
+            splash.style.opacity = '0';
+            splash.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => splash.remove(), 300);
+          }
+        }, 100);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.next/
+.cache/
+public/
+*.lock
+*.log
+.git/
+.DS_Store

@@ -1,0 +1,37 @@
+{
+  "name": "neuroai-lab",
+  "version": "1.0.0",
+  "description": "NeuroIA Lab - Psychology AI Assistants Platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "clean": "rm -rf node_modules frontend/node_modules backend/node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "psychology",
+    "ai",
+    "assistants",
+    "saas",
+    "chat",
+    "subscriptions"
+  ],
+  "author": "NeuroIA Lab Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
+    "node-fetch": "^3.3.2"
+  }
+}
