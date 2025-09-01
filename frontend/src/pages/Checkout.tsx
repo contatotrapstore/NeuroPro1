@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { PageLoader } from '../components/ui/LoadingSpinner';
+import { PageLoader, LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorState } from '../components/ui/ErrorState';
 import { CreditCard, User, MapPin, Calendar, Lock, ArrowLeft } from 'lucide-react';
 import { PixIcon, BoletoIcon, CreditCardIcon } from '../components/icons/PaymentIcons';
+import { AssistantIcon } from '../components/ui/AssistantIcon';
 
 interface Assistant {
   id: string;
@@ -478,7 +479,7 @@ export default function Checkout() {
                         className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
                         style={{ backgroundColor: currentAssistant.color_theme }}
                       >
-                        {currentAssistant.icon}
+                        <AssistantIcon iconType={currentAssistant.icon} color="white" size={20} />
                       </div>
                       <div>
                         <h4 className="font-medium text-neuro-gray-900">
@@ -509,7 +510,7 @@ export default function Checkout() {
                               className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
                               style={{ backgroundColor: assistant.color_theme }}
                             >
-                              {assistant.icon}
+                              <AssistantIcon iconType={assistant.icon} color="white" size={20} />
                             </div>
                             <span className="text-sm text-neuro-gray-900">
                               {assistant.name}

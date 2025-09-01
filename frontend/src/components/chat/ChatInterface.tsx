@@ -6,7 +6,7 @@ import { MessageInput } from './MessageInput';
 import { ConversationList } from './ConversationList';
 import { AssistantSelector } from './AssistantSelector';
 import { AssistantIcon } from '../ui/AssistantIcon';
-import { NeuroLabIconMedium, NeuroLabIconLarge } from '../icons/NeuroLabLogo';
+import Logo from '../../assets/Logo.png';
 
 export function ChatInterface() {
   const { state, clearError } = useChat();
@@ -86,7 +86,11 @@ export function ChatInterface() {
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <NeuroLabIconMedium color="#2D5A1F" />
+                  <img 
+                    src={Logo} 
+                    alt="NeuroIA Lab" 
+                    className="w-10 h-10 object-contain" 
+                  />
                   <div>
                     <h1 className="text-lg font-semibold text-gray-900">NeuroIA Lab</h1>
                     <p className="text-sm text-gray-500">Selecione uma conversa ou inicie uma nova</p>
@@ -125,7 +129,11 @@ export function ChatInterface() {
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <div className="flex justify-center mb-6">
-                  <NeuroLabIconLarge color="#2D5A1F" />
+                  <img 
+                    src={Logo} 
+                    alt="NeuroIA Lab" 
+                    className="w-16 h-16 object-contain" 
+                  />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Bem-vindo ao NeuroIA Lab</h2>
                 <p className="text-gray-600 mb-6 max-w-md">

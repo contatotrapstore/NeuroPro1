@@ -14,7 +14,7 @@ export class ApiService {
   private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   }
 
   // Singleton pattern
@@ -28,14 +28,29 @@ export class ApiService {
   // Get current auth token
   private async getAuthToken(): Promise<string | null> {
     try {
+      console.log('🔑 Obtendo token de autenticação...');
       const { data: { session }, error } = await supabase.auth.getSession();
+      
       if (error) {
-        console.error('Error getting session:', error);
+        console.error('❌ Erro ao obter sessão:', error);
         return null;
       }
+      
+      if (!session) {
+        console.log('❌ Nenhuma sessão encontrada');
+        return null;
+      }
+      
+      console.log('✅ Sessão encontrada:', {
+        userId: session.user?.id,
+        email: session.user?.email,
+        hasToken: !!session.access_token,
+        tokenLength: session.access_token?.length
+      });
+      
       return session?.access_token || null;
     } catch (error) {
-      console.error('Error in getAuthToken:', error);
+      console.error('❌ Erro em getAuthToken:', error);
       return null;
     }
   }
@@ -49,16 +64,20 @@ export class ApiService {
   // Handle authentication errors
   private handleAuthError(error: any, silent = false) {
     if (error.status === 401) {
-      // Token expired or invalid - redirect to login
-      if (!silent) {
+      // Token expired or invalid
+      const errorMessage = silent ? 'Não autenticado' : 'Sessão expirada. Faça login para continuar.';
+      
+      // Only redirect if not in silent mode and not on dashboard
+      if (!silent && !window.location.pathname.includes('/dashboard')) {
         console.warn('Authentication failed, redirecting to login');
         setTimeout(() => {
           window.location.href = '/auth/login';
         }, 2000);
       }
+      
       return {
         success: false,
-        error: silent ? 'Não autenticado' : 'Sessão expirada. Redirecionando para login...'
+        error: errorMessage
       };
     }
     return null;
@@ -187,19 +206,26 @@ export class ApiService {
 
       // Add authorization header if auth is required or available
       if (requireAuth) {
+        console.log('🔐 Autenticação obrigatória para:', endpoint);
         const token = await this.getAuthToken();
         if (!token) {
+          console.log('❌ Token não encontrado para requisição obrigatória');
           return {
             success: false,
             error: 'Usuário não autenticado. Faça login para continuar.'
           };
         }
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('✅ Token adicionado ao header');
       } else {
         // Optional auth - include token if available but don't require it
+        console.log('🔓 Autenticação opcional para:', endpoint);
         const token = await this.getAuthToken();
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
+          console.log('✅ Token opcional adicionado ao header');
+        } else {
+          console.log('ℹ️ Sem token para autenticação opcional');
         }
       }
 
@@ -306,10 +332,22 @@ export class ApiService {
     if (!isAuth) {
       return {
         success: false,
-        error: 'Usuário não autenticado'
+        error: 'Usuário não autenticado',
+        data: []
       };
     }
-    return this.get<UserSubscription[]>('/subscriptions');
+    
+    try {
+      const result = await this.get<UserSubscription[]>('/subscriptions');
+      return result;
+    } catch (error: any) {
+      console.warn('Error getting subscriptions:', error);
+      return {
+        success: false,
+        error: 'Erro ao carregar subscriptions',
+        data: []
+      };
+    }
   }
 
   async getUserPackages(): Promise<ApiResponse<UserPackage[]>> {

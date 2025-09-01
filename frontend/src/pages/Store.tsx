@@ -98,15 +98,18 @@ export default function Store() {
   };
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const offset = 80; // Account for any fixed header
-      const elementPosition = element.offsetTop - offset;
-      window.scrollTo({
-        top: elementPosition,
-        behavior: 'smooth'
-      });
-    }
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const offset = 100; // Account for any fixed header
+        const elementPosition = element.offsetTop - offset;
+        window.scrollTo({
+          top: elementPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
   };
 
   const [showPackagesModal, setShowPackagesModal] = useState(false);
@@ -453,7 +456,8 @@ export default function Store() {
 
 
         {/* Assistants View */}
-        <ParallaxContainer className="space-y-16" speed={0.2} id="assistants">
+        <div id="assistants" className="scroll-mt-20">
+        <ParallaxContainer className="space-y-16" speed={0.2}>
             {/* Search and Filters */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -548,6 +552,7 @@ export default function Store() {
               />
             )}
         </ParallaxContainer>
+        </div>
       </div>
 
       {/* Packages Modal */}

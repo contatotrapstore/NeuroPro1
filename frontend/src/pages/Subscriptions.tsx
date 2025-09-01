@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api.service';
 import { PageLoader } from '../components/ui/LoadingSpinner';
+import { AssistantIcon } from '../components/ui/AssistantIcon';
 import toast from 'react-hot-toast';
 
 interface Assistant {
@@ -266,7 +267,7 @@ export default function Subscriptions() {
                                 className="w-8 h-8 rounded-md flex items-center justify-center text-white text-sm"
                                 style={{ backgroundColor: sub.assistants.color_theme }}
                               >
-                                {sub.assistants.icon}
+                                <AssistantIcon iconType={sub.assistants.icon} color="white" size={20} />
                               </div>
                               <span className="text-sm font-medium text-gray-900 truncate">
                                 {sub.assistants.name}
@@ -322,7 +323,7 @@ export default function Subscriptions() {
                           className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"
                           style={{ backgroundColor: subscription.assistants?.color_theme || '#0E1E03' }}
                         >
-                          {subscription.assistants?.icon || '🤖'}
+                          <AssistantIcon iconType={subscription.assistants?.icon || 'target'} color="white" size={24} />
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">

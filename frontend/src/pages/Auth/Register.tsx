@@ -114,7 +114,7 @@ const Register: React.FC = () => {
               <p className="text-neuro-gray-600 mb-6 leading-relaxed">
                 Sua conta foi criada com sucesso. Você será redirecionado para o login em alguns segundos.
               </p>
-              <p className="text-sm text-neuro-gray-500">
+              <p className="text-sm text-neuro-gray-400">
                 Se você não recebeu um email de confirmação, verifique sua pasta de spam.
               </p>
             </CardContent>
@@ -184,7 +184,7 @@ const Register: React.FC = () => {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-8 text-neuro-gray-400 hover:text-neuro-gray-600 transition-colors"
+                  className="absolute right-3 top-10 text-neuro-gray-400 hover:text-neuro-gray-600 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
@@ -209,7 +209,7 @@ const Register: React.FC = () => {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-8 text-neuro-gray-400 hover:text-neuro-gray-600 transition-colors"
+                  className="absolute right-3 top-10 text-neuro-gray-400 hover:text-neuro-gray-600 transition-colors"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={loading}
                 >
@@ -238,18 +238,18 @@ const Register: React.FC = () => {
                   <div className="w-full border-t border-neuro-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-neuro-gray-500 font-medium">
+                  <span className="px-4 bg-white text-neuro-gray-400 font-medium">
                     Já tem uma conta?
                   </span>
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-6 text-center">
                 <Button
                   asChild
-                  variant="outline"
+                  variant="primary"
                   size="lg"
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-neuro-primary to-neuro-primary-dark hover:from-neuro-primary-dark hover:to-neuro-primary text-white shadow-lg shadow-neuro-primary/30 hover:shadow-xl hover:shadow-neuro-primary/40 transition-all duration-300"
                 >
                   <Link to="/auth/login">
                     Fazer login

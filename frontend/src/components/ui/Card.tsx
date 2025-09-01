@@ -76,7 +76,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={cardClasses}
         {...animationProps}
-        {...props}
+        {...(props as any)}
       >
         {children}
       </CardComponent>

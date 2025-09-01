@@ -102,7 +102,7 @@ const Login: React.FC = () => {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-8 text-neuro-gray-400 hover:text-neuro-gray-600 transition-colors"
+                  className="absolute right-3 top-10 text-neuro-gray-400 hover:text-neuro-gray-600 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
@@ -140,18 +140,18 @@ const Login: React.FC = () => {
                   <div className="w-full border-t border-neuro-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-neuro-gray-500 font-medium">
+                  <span className="px-4 bg-white text-neuro-gray-400 font-medium">
                     Não tem uma conta?
                   </span>
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-6 text-center">
                 <Button
                   asChild
-                  variant="outline"
+                  variant="primary"
                   size="lg"
-                  className="w-full border-2 border-neuro-primary/30 text-neuro-primary hover:bg-gradient-to-r hover:from-neuro-primary/5 hover:to-neuro-primary-light/5 hover:border-neuro-primary/50 transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-neuro-primary to-neuro-primary-dark hover:from-neuro-primary-dark hover:to-neuro-primary text-white shadow-lg shadow-neuro-primary/30 hover:shadow-xl hover:shadow-neuro-primary/40 transition-all duration-300"
                 >
                   <Link to="/auth/register">
                     Criar nova conta

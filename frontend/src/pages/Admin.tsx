@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api.service';
 import { PageLoader } from '../components/ui/LoadingSpinner';
+import { AssistantIcon } from '../components/ui/AssistantIcon';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -346,7 +347,7 @@ export default function Admin() {
                             className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
                             style={{ backgroundColor: assistant.color_theme }}
                           >
-                            {assistant.icon}
+                            <AssistantIcon iconType={assistant.icon} color="white" size={20} />
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900">{assistant.name}</h3>

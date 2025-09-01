@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useChat } from '../../contexts/ChatContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { PageLoader } from '../ui/LoadingSpinner';
-import { supabase } from '../../services/supabase';
 import { AssistantIcon } from '../ui/AssistantIcon';
+import { apiService } from '../../services/api.service';
 
 interface Assistant {
   id: string;
@@ -28,6 +29,7 @@ export function AssistantSelector({ onClose, onSelect }: AssistantSelectorProps)
   const [conversationTitle, setConversationTitle] = useState('');
   
   const { createConversation } = useChat();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadAssistants();
@@ -38,43 +40,29 @@ export function AssistantSelector({ onClose, onSelect }: AssistantSelectorProps)
       setLoading(true);
       setError(null);
 
-      // Buscar apenas assistentes que o usuário tem acesso
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        throw new Error('Usuário não autenticado');
+      // Verificar se usuário está autenticado
+      if (!user) {
+        throw new Error('Você precisa estar logado para acessar o chat. Faça login primeiro.');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assistants/user`, {
-        headers: {
-          'Authorization': `Bearer ${session.session.access_token}`
+      // Buscar assistentes que o usuário tem acesso usando o ApiService
+      const result = await apiService.getUserAssistants();
+      
+      if (!result.success) {
+        if (result.error?.includes('não autenticado')) {
+          throw new Error('Sua sessão expirou. Faça login novamente.');
         }
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Erro ao carregar assistentes');
+        throw new Error(result.error || 'Erro ao carregar assistentes');
       }
 
-      // A função do banco já retorna apenas assistentes acessíveis, então não é necessário filtrar
       const accessibleAssistants = result.data || [];
       
       if (accessibleAssistants.length === 0) {
         throw new Error('Você não possui assinaturas ativas. Vá para a loja para assinar assistentes.');
       }
 
-      // Mapear os campos do banco para a interface do componente
-      const mappedAssistants = accessibleAssistants.map((assistant: any) => ({
-        id: assistant.assistant_id,
-        name: assistant.assistant_name,
-        description: assistant.assistant_description,
-        icon: assistant.assistant_icon,
-        color_theme: assistant.assistant_color_theme,
-        monthly_price: 39.90, // Preço padrão conforme especificação
-        semester_price: 199.00, // Preço padrão conforme especificação
-        openai_assistant_id: assistant.openai_assistant_id
-      }));
-
-      setAssistants(mappedAssistants);
+      // Os dados já vêm no formato correto do ApiService
+      setAssistants(accessibleAssistants);
     } catch (error: any) {
       console.error('Erro ao carregar assistentes:', error);
       setError(error.message);

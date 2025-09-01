@@ -1,22 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+// Create a shared supabase client using anon key (works with RLS)
+export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
   }
 });
 
-// For client-side operations (with anon key)
-export const supabaseClient = createClient(
-  supabaseUrl, 
-  process.env.SUPABASE_ANON_KEY || supabaseServiceKey
-);
+// For backward compatibility - use same client
+export const supabase = supabaseClient;

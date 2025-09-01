@@ -107,6 +107,7 @@ import {
   Gift,
   LogOut,
 } from 'lucide-react';
+import { iconMap } from '../icons/AssistantIcons';
 
 // Assistant-specific professional icons mapping
 const assistantIconMap: Record<string, React.ComponentType<any>> = {
@@ -265,7 +266,11 @@ export const Icon: React.FC<IconProps> = ({
 
   if (assistantIcon && assistantIconMap[assistantIcon as AssistantIconKey]) {
     IconComponent = assistantIconMap[assistantIcon as AssistantIconKey];
+  } else if (name && iconMap[name as keyof typeof iconMap]) {
+    // Check custom assistant icons first
+    IconComponent = iconMap[name as keyof typeof iconMap];
   } else if (name && uiIconMap[name as UIIconKey]) {
+    // Then check UI icons
     IconComponent = uiIconMap[name as UIIconKey];
   }
 

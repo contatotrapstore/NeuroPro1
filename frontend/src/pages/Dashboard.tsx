@@ -42,6 +42,7 @@ export default function Dashboard() {
     conversationsCount: 0
   });
   const hasLoadedRef = useRef(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   useEffect(() => {
     // Prevent double execution in React StrictMode
@@ -62,12 +63,20 @@ export default function Dashboard() {
   }, []);
 
   const loadDashboardData = async () => {
+    // Evitar múltiplas requisições simultâneas
+    if (isLoadingData) {
+      console.log('🛑 Requisição já em andamento, pulando...');
+      return;
+    }
+    
     try {
       setLoading(true);
+      setIsLoadingData(true);
       setError(null);
       
       if (!user) {
         setLoading(false);
+        setIsLoadingData(false);
         return;
       }
 
@@ -83,9 +92,10 @@ export default function Dashboard() {
       // Calcular estatísticas
       const totalAssistants = assistantsResult.data?.length || 0;
 
-      // Carregar assinaturas do usuário
+      // Carregar assinaturas do usuário apenas se estiver logado
       if (user?.id) {
         try {
+          console.log('Usuário logado, carregando subscriptions...');
           const subscriptionsResult = await apiService.getSubscriptions();
           
           if (subscriptionsResult.success && subscriptionsResult.data) {
@@ -118,6 +128,7 @@ export default function Dashboard() {
               conversationsCount
             });
           } else {
+            console.log('Nenhuma subscription encontrada ou erro na requisição');
             setSubscriptions([]);
             setStats({
               activeSubscriptions: 0,
@@ -127,6 +138,7 @@ export default function Dashboard() {
             });
           }
         } catch (error) {
+          console.warn('Erro ao carregar subscriptions (usuário pode não estar autenticado):', error);
           setSubscriptions([]);
           setStats({
             activeSubscriptions: 0,
@@ -136,6 +148,8 @@ export default function Dashboard() {
           });
         }
       } else {
+        console.log('Usuário não logado, exibindo apenas assistentes disponíveis');
+        setSubscriptions([]);
         setStats({
           activeSubscriptions: 0,
           subscribedAssistants: 0,
@@ -148,6 +162,7 @@ export default function Dashboard() {
       setError(error.message || 'Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -191,9 +206,17 @@ export default function Dashboard() {
         </h1>
         
         <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-          Olá <span className="font-semibold text-neuro-primary">
-            {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
-          </span>, seus assistentes especializados em psicologia estão prontos para revolucionar sua prática clínica
+          {user ? (
+            <>
+              Olá <span className="font-semibold text-neuro-primary">
+                {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+              </span>, seus assistentes especializados em psicologia estão prontos para revolucionar sua prática clínica
+            </>
+          ) : (
+            <>
+              Conheça nossos <span className="font-semibold text-neuro-primary">assistentes especializados</span> em psicologia, prontos para revolucionar sua prática clínica
+            </>
+          )}
         </p>
 
         {/* Quick Start CTA for new users */}

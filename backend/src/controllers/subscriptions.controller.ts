@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { supabase } from '../config/supabase';
 import { asaasService } from '../services/asaas.service';
+import { AssistantService } from '../services/assistant.service';
 import { ApiResponse } from '../types';
 
 export class SubscriptionsController {
@@ -533,8 +534,20 @@ export class SubscriptionsController {
   static async getUserSubscriptions(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.id;
+      const userClient = req.supabaseClient;
 
-      const { data: subscriptions, error } = await supabase
+      console.log('🔍 [getUserSubscriptions] Iniciando busca de assinaturas');
+      console.log('🔍 [getUserSubscriptions] User ID:', userId);
+      console.log('🔍 [getUserSubscriptions] Cliente individual disponível:', !!userClient);
+
+      if (!userClient) {
+        console.log('❌ [getUserSubscriptions] Cliente individual não disponível, usando fallback');
+      }
+
+      // Usar cliente individual da requisição ou fallback para o compartilhado
+      const client = userClient || supabase;
+
+      const { data: subscriptions, error } = await client
         .from('user_subscriptions')
         .select(`
           *,
@@ -555,7 +568,12 @@ export class SubscriptionsController {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      console.log('🔍 [getUserSubscriptions] Query executada');
+      console.log('🔍 [getUserSubscriptions] Erro:', error);
+      console.log('🔍 [getUserSubscriptions] Subscriptions encontradas:', subscriptions?.length || 0);
+
       if (error) {
+        console.error('❌ [getUserSubscriptions] Erro na query:', error);
         const response: ApiResponse<null> = {
           success: false,
           error: 'Erro ao buscar assinaturas'
@@ -563,6 +581,7 @@ export class SubscriptionsController {
         return res.status(500).json(response);
       }
 
+      console.log('✅ [getUserSubscriptions] Retornando', subscriptions?.length || 0, 'assinaturas');
       const response: ApiResponse<typeof subscriptions> = {
         success: true,
         data: subscriptions || []
@@ -570,7 +589,7 @@ export class SubscriptionsController {
 
       res.json(response);
     } catch (error) {
-      console.error('Error getting user subscriptions:', error);
+      console.error('❌ [getUserSubscriptions] Error getting user subscriptions:', error);
       const response: ApiResponse<null> = {
         success: false,
         error: 'Erro interno do servidor'
@@ -583,8 +602,16 @@ export class SubscriptionsController {
   static async getUserPackages(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.id;
+      const userClient = req.supabaseClient;
 
-      const { data: packages, error } = await supabase
+      console.log('🔍 [getUserPackages] Iniciando busca de pacotes');
+      console.log('🔍 [getUserPackages] User ID:', userId);
+      console.log('🔍 [getUserPackages] Cliente individual disponível:', !!userClient);
+
+      // Usar cliente individual da requisição ou fallback para o compartilhado
+      const client = userClient || supabase;
+
+      const { data: packages, error } = await client
         .from('user_packages')
         .select(`
           *,
@@ -603,7 +630,12 @@ export class SubscriptionsController {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      console.log('🔍 [getUserPackages] Query executada');
+      console.log('🔍 [getUserPackages] Erro:', error);
+      console.log('🔍 [getUserPackages] Packages encontrados:', packages?.length || 0);
+
       if (error) {
+        console.error('❌ [getUserPackages] Erro na query:', error);
         const response: ApiResponse<null> = {
           success: false,
           error: 'Erro ao buscar pacotes'
@@ -611,6 +643,7 @@ export class SubscriptionsController {
         return res.status(500).json(response);
       }
 
+      console.log('✅ [getUserPackages] Retornando', packages?.length || 0, 'pacotes');
       const response: ApiResponse<typeof packages> = {
         success: true,
         data: packages || []
@@ -618,7 +651,7 @@ export class SubscriptionsController {
 
       res.json(response);
     } catch (error) {
-      console.error('Error getting user packages:', error);
+      console.error('❌ [getUserPackages] Error getting user packages:', error);
       const response: ApiResponse<null> = {
         success: false,
         error: 'Erro interno do servidor'
@@ -631,29 +664,32 @@ export class SubscriptionsController {
   static async getUserAssistants(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.id;
+      const userClient = req.supabaseClient;
 
-      const { data: assistants, error } = await supabase
-        .rpc('get_user_accessible_assistants', {
-          p_user_id: userId,
-          p_current_time: new Date().toISOString()
-        });
+      console.log('🔍 [getUserAssistants] Buscando assistentes para usuário:', userId);
+      console.log('🔍 [getUserAssistants] Cliente individual disponível:', !!userClient);
 
-      if (error) {
+      if (!userId) {
         const response: ApiResponse<null> = {
           success: false,
-          error: 'Erro ao buscar assistentes'
+          error: 'Usuário não autenticado'
         };
-        return res.status(500).json(response);
+        return res.status(401).json(response);
       }
+
+      // Usar o serviço de assistentes com o cliente individual da requisição
+      const assistants = await AssistantService.getUserAvailableAssistants(userId, userClient);
 
       const response: ApiResponse<typeof assistants> = {
         success: true,
-        data: assistants || []
+        data: assistants,
+        message: 'Assistentes recuperados com sucesso'
       };
 
+      console.log('✅ [getUserAssistants] Retornando assistentes do serviço:', assistants.length);
       res.json(response);
     } catch (error) {
-      console.error('Error getting user assistants:', error);
+      console.error('❌ [getUserAssistants] Error getting user assistants:', error);
       const response: ApiResponse<null> = {
         success: false,
         error: 'Erro interno do servidor'

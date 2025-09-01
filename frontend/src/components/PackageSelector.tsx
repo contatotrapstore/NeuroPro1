@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AssistantIcon } from './ui/AssistantIcon';
 
 interface Assistant {
   id: string;
@@ -167,9 +168,9 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
         </div>
 
         {/* Content */}
-        <div className="flex flex-col lg:flex-row h-full">
+        <div className="flex flex-col lg:flex-row" style={{ height: 'calc(90vh - 120px)' }}>
           {/* Assistant Selection */}
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto max-h-full">
             <div className="mb-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -212,7 +213,7 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
                         className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
                         style={getColorStyle(assistant.color_theme)}
                       >
-                        {assistant.icon}
+                        <AssistantIcon iconType={assistant.icon} color="white" size={24} />
                       </div>
                       
                       <div className="flex-1 min-w-0">
@@ -238,8 +239,8 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
           </div>
 
           {/* Sidebar - Package Summary */}
-          <div className="lg:w-80 bg-gray-50 p-6">
-            <div className="sticky top-0">
+          <div className="lg:w-80 bg-gray-50 p-6 flex-shrink-0 overflow-y-auto max-h-full">
+            <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Resumo do Pacote
               </h3>
@@ -302,7 +303,7 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
                             className="w-6 h-6 rounded flex items-center justify-center text-white text-xs"
                             style={getColorStyle(assistant.color_theme)}
                           >
-                            {assistant.icon}
+                            <AssistantIcon iconType={assistant.icon} color="white" size={16} />
                           </div>
                           <span className="text-sm font-medium text-gray-900 truncate">
                             {assistant.name}

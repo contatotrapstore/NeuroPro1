@@ -13,8 +13,17 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
   try {
     const { assistant_id, title } = req.body;
     const userId = req.user?.id;
+    const userClient = req.supabaseClient;
 
-    // Validar se o assistente existe no banco
+    console.log('🔍 [createConversation] Iniciando criação de conversa');
+    console.log('🔍 [createConversation] User ID:', userId);
+    console.log('🔍 [createConversation] Assistant ID:', assistant_id);
+    console.log('🔍 [createConversation] Cliente individual disponível:', !!userClient);
+
+    // Usar cliente individual da requisição ou fallback para o compartilhado
+    const client = userClient || supabase;
+
+    // Validar se o assistente existe no banco (query pública, pode usar cliente compartilhado)
     const { data: assistant, error: assistantError } = await supabase
       .from('assistants')
       .select('id, name')
@@ -23,14 +32,15 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
       .single();
 
     if (assistantError || !assistant) {
+      console.log('❌ [createConversation] Assistente não encontrado:', assistant_id);
       return res.status(404).json({
         success: false,
         message: 'Assistente não encontrado'
       });
     }
 
-    // Validar se o usuário tem acesso ao assistente
-    const { data: subscriptions, error: subError } = await supabase
+    // Validar se o usuário tem acesso ao assistente (precisa do cliente autenticado)
+    const { data: subscriptions, error: subError } = await client
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
@@ -38,7 +48,11 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
       .eq('status', 'active')
       .gte('expires_at', new Date().toISOString());
 
+    console.log('🔍 [createConversation] Verificação de acesso executada');
+    console.log('🔍 [createConversation] Subscriptions encontradas:', subscriptions?.length || 0);
+
     if (subError || !subscriptions || subscriptions.length === 0) {
+      console.log('❌ [createConversation] Usuário sem acesso ao assistente');
       return res.status(403).json({
         success: false,
         message: 'Você não possui acesso a este assistente. Faça uma assinatura para usar este assistente.'
@@ -48,8 +62,8 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
     // Criar thread no OpenAI
     const threadId = await openaiService.createThread();
 
-    // Criar conversa no banco
-    const { data: conversation, error } = await supabase
+    // Criar conversa no banco (precisa do cliente autenticado)
+    const { data: conversation, error } = await client
       .from('conversations')
       .insert({
         user_id: userId,
@@ -61,6 +75,7 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
       .single();
 
     if (error) {
+      console.error('❌ [createConversation] Erro ao criar conversa:', error);
       return res.status(500).json({
         success: false,
         message: 'Erro ao criar conversa',
@@ -68,6 +83,7 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
       });
     }
 
+    console.log('✅ [createConversation] Conversa criada com sucesso');
     res.status(201).json({
       success: true,
       data: conversation,
@@ -75,7 +91,7 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
     });
 
   } catch (error: any) {
-    console.error('Erro ao criar conversa:', error);
+    console.error('❌ [createConversation] Erro ao criar conversa:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor',
@@ -88,8 +104,16 @@ router.post('/conversations', async (req: AuthenticatedRequest, res: Response) =
 router.get('/conversations', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
+    const userClient = req.supabaseClient;
 
-    const { data: conversations, error } = await supabase
+    console.log('🔍 [getConversations] Iniciando busca de conversas');
+    console.log('🔍 [getConversations] User ID:', userId);
+    console.log('🔍 [getConversations] Cliente individual disponível:', !!userClient);
+
+    // Usar cliente individual da requisição ou fallback para o compartilhado
+    const client = userClient || supabase;
+
+    const { data: conversations, error } = await client
       .from('conversations')
       .select(`
         *,
@@ -102,7 +126,12 @@ router.get('/conversations', async (req: AuthenticatedRequest, res: Response) =>
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
+    console.log('🔍 [getConversations] Query executada');
+    console.log('🔍 [getConversations] Erro:', error);
+    console.log('🔍 [getConversations] Conversas encontradas:', conversations?.length || 0);
+
     if (error) {
+      console.error('❌ [getConversations] Erro na query:', error);
       return res.status(500).json({
         success: false,
         message: 'Erro ao buscar conversas',
@@ -110,6 +139,7 @@ router.get('/conversations', async (req: AuthenticatedRequest, res: Response) =>
       });
     }
 
+    console.log('✅ [getConversations] Retornando', conversations?.length || 0, 'conversas');
     res.json({
       success: true,
       data: conversations,
@@ -117,7 +147,7 @@ router.get('/conversations', async (req: AuthenticatedRequest, res: Response) =>
     });
 
   } catch (error: any) {
-    console.error('Erro ao listar conversas:', error);
+    console.error('❌ [getConversations] Erro ao listar conversas:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor',
@@ -131,8 +161,17 @@ router.get('/conversations/:id', async (req: AuthenticatedRequest, res: Response
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+    const userClient = req.supabaseClient;
 
-    const { data: conversation, error } = await supabase
+    console.log('🔍 [getConversation] Buscando conversa específica');
+    console.log('🔍 [getConversation] Conversation ID:', id);
+    console.log('🔍 [getConversation] User ID:', userId);
+    console.log('🔍 [getConversation] Cliente individual disponível:', !!userClient);
+
+    // Usar cliente individual da requisição ou fallback para o compartilhado
+    const client = userClient || supabase;
+
+    const { data: conversation, error } = await client
       .from('conversations')
       .select(`
         *,
@@ -146,13 +185,19 @@ router.get('/conversations/:id', async (req: AuthenticatedRequest, res: Response
       .eq('user_id', userId)
       .single();
 
+    console.log('🔍 [getConversation] Query executada');
+    console.log('🔍 [getConversation] Erro:', error);
+    console.log('🔍 [getConversation] Conversa encontrada:', !!conversation);
+
     if (error || !conversation) {
+      console.log('❌ [getConversation] Conversa não encontrada');
       return res.status(404).json({
         success: false,
         message: 'Conversa não encontrada'
       });
     }
 
+    console.log('✅ [getConversation] Conversa recuperada com sucesso');
     res.json({
       success: true,
       data: conversation,
@@ -160,7 +205,7 @@ router.get('/conversations/:id', async (req: AuthenticatedRequest, res: Response
     });
 
   } catch (error: any) {
-    console.error('Erro ao obter conversa:', error);
+    console.error('❌ [getConversation] Erro ao obter conversa:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor',
@@ -175,16 +220,30 @@ router.post('/conversations/:id/messages', async (req: AuthenticatedRequest, res
     const { id } = req.params;
     const { content } = req.body;
     const userId = req.user?.id;
+    const userClient = req.supabaseClient;
+
+    console.log('🔍 [sendMessage] Iniciando envio de mensagem');
+    console.log('🔍 [sendMessage] Conversation ID:', id);
+    console.log('🔍 [sendMessage] User ID:', userId);
+    console.log('🔍 [sendMessage] Cliente individual disponível:', !!userClient);
+
+    // Usar cliente individual da requisição ou fallback para o compartilhado
+    const client = userClient || supabase;
 
     // Verificar se a conversa existe e pertence ao usuário
-    const { data: conversation, error: convError } = await supabase
+    const { data: conversation, error: convError } = await client
       .from('conversations')
       .select('*, assistants(id, name, openai_assistant_id)')
       .eq('id', id)
       .eq('user_id', userId)
       .single();
 
+    console.log('🔍 [sendMessage] Verificação de conversa executada');
+    console.log('🔍 [sendMessage] Erro:', convError);
+    console.log('🔍 [sendMessage] Conversa encontrada:', !!conversation);
+
     if (convError || !conversation) {
+      console.log('❌ [sendMessage] Conversa não encontrada');
       return res.status(404).json({
         success: false,
         message: 'Conversa não encontrada'
@@ -192,7 +251,7 @@ router.post('/conversations/:id/messages', async (req: AuthenticatedRequest, res
     }
 
     // Validar se o usuário ainda tem acesso ao assistente
-    const { data: subscriptions, error: subError } = await supabase
+    const { data: subscriptions, error: subError } = await client
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
@@ -200,15 +259,19 @@ router.post('/conversations/:id/messages', async (req: AuthenticatedRequest, res
       .eq('status', 'active')
       .gte('expires_at', new Date().toISOString());
 
+    console.log('🔍 [sendMessage] Verificação de acesso executada');
+    console.log('🔍 [sendMessage] Subscriptions encontradas:', subscriptions?.length || 0);
+
     if (subError || !subscriptions || subscriptions.length === 0) {
+      console.log('❌ [sendMessage] Usuário sem acesso ao assistente');
       return res.status(403).json({
         success: false,
         message: 'Sua assinatura para este assistente expirou ou foi cancelada.'
       });
     }
 
-    // Salvar mensagem do usuário no banco
-    const { data: userMessage, error: userMsgError } = await supabase
+    // Salvar mensagem do usuário no banco (messages tem RLS, precisa usar cliente autenticado)
+    const { data: userMessage, error: userMsgError } = await client
       .from('messages')
       .insert({
         conversation_id: id,
@@ -253,7 +316,7 @@ router.post('/conversations/:id/messages', async (req: AuthenticatedRequest, res
       // Salvar resposta do assistente no banco
       const assistantContent = assistantMessage.content[0]?.text?.value || 'Erro ao obter resposta';
       
-      const { data: assistantReply, error: assistantError } = await supabase
+      const { data: assistantReply, error: assistantError } = await client
         .from('messages')
         .insert({
           conversation_id: id,
@@ -267,8 +330,8 @@ router.post('/conversations/:id/messages', async (req: AuthenticatedRequest, res
         console.error('Erro ao salvar resposta do assistente:', assistantError);
       }
 
-      // Atualizar timestamp da conversa
-      await supabase
+      // Atualizar timestamp da conversa (precisa do cliente autenticado)
+      await client
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', id);
@@ -311,30 +374,49 @@ router.get('/conversations/:id/messages', async (req: AuthenticatedRequest, res:
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+    const userClient = req.supabaseClient;
+
+    console.log('🔍 [getMessages] Buscando mensagens da conversa');
+    console.log('🔍 [getMessages] Conversation ID:', id);
+    console.log('🔍 [getMessages] User ID:', userId);
+    console.log('🔍 [getMessages] Cliente individual disponível:', !!userClient);
+
+    // Usar cliente individual da requisição ou fallback para o compartilhado
+    const client = userClient || supabase;
 
     // Verificar se a conversa existe e pertence ao usuário
-    const { data: conversation, error: convError } = await supabase
+    const { data: conversation, error: convError } = await client
       .from('conversations')
       .select('id')
       .eq('id', id)
       .eq('user_id', userId)
       .single();
 
+    console.log('🔍 [getMessages] Verificação de conversa executada');
+    console.log('🔍 [getMessages] Erro na verificação:', convError);
+    console.log('🔍 [getMessages] Conversa encontrada:', !!conversation);
+
     if (convError || !conversation) {
+      console.log('❌ [getMessages] Conversa não encontrada');
       return res.status(404).json({
         success: false,
         message: 'Conversa não encontrada'
       });
     }
 
-    // Buscar mensagens da conversa
-    const { data: messages, error } = await supabase
+    // Buscar mensagens da conversa (messages tem RLS, precisa usar cliente autenticado)
+    const { data: messages, error } = await client
       .from('messages')
       .select('*')
       .eq('conversation_id', id)
       .order('created_at', { ascending: true });
 
+    console.log('🔍 [getMessages] Query de mensagens executada');
+    console.log('🔍 [getMessages] Erro:', error);
+    console.log('🔍 [getMessages] Mensagens encontradas:', messages?.length || 0);
+
     if (error) {
+      console.error('❌ [getMessages] Erro ao buscar mensagens:', error);
       return res.status(500).json({
         success: false,
         message: 'Erro ao buscar mensagens',
@@ -342,6 +424,7 @@ router.get('/conversations/:id/messages', async (req: AuthenticatedRequest, res:
       });
     }
 
+    console.log('✅ [getMessages] Retornando', messages?.length || 0, 'mensagens');
     res.json({
       success: true,
       data: messages,
@@ -349,7 +432,7 @@ router.get('/conversations/:id/messages', async (req: AuthenticatedRequest, res:
     });
 
   } catch (error: any) {
-    console.error('Erro ao obter mensagens:', error);
+    console.error('❌ [getMessages] Erro ao obter mensagens:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor',
@@ -363,21 +446,36 @@ router.delete('/conversations/:id', async (req: AuthenticatedRequest, res: Respo
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+    const userClient = req.supabaseClient;
 
-    // Deletar mensagens primeiro (cascade)
-    await supabase
+    console.log('🔍 [deleteConversation] Iniciando deleção de conversa');
+    console.log('🔍 [deleteConversation] Conversation ID:', id);
+    console.log('🔍 [deleteConversation] User ID:', userId);
+    console.log('🔍 [deleteConversation] Cliente individual disponível:', !!userClient);
+
+    // Usar cliente individual da requisição ou fallback para o compartilhado
+    const client = userClient || supabase;
+
+    // Deletar mensagens primeiro (cascade) - messages tem RLS, precisa usar cliente autenticado
+    await client
       .from('messages')
       .delete()
       .eq('conversation_id', id);
 
-    // Deletar conversa
-    const { error } = await supabase
+    console.log('🔍 [deleteConversation] Mensagens deletadas');
+
+    // Deletar conversa (precisa do cliente autenticado)
+    const { error } = await client
       .from('conversations')
       .delete()
       .eq('id', id)
       .eq('user_id', userId);
 
+    console.log('🔍 [deleteConversation] Tentativa de deletar conversa executada');
+    console.log('🔍 [deleteConversation] Erro:', error);
+
     if (error) {
+      console.error('❌ [deleteConversation] Erro ao deletar conversa:', error);
       return res.status(500).json({
         success: false,
         message: 'Erro ao deletar conversa',
@@ -385,13 +483,14 @@ router.delete('/conversations/:id', async (req: AuthenticatedRequest, res: Respo
       });
     }
 
+    console.log('✅ [deleteConversation] Conversa deletada com sucesso');
     res.json({
       success: true,
       message: 'Conversa deletada com sucesso'
     });
 
   } catch (error: any) {
-    console.error('Erro ao deletar conversa:', error);
+    console.error('❌ [deleteConversation] Erro ao deletar conversa:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor',

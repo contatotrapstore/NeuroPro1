@@ -17,6 +17,7 @@ export interface Assistant {
   monthly_price: number;
   semester_price: number;
   is_active: boolean;
+  openai_assistant_id: string;
   created_at: string;
 }
 
