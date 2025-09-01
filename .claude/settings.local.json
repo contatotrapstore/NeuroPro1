@@ -47,7 +47,10 @@
       "Bash(Stop-Process -Id 22436 -Force)",
       "Bash(powershell Stop-Process:*)",
       "Bash(del frontend/temp-debug-auth.js)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": [],
