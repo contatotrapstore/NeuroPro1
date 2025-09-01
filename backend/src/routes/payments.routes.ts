@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth.middleware';
 import { supabase } from '../config/supabase';
-import { getPackagePrice, type SubscriptionType, type PackageSize } from '../../../shared/config/pricing';
+import { getPackagePrice, type SubscriptionType, type PackageSize } from '../config/pricing';
 
 const router = Router();
 

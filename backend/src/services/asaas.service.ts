@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { getIndividualPrice, getPackagePrice, type SubscriptionType, type PackageSize } from '../../../shared/config/pricing';
+import { getIndividualPrice, getPackagePrice, type SubscriptionType, type PackageSize } from '../config/pricing';
 
 interface AsaasCustomer {
   id: string;
