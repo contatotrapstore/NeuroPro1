@@ -161,6 +161,49 @@ export const CalculatorDollarIcon: React.FC<IconProps> = ({ className = '', colo
   </svg>
 );
 
+// PsicopedIA - Graduação com cérebro
+export const GraduationBrainIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M12 3L2 8L12 13L22 8L12 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 17L12 22L22 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 12L12 17L22 12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8 10C8 11.5 9.5 13 12 13C14.5 13 16 11.5 16 10" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+// NeuroABA - Peças de quebra-cabeça
+export const PuzzleIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M4 4H9V8C9 9.1 9.9 10 11 10C12.1 10 13 9.1 13 8V4H20V11H16C14.9 11 14 11.9 14 13C14 14.1 14.9 15 16 15H20V20H13V16C13 14.9 12.1 14 11 14C9.9 14 9 14.9 9 16V20H4V4Z" stroke={color} strokeWidth="2" strokeLinejoin="round"/>
+    <circle cx="7" cy="7" r="1" fill={color}/>
+    <circle cx="17" cy="17" r="1" fill={color}/>
+  </svg>
+);
+
+// TheraCasal - Dois anéis entrelaçados (casamento)
+export const RingsIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="9" cy="12" r="5" stroke={color} strokeWidth="2"/>
+    <circle cx="15" cy="12" r="5" stroke={color} strokeWidth="2"/>
+    <path d="M9 7L15 7M9 17L15 17" stroke={color} strokeWidth="1" strokeOpacity="0.5"/>
+  </svg>
+);
+
+// Harmonia Sistêmica - Árvore familiar/hierárquica
+export const FamilyTreeIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="4" r="2" fill={color}/>
+    <circle cx="7" cy="12" r="2" stroke={color} strokeWidth="2"/>
+    <circle cx="17" cy="12" r="2" stroke={color} strokeWidth="2"/>
+    <circle cx="5" cy="20" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <circle cx="9" cy="20" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <circle cx="15" cy="20" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <circle cx="19" cy="20" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <path d="M12 6V8M12 8L7 10M12 8L17 10" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M7 14V18M17 14V18M5 18V16M9 18V16M15 18V16M19 18V16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 // Mapeamento de ícones por ID
 export const iconMap = {
   'map-route': MapRouteIcon,
@@ -177,4 +220,8 @@ export const iconMap = {
   'book-search': BookSearchIcon,
   'home-heart': HomeHeartIcon,
   'calculator-dollar': CalculatorDollarIcon,
+  'graduation-brain': GraduationBrainIcon,
+  'puzzle': PuzzleIcon,
+  'rings': RingsIcon,
+  'family-tree': FamilyTreeIcon,
 } as const;

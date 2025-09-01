@@ -153,3 +153,14 @@ export const useRecentSearches = () => {
     clearSearches
   };
 };
+
+/**
+ * Hook for conversations cache
+ */
+export const useConversationsCache = () => {
+  return useLocalStorage('conversations-cache', {
+    conversations: [] as any[],
+    lastUpdated: null as string | null,
+    userId: null as string | null
+  });
+};

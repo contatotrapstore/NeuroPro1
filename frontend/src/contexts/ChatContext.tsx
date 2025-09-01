@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
+import { useConversationsCache } from '../hooks/useLocalStorage';
 
 interface Message {
   id: string;
@@ -96,6 +97,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const { user } = useAuth();
+  const [cache, setCache] = useConversationsCache();
 
   // Criar nova conversa
   const createConversation = async (assistantId: string, title?: string): Promise<Conversation | null> => {
@@ -144,6 +146,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const loadConversations = async (): Promise<void> => {
     if (!user) return;
 
+    // Carregar cache imediatamente se for do mesmo usuário
+    if (cache.userId === user.id && cache.conversations.length > 0) {
+      dispatch({ type: 'SET_CONVERSATIONS', payload: cache.conversations });
+    }
+
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -165,11 +172,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         throw new Error(result.message || 'Erro ao carregar conversas');
       }
 
+      // Atualizar estado e cache
       dispatch({ type: 'SET_CONVERSATIONS', payload: result.data });
+      setCache({
+        conversations: result.data,
+        lastUpdated: new Date().toISOString(),
+        userId: user.id
+      });
 
     } catch (error: any) {
       console.error('Erro ao carregar conversas:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message });
+      
+      // Se falhou e não temos cache, continuar com estado vazio
+      if (cache.userId !== user.id || cache.conversations.length === 0) {
+        dispatch({ type: 'SET_CONVERSATIONS', payload: [] });
+      }
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -341,12 +359,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Carregar conversas quando usuário fizer login
   useEffect(() => {
     if (user) {
-      // Debounce to prevent multiple rapid calls
-      const timeoutId = setTimeout(() => {
-        loadConversations();
-      }, 250);
-      
-      return () => clearTimeout(timeoutId);
+      // Carregar imediatamente sem delay
+      loadConversations();
+    } else {
+      // Limpar conversas quando usuário sair
+      dispatch({ type: 'SET_CONVERSATIONS', payload: [] });
+      dispatch({ type: 'SET_CURRENT_CONVERSATION', payload: null });
+      dispatch({ type: 'SET_MESSAGES', payload: [] });
     }
   }, [user]);
 

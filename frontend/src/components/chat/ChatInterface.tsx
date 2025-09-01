@@ -21,7 +21,12 @@ export function ChatInterface() {
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+                {state.isLoading && state.conversations.length > 0 && (
+                  <div className="w-4 h-4 border-2 border-neuro-primary border-t-transparent rounded-full animate-spin"></div>
+                )}
+              </div>
               <button
                 onClick={() => setShowAssistantSelector(true)}
                 className="px-3 py-1.5 bg-neuro-primary text-white rounded-lg hover:bg-neuro-primary-hover transition-colors text-sm font-medium"

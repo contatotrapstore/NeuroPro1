@@ -1,6 +1,7 @@
 import { useChat } from '../../contexts/ChatContext';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { AssistantIcon } from '../ui/AssistantIcon';
+import { ConversationListSkeleton } from '../ui/SkeletonLoader';
 
 interface ConversationItemProps {
   conversation: any;
@@ -9,7 +10,7 @@ interface ConversationItemProps {
   onDelete: () => void;
 }
 
-function ConversationItem({ conversation, isActive, onClick, onDelete }: ConversationItemProps) {
+const ConversationItem = memo(function ConversationItem({ conversation, isActive, onClick, onDelete }: ConversationItemProps) {
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
 
   const formatDate = (date: string) => {
@@ -107,10 +108,15 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
       )}
     </div>
   );
-}
+});
 
 export function ConversationList() {
   const { state, selectConversation, deleteConversation } = useChat();
+
+  // Mostrar skeleton durante carregamento
+  if (state.isLoading && state.conversations.length === 0) {
+    return <ConversationListSkeleton />;
+  }
 
   if (state.conversations.length === 0) {
     return (
