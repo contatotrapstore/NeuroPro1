@@ -1,5 +1,20 @@
 # 🚀 Deploy NeuroIA Lab no Vercel
 
+## ⚠️ PROBLEMA RESOLVIDO: Environment Variables
+
+O erro "Environment Variable 'VITE_API_BASE_URL' references Secret 'vite_api_base_url', which does not exist" foi corrigido.
+
+### Correção Aplicada
+Removidas as referências a secrets inexistentes no `frontend/vercel.json` e substituídas por valores diretos:
+
+```json
+"env": {
+  "VITE_API_BASE_URL": "https://neuro-pro-backend.vercel.app/api",
+  "VITE_SUPABASE_URL": "https://avgoyfartmzepdgzhroc.supabase.co",
+  "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
 ## Guia Completo de Deploy
 
 ### 📋 Variáveis de Ambiente para Vercel
@@ -37,17 +52,18 @@ DEBUG=false
 
 ---
 
-## 🎨 Frontend Environment Variables
+## 🎨 Frontend Environment Variables (já configuradas no vercel.json)
+
+✅ `VITE_API_BASE_URL` - URL da API backend
+✅ `VITE_SUPABASE_URL` - URL do Supabase  
+✅ `VITE_SUPABASE_ANON_KEY` - Chave anônima do Supabase
 
 ```bash
-# API Configuration
-VITE_API_BASE_URL=https://your-vercel-domain.vercel.app/api
-
-# Supabase Configuration
+# Estas variáveis já estão configuradas no frontend/vercel.json
+# NÃO é necessário configurá-las novamente no dashboard do Vercel
+VITE_API_BASE_URL=https://neuro-pro-backend.vercel.app/api
 VITE_SUPABASE_URL=https://avgoyfartmzepdgzhroc.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Z295ZmFydG16ZXBkZ3pocm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDA5MDksImV4cCI6MjA3MTgxNjkwOX0.WiRurAg7vCXk-cAOTYOpFcvHrYPCuQPRvnujmtNnVEo
-
-# Environment
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 VITE_ENVIRONMENT=production
 VITE_DEBUG=false
 ```
