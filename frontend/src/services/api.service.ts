@@ -390,25 +390,25 @@ export class ApiService {
     return this.post(`/assistants/${assistantId}/validate-access`);
   }
 
-  // Chat methods
+  // Chat methods - Using v3 API to bypass cache issues
   async createConversation(assistantId: string, title?: string): Promise<ApiResponse<any>> {
-    return this.post('/chat/conversations', { assistant_id: assistantId, title });
+    return this.post('/chat-v3/conversations', { assistant_id: assistantId, title });
   }
 
   async getConversations(): Promise<ApiResponse<any[]>> {
-    return this.get('/chat/conversations');
+    return this.get('/chat-v3/conversations');
   }
 
   async sendMessage(conversationId: string, message: string): Promise<ApiResponse<any>> {
-    return this.post(`/chat/conversations/${conversationId}/messages`, { content: message });
+    return this.post(`/chat-v3/conversations/${conversationId}/messages`, { content: message });
   }
 
   async getMessages(conversationId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/chat/conversations/${conversationId}/messages`);
+    return this.get(`/chat-v3/conversations/${conversationId}/messages`);
   }
 
   async deleteConversation(conversationId: string): Promise<ApiResponse<any>> {
-    return this.delete(`/chat/conversations/${conversationId}`);
+    return this.delete(`/chat-v3/conversations/${conversationId}`);
   }
 
   // Profile methods

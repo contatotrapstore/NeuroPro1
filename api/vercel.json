@@ -32,6 +32,10 @@
       "dest": "/chat.js"
     },
     {
+      "src": "/chat-v3/(.*)",
+      "dest": "/chat-v3.js"
+    },
+    {
       "src": "/auth/(.*)",
       "dest": "/auth.js"
     },
