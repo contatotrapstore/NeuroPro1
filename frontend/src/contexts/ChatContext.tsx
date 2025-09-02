@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useEffect, type ReactNode } from
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { useConversationsCache } from '../hooks/useLocalStorage';
+import { ApiService } from '../services/api.service';
 
 interface Message {
   id: string;
@@ -112,22 +113,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         throw new Error('Usuário não autenticado');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session.access_token}`
-        },
-        body: JSON.stringify({
-          assistant_id: assistantId,
-          title
-        })
-      });
+      const apiService = ApiService.getInstance();
+      const result = await apiService.createConversation(assistantId, title);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Erro ao criar conversa');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao criar conversa');
       }
 
       dispatch({ type: 'ADD_CONVERSATION', payload: result.data });
@@ -160,16 +150,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         throw new Error('Usuário não autenticado');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${session.session.access_token}`
-        }
-      });
+      const apiService = ApiService.getInstance();
+      const result = await apiService.getConversations();
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Erro ao carregar conversas');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao carregar conversas');
       }
 
       // Atualizar estado e cache

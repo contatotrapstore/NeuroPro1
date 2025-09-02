@@ -12,6 +12,7 @@ import { Heading, Text, DisplayText } from '../components/ui/Typography';
 import { FloatingParticles, GradientOrb, ParallaxContainer, TextReveal } from '../components/ui/AdvancedEffects';
 import { Icon } from '../components/ui/Icon';
 import { cn } from '../utils/cn';
+import { ApiService } from '../services/api.service';
 
 interface Assistant {
   id: string;
@@ -65,11 +66,11 @@ export default function Store() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assistants`);
-      const result = await response.json();
+      const apiService = ApiService.getInstance();
+      const result = await apiService.getAssistants();
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Erro ao carregar assistentes');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao carregar assistentes');
       }
 
       setAssistants(result.data || []);

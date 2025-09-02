@@ -8,6 +8,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { CreditCard, User, MapPin, Calendar, Lock, ArrowLeft } from 'lucide-react';
 import { PixIcon, BoletoIcon, CreditCardIcon } from '../components/icons/PaymentIcons';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
+import { ApiService } from '../services/api.service';
 
 interface Assistant {
   id: string;
@@ -104,14 +105,14 @@ export default function Checkout() {
       setError(null);
 
       // Load assistants if needed
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assistants`);
-      const result = await response.json();
+      const apiService = ApiService.getInstance();
+      const result = await apiService.getAssistants();
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Erro ao carregar dados');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao carregar dados');
       }
 
-      setAssistants(result.data);
+      setAssistants(result.data || []);
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error);
       setError(error.message);
@@ -150,18 +151,12 @@ export default function Checkout() {
             ...(paymentMethod === 'CREDIT_CARD' && { card_data: cardData })
           };
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const apiService = ApiService.getInstance();
+      const result = checkoutData.type === 'individual' 
+        ? await apiService.createSubscription(checkoutData.assistant_id!, checkoutData.subscription_type!)
+        : await apiService.createPackage(checkoutData.selected_assistants!, checkoutData.subscription_type!);
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || 'Erro ao processar pagamento');
       }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AssistantIcon } from './ui/AssistantIcon';
+import { ApiService } from '../services/api.service';
 
 interface Assistant {
   id: string;
@@ -52,14 +53,14 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assistants`);
-      const result = await response.json();
+      const apiService = ApiService.getInstance();
+      const result = await apiService.getAssistants();
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Erro ao carregar assistentes');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao carregar assistentes');
       }
 
-      setAssistants(result.data);
+      setAssistants(result.data || []);
     } catch (error: any) {
       console.error('Erro ao carregar assistentes:', error);
       setError(error.message);
