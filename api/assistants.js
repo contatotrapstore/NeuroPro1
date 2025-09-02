@@ -112,7 +112,7 @@ module.exports = async function handler(req, res) {
         },
         {
           id: 'asst_ZuPRuYG9eqxmb6tIIcBNSSWd',
-          name: 'ClinReplay',
+          name: 'Simulador de Paciente',
           description: 'Session Trainer (AI Patient)',
           icon: 'conversation',
           specialization: 'Training Simulation',
@@ -189,6 +189,38 @@ module.exports = async function handler(req, res) {
           icon: 'calculator-dollar',
           specialization: 'Cost Analysis',
           status: 'active'
+        },
+        {
+          id: 'harmonia-sistemica',
+          name: 'Harmonia Sistêmica',
+          description: 'Family and Systemic Therapy Assistant',
+          icon: 'family-tree',
+          specialization: 'Family Therapy',
+          status: 'active'
+        },
+        {
+          id: 'neuroaba',
+          name: 'NeuroABA',
+          description: 'Applied Behavior Analysis Assistant',
+          icon: 'brain-circuit',
+          specialization: 'Behavioral Analysis',
+          status: 'active'
+        },
+        {
+          id: 'psicopedia',
+          name: 'PsicopedIA',
+          description: 'Psychopedagogy and Learning Assistant',
+          icon: 'graduation-cap',
+          specialization: 'Educational Psychology',
+          status: 'active'
+        },
+        {
+          id: 'theracasal',
+          name: 'TheraCasal',
+          description: 'Couple Therapy Assistant',
+          icon: 'heart-duo',
+          specialization: 'Couple Therapy',
+          status: 'active'
         }
       ];
 
@@ -202,7 +234,7 @@ module.exports = async function handler(req, res) {
 
     // If no assistants found, return default set
     if (!assistants || assistants.length === 0) {
-      console.log('⚠️ No assistants in database, returning all 14 defaults');
+      console.log('⚠️ No assistants in database, returning all 18 defaults');
       
       const defaultAssistants = [
         {
@@ -239,7 +271,7 @@ module.exports = async function handler(req, res) {
         },
         {
           id: 'asst_ZuPRuYG9eqxmb6tIIcBNSSWd',
-          name: 'ClinReplay',
+          name: 'Simulador de Paciente',
           description: 'Session Trainer (AI Patient)',
           icon: 'conversation',
           specialization: 'Training Simulation',
@@ -315,6 +347,38 @@ module.exports = async function handler(req, res) {
           description: 'Clinical Session Cost Evaluator',
           icon: 'calculator-dollar',
           specialization: 'Cost Analysis',
+          status: 'active'
+        },
+        {
+          id: 'harmonia-sistemica',
+          name: 'Harmonia Sistêmica',
+          description: 'Family and Systemic Therapy Assistant',
+          icon: 'family-tree',
+          specialization: 'Family Therapy',
+          status: 'active'
+        },
+        {
+          id: 'neuroaba',
+          name: 'NeuroABA',
+          description: 'Applied Behavior Analysis Assistant',
+          icon: 'brain-circuit',
+          specialization: 'Behavioral Analysis',
+          status: 'active'
+        },
+        {
+          id: 'psicopedia',
+          name: 'PsicopedIA',
+          description: 'Psychopedagogy and Learning Assistant',
+          icon: 'graduation-cap',
+          specialization: 'Educational Psychology',
+          status: 'active'
+        },
+        {
+          id: 'theracasal',
+          name: 'TheraCasal',
+          description: 'Couple Therapy Assistant',
+          icon: 'heart-duo',
+          specialization: 'Couple Therapy',
           status: 'active'
         }
       ];
