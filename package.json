@@ -20,7 +20,7 @@
   "author": "NeuroIA Lab Team",
   "license": "MIT",
   "engines": {
-    "node": "18.x"
+    "node": ">=18.x"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.1",

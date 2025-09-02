@@ -1,6 +1,6 @@
 {
   "functions": {
-    "frontend/**": "18.x"
+    "frontend/**": "20.x"
   },
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
