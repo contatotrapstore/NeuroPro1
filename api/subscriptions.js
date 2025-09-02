@@ -85,10 +85,13 @@ module.exports = async function handler(req, res) {
       const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
       userId = payload.sub; // 'sub' claim contains user ID
       
+      console.log('👤 JWT payload completo:', payload);
       console.log('👤 JWT decoded successfully:', {
         userId: userId,
         email: payload.email || 'not-in-token',
-        exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no-expiry'
+        exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no-expiry',
+        aud: payload.aud || 'no-audience',
+        iss: payload.iss || 'no-issuer'
       });
       
       // Check if token is expired
@@ -118,7 +121,23 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Get user subscriptions using service key
-      console.log('📊 Buscando assinaturas do usuário:', userId);
+      console.log('📊 Buscando assinaturas do usuário:', {
+        userId: userId,
+        userIdType: typeof userId,
+        userIdLength: userId ? userId.length : 0
+      });
+      
+      // First, let's check if user exists at all
+      const { data: allUserSubs, error: checkError } = await supabase
+        .from('user_subscriptions')
+        .select('user_id, status')
+        .eq('user_id', userId);
+      
+      console.log('🔍 Verificando se usuário tem subscriptions:', {
+        found: allUserSubs ? allUserSubs.length : 0,
+        subs: allUserSubs,
+        error: checkError ? checkError.message : 'none'
+      });
       
       const { data: subscriptions, error } = await supabase
         .from('user_subscriptions')

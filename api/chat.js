@@ -319,16 +319,35 @@ module.exports = async function handler(req, res) {
             assistant_id: conversation.assistants.openai_assistant_id
           });
           
-          console.log('✅ Run created:', { runId: run.id, status: run.status });
+          console.log('✅ Run created:', { 
+            runId: run.id, 
+            status: run.status,
+            hasRunId: !!run.id,
+            runObject: run
+          });
+
+          if (!run.id) {
+            console.error('❌ Run ID is undefined!', { run });
+            throw new Error('Failed to create run - no run ID returned');
+          }
 
           // Wait for completion (simplified)
           let runStatus = await openai.beta.threads.runs.retrieve(conversation.thread_id, run.id);
           let attempts = 0;
           
+          console.log('⏳ Waiting for run completion...', { 
+            initialStatus: runStatus.status,
+            runId: run.id 
+          });
+          
           while (runStatus.status === 'running' && attempts < 30) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             runStatus = await openai.beta.threads.runs.retrieve(conversation.thread_id, run.id);
             attempts++;
+            
+            if (attempts % 5 === 0) {
+              console.log(`⏳ Still waiting... attempt ${attempts}, status: ${runStatus.status}`);
+            }
           }
 
           if (runStatus.status === 'completed') {
