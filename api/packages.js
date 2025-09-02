@@ -318,7 +318,29 @@ async function handleGetUserPackages(req, res, supabase) {
       });
     }
 
-    // Create user-specific client
+    // Alternative auth approach for Vercel serverless
+    console.log('🔍 Validando usuário com token usando admin client...');
+    
+    // Use admin client to validate JWT token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    console.log('👤 User validation result:', {
+      hasUser: !!user,
+      userId: user ? user.id : 'null',
+      userEmail: user ? user.email : 'null',
+      authError: userError ? userError.message : 'none'
+    });
+    
+    if (userError || !user) {
+      console.error('❌ Erro de autenticação:', userError?.message || 'User não encontrado');
+      return res.status(401).json({
+        success: false,
+        error: 'Token inválido'
+      });
+    }
+
+    // Create user-specific client for database operations
+    console.log('👤 Criando client autenticado para operações do banco...');
     const userClient = require('@supabase/supabase-js').createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_ANON_KEY,
@@ -334,16 +356,6 @@ async function handleGetUserPackages(req, res, supabase) {
         }
       }
     );
-
-    // Get user from token
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    
-    if (userError || !user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Token inválido'
-      });
-    }
 
     const userId = user.id;
 

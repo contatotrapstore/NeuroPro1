@@ -76,23 +76,11 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Create user-specific client
-    console.log('👤 Criando client autenticado...');
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    });
-
-    // Get user from token
-    console.log('🔍 Validando usuário com token...');
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    // Alternative auth approach for Vercel serverless
+    console.log('🔍 Validando usuário com token usando admin client...');
+    
+    // Use admin client to validate JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     console.log('👤 User validation result:', {
       hasUser: !!user,
@@ -108,6 +96,20 @@ module.exports = async function handler(req, res) {
         error: 'Token inválido ou expirado'
       });
     }
+
+    // Create user-specific client for database operations
+    console.log('👤 Criando client autenticado para operações do banco...');
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
 
     if (req.method === 'GET') {
       // Get user subscriptions
