@@ -14,7 +14,25 @@ export class ApiService {
   private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+    // Detectar se está em produção baseado na URL
+    const isProduction = typeof window !== 'undefined' && 
+      (window.location.hostname !== 'localhost' && 
+       window.location.hostname !== '127.0.0.1' && 
+       window.location.hostname !== '');
+    
+    // Em produção, usar URL absoluta do backend
+    if (isProduction) {
+      this.baseURL = 'https://neuro-pro-backend.vercel.app/api';
+    } else {
+      // Em desenvolvimento, usar proxy local
+      this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+    }
+    
+    console.log('🌍 API Base URL configurada:', {
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'servidor',
+      isProduction,
+      baseURL: this.baseURL
+    });
   }
 
   // Singleton pattern
