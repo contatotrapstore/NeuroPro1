@@ -1,12 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-);
-
 export default async function handler(req, res) {
-  // Enable CORS for production frontend
+  // Always set CORS headers first
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
     'http://localhost:5173', // Development
@@ -14,21 +9,42 @@ export default async function handler(req, res) {
   ];
   
   const origin = req.headers.origin;
+  console.log('Request origin:', origin);
+  
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    console.log('CORS origin allowed:', origin);
+  } else {
+    // Allow all origins temporarily for debugging
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    console.log('CORS fallback to * for origin:', origin);
   }
   
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Credentials', 'false');
   
   if (req.method === 'OPTIONS') {
+    console.log('Preflight OPTIONS request handled');
     res.status(200).end();
     return;
   }
 
+  // Initialize Supabase client
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Z295ZmFydG16ZXBkZ3pocm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDA5MDksImV4cCI6MjA3MTgxNjkwOX0.WiRurAg7vCXk-cAOTYOpFcvHrYPCuQPRvnujmtNnVEo';
+  
+  console.log('Supabase URL:', supabaseUrl);
+  console.log('Supabase Key available:', !!supabaseKey);
+  
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
+    console.log('Request method:', req.method);
+    
     if (req.method === 'GET') {
+      console.log('Fetching assistants from database...');
+      
       // Get all assistants (public endpoint)
       const { data: assistants, error } = await supabase
         .from('assistants')
@@ -36,11 +52,17 @@ export default async function handler(req, res) {
         .eq('status', 'active')
         .order('name');
 
+      console.log('Database query result:', { 
+        assistants: assistants ? assistants.length + ' records' : 'null',
+        error: error ? error.message : 'none'
+      });
+
       if (error) {
         console.error('Database error:', error);
         return res.status(500).json({
           success: false,
-          error: 'Erro ao buscar assistentes'
+          error: 'Erro ao buscar assistentes',
+          details: error.message
         });
       }
 
@@ -180,9 +202,12 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('API Error:', error);
+    console.error('Error stack:', error.stack);
     return res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
+      error: 'Erro interno do servidor',
+      details: error.message,
+      type: error.name
     });
   }
 }
