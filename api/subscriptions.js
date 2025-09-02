@@ -128,7 +128,9 @@ module.exports = async function handler(req, res) {
             id,
             name,
             description,
-            icon
+            icon,
+            openai_assistant_id,
+            color_theme
           )
         `)
         .eq('user_id', userId)

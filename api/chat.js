@@ -292,20 +292,34 @@ module.exports = async function handler(req, res) {
       // Try to get AI response if OpenAI is configured
       let assistantReply = null;
       
+      console.log('🤖 OpenAI Configuration Check:', {
+        hasApiKey: !!process.env.OPENAI_API_KEY,
+        keyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+        keyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'none',
+        hasAssistantId: !!conversation.assistants?.openai_assistant_id,
+        assistantId: conversation.assistants?.openai_assistant_id || 'none',
+        threadId: conversation.thread_id
+      });
+      
       if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('placeholder') && conversation.assistants?.openai_assistant_id) {
         try {
+          console.log('🚀 Initiating OpenAI request...');
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
           
           // Add message to thread
+          console.log('📝 Adding message to thread...');
           await openai.beta.threads.messages.create(conversation.thread_id, {
             role: 'user',
             content: content
           });
 
           // Create run
+          console.log('▶️ Creating run with assistant...');
           const run = await openai.beta.threads.runs.create(conversation.thread_id, {
             assistant_id: conversation.assistants.openai_assistant_id
           });
+          
+          console.log('✅ Run created:', { runId: run.id, status: run.status });
 
           // Wait for completion (simplified)
           let runStatus = await openai.beta.threads.runs.retrieve(conversation.thread_id, run.id);
