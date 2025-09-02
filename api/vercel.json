@@ -20,8 +20,24 @@
       "dest": "/subscriptions.js"
     },
     {
+      "src": "/packages",
+      "dest": "/packages.js"
+    },
+    {
       "src": "/test",
       "dest": "/test.js"
+    },
+    {
+      "src": "/chat/(.*)",
+      "dest": "/chat.js"
+    },
+    {
+      "src": "/auth/(.*)",
+      "dest": "/auth.js"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/admin.js"
     }
   ]
 }
