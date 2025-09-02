@@ -1,6 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async function handler(req, res) {
+  console.log('🚀 Subscriptions API v2.1 - Fixed query structure');
+  
   // Enable CORS
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
