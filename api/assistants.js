@@ -467,22 +467,23 @@ module.exports = async function handler(req, res) {
         console.error('Error getting subscriptions:', subError);
       }
 
-      // Get user's package assistants
-      const { data: packageAssistants, error: packageError } = await userClient
-        .from('user_package_assistants')
-        .select(`
-          assistant_id,
-          assistants (
-            id, name, description, icon, color_theme,
-            monthly_price, semester_price, is_active
-          ),
-          user_packages!inner (
-            user_id, status, expires_at
-          )
-        `)
-        .eq('user_packages.user_id', userId)
-        .eq('user_packages.status', 'active')
-        .gte('user_packages.expires_at', new Date().toISOString());
+      // Get user's package assistants from user_packages table
+      const { data: userPackages, error: packageError } = await userClient
+        .from('user_packages')
+        .select('assistant_ids, status, expires_at')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString());
+
+      let packageAssistantIds = [];
+      if (userPackages && userPackages.length > 0) {
+        packageAssistantIds = userPackages.flatMap(pkg => pkg.assistant_ids || []);
+      }
+
+      console.log('Package assistants from user_packages:', {
+        packages: userPackages ? userPackages.length : 0,
+        assistantIds: packageAssistantIds
+      });
 
       if (packageError) {
         console.error('Error getting package assistants:', packageError);
@@ -501,12 +502,18 @@ module.exports = async function handler(req, res) {
       }
 
       // Add package assistants
-      if (packageAssistants) {
-        packageAssistants.forEach(pkg => {
-          if (pkg.assistants) {
-            userAssistants.set(pkg.assistants.id, pkg.assistants);
-          }
-        });
+      if (packageAssistantIds.length > 0) {
+        const { data: packageAssistantsData } = await userClient
+          .from('assistants')
+          .select('*')
+          .in('id', packageAssistantIds)
+          .eq('is_active', true);
+
+        if (packageAssistantsData) {
+          packageAssistantsData.forEach(assistant => {
+            userAssistants.set(assistant.id, assistant);
+          });
+        }
       }
 
       const availableAssistants = Array.from(userAssistants.values());
@@ -605,22 +612,19 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check package subscription
-      const { data: packageAccess, error: packageError } = await userClient
-        .from('user_package_assistants')
-        .select(`
-          *,
-          user_packages!inner (
-            user_id, status, expires_at
-          )
-        `)
-        .eq('assistant_id', assistantId)
-        .eq('user_packages.user_id', userId)
-        .eq('user_packages.status', 'active')
-        .gte('user_packages.expires_at', new Date().toISOString())
-        .single();
+      // Check package subscription  
+      const { data: userPackagesCheck, error: packageError } = await userClient
+        .from('user_packages')
+        .select('assistant_ids, status, expires_at')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString());
 
-      if (!packageError && packageAccess) {
+      const hasPackageAccess = userPackagesCheck && userPackagesCheck.some(pkg => 
+        pkg.assistant_ids && pkg.assistant_ids.includes(assistantId)
+      );
+
+      if (!packageError && hasPackageAccess) {
         return res.json({
           success: true,
           data: {

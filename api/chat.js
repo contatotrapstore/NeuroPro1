@@ -311,16 +311,32 @@ module.exports = async function handler(req, res) {
           console.log('🚀 Initiating OpenAI request...');
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
           
+          // Check if thread_id is valid, create new one if needed
+          let workingThreadId = conversation.thread_id;
+          if (!workingThreadId || workingThreadId === 'undefined' || workingThreadId.startsWith('mock-thread-')) {
+            console.log('🔧 Creating new OpenAI thread (invalid thread_id)...');
+            const newThread = await openai.beta.threads.create();
+            workingThreadId = newThread.id;
+            
+            // Update conversation with new thread_id
+            await userClient
+              .from('conversations')
+              .update({ thread_id: workingThreadId })
+              .eq('id', conversationId);
+            
+            console.log('✅ New thread created:', workingThreadId);
+          }
+          
           // Add message to thread
-          console.log('📝 Adding message to thread...');
-          await openai.beta.threads.messages.create(conversation.thread_id, {
+          console.log('📝 Adding message to thread:', workingThreadId);
+          await openai.beta.threads.messages.create(workingThreadId, {
             role: 'user',
             content: content
           });
 
           // Create run
           console.log('▶️ Creating run with assistant...');
-          const run = await openai.beta.threads.runs.create(conversation.thread_id, {
+          const run = await openai.beta.threads.runs.create(workingThreadId, {
             assistant_id: conversation.assistants.openai_assistant_id
           });
           
@@ -334,14 +350,14 @@ module.exports = async function handler(req, res) {
           if (!run || !run.id) {
             console.error('❌ Invalid run object returned from OpenAI:', { 
               run,
-              threadId: conversation.thread_id,
+              threadId: workingThreadId,
               assistantId: conversation.assistants.openai_assistant_id
             });
             throw new Error('Failed to create run - invalid response from OpenAI');
           }
 
           // Wait for completion (simplified)
-          let runStatus = await openai.beta.threads.runs.retrieve(conversation.thread_id, run.id);
+          let runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
           let attempts = 0;
           
           console.log('⏳ Waiting for run completion...', { 
@@ -351,7 +367,7 @@ module.exports = async function handler(req, res) {
           
           while (runStatus.status === 'running' && attempts < 30) {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            runStatus = await openai.beta.threads.runs.retrieve(conversation.thread_id, run.id);
+            runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
             attempts++;
             
             if (attempts % 5 === 0) {
@@ -361,7 +377,7 @@ module.exports = async function handler(req, res) {
 
           if (runStatus.status === 'completed') {
             // Get messages
-            const messages = await openai.beta.threads.messages.list(conversation.thread_id);
+            const messages = await openai.beta.threads.messages.list(workingThreadId);
             const assistantMessage = messages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
             
             if (assistantMessage && assistantMessage.content[0]?.text?.value) {
@@ -394,7 +410,23 @@ module.exports = async function handler(req, res) {
             hasAPIKey: !!process.env.OPENAI_API_KEY,
             apiKeyLength: process.env.OPENAI_API_KEY?.length
           });
-          // Continue without AI response
+          
+          // Create a fallback response when OpenAI fails
+          const fallbackContent = `Desculpe, não consegui processar sua mensagem no momento. O assistente está temporariamente indisponível. Tente novamente em alguns instantes.`;
+          
+          const { data: fallbackReply, error: fallbackError } = await userClient
+            .from('messages')
+            .insert({
+              conversation_id: conversationId,
+              role: 'assistant',
+              content: fallbackContent
+            })
+            .select()
+            .single();
+
+          if (!fallbackError) {
+            assistantReply = fallbackReply;
+          }
         }
       }
 
