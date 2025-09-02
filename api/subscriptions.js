@@ -128,8 +128,7 @@ module.exports = async function handler(req, res) {
             id,
             name,
             description,
-            icon,
-            specialization
+            icon
           )
         `)
         .eq('user_id', userId)
