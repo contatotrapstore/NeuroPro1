@@ -22,7 +22,7 @@ export class ApiService {
     
     // Em produção, usar URL absoluta do backend
     if (isProduction) {
-      this.baseURL = 'https://neuro-pro-backend.vercel.app';
+      this.baseURL = 'https://neuro-pro-backend-phi.vercel.app';
     } else {
       // Em desenvolvimento, usar proxy local
       this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
