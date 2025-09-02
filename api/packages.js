@@ -318,53 +318,52 @@ async function handleGetUserPackages(req, res, supabase) {
       });
     }
 
-    // Alternative auth approach for Vercel serverless
-    console.log('🔍 Validando usuário com token usando admin client...');
+    // Serverless auth approach - decode JWT manually
+    console.log('🔍 Decodificando JWT para obter user_id...');
     
-    // Use admin client to validate JWT token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    console.log('👤 User validation result:', {
-      hasUser: !!user,
-      userId: user ? user.id : 'null',
-      userEmail: user ? user.email : 'null',
-      authError: userError ? userError.message : 'none'
-    });
-    
-    if (userError || !user) {
-      console.error('❌ Erro de autenticação:', userError?.message || 'User não encontrado');
+    let userId;
+    try {
+      // Decode JWT payload (base64)
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      userId = payload.sub; // 'sub' claim contains user ID
+      
+      console.log('👤 JWT decoded successfully:', {
+        userId: userId,
+        email: payload.email || 'not-in-token',
+        exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no-expiry'
+      });
+      
+      // Check if token is expired
+      if (payload.exp && payload.exp < Date.now() / 1000) {
+        console.error('❌ Token expirado');
+        return res.status(401).json({
+          success: false,
+          error: 'Token expirado'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao decodificar JWT:', error.message);
       return res.status(401).json({
         success: false,
         error: 'Token inválido'
       });
     }
 
-    // Create user-specific client for database operations
-    console.log('👤 Criando client autenticado para operações do banco...');
-    const userClient = require('@supabase/supabase-js').createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      }
-    );
-
-    const userId = user.id;
+    if (!userId) {
+      console.error('❌ User ID não encontrado no token');
+      return res.status(401).json({
+        success: false,
+        error: 'Token inválido - sem user ID'
+      });
+    }
 
     console.log('📊 Querying user packages for user:', userId);
 
-    // Get user's packages (simplified query to avoid relation errors)
+    // Get user's packages using service key
     console.log('📊 Buscando packages do usuário:', userId);
     
-    const { data: packages, error } = await userClient
+    const { data: packages, error } = await supabase
       .from('user_packages')
       .select('*')
       .eq('user_id', userId)

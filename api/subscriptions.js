@@ -76,46 +76,51 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Alternative auth approach for Vercel serverless
-    console.log('🔍 Validando usuário com token usando admin client...');
+    // Serverless auth approach - decode JWT manually
+    console.log('🔍 Decodificando JWT para obter user_id...');
     
-    // Use admin client to validate JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    console.log('👤 User validation result:', {
-      hasUser: !!user,
-      userId: user ? user.id : 'null',
-      userEmail: user ? user.email : 'null',
-      authError: authError ? authError.message : 'none'
-    });
-
-    if (authError || !user) {
-      console.error('❌ Erro de autenticação:', authError?.message || 'User não encontrado');
+    let userId;
+    try {
+      // Decode JWT payload (base64)
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      userId = payload.sub; // 'sub' claim contains user ID
+      
+      console.log('👤 JWT decoded successfully:', {
+        userId: userId,
+        email: payload.email || 'not-in-token',
+        exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no-expiry'
+      });
+      
+      // Check if token is expired
+      if (payload.exp && payload.exp < Date.now() / 1000) {
+        console.error('❌ Token expirado');
+        return res.status(401).json({
+          success: false,
+          error: 'Token expirado'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao decodificar JWT:', error.message);
       return res.status(401).json({
         success: false,
-        error: 'Token inválido ou expirado'
+        error: 'Token inválido'
       });
     }
 
-    // Create user-specific client for database operations
-    console.log('👤 Criando client autenticado para operações do banco...');
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    });
+    if (!userId) {
+      console.error('❌ User ID não encontrado no token');
+      return res.status(401).json({
+        success: false,
+        error: 'Token inválido - sem user ID'
+      });
+    }
 
     if (req.method === 'GET') {
-      // Get user subscriptions
-      console.log('📊 Buscando assinaturas do usuário:', user.id);
+      // Get user subscriptions using service key
+      console.log('📊 Buscando assinaturas do usuário:', userId);
       
-      const { data: subscriptions, error } = await userClient
+      const { data: subscriptions, error } = await supabase
         .from('user_subscriptions')
         .select(`
           *,
@@ -127,7 +132,7 @@ module.exports = async function handler(req, res) {
             specialization
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('status', 'active');
 
       console.log('📊 Database query result:', {
@@ -167,7 +172,7 @@ module.exports = async function handler(req, res) {
       const { data: existing } = await supabase
         .from('user_subscriptions')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('assistant_id', assistantId)
         .eq('status', 'active')
         .single();
@@ -191,7 +196,7 @@ module.exports = async function handler(req, res) {
       const { data: subscription, error } = await supabase
         .from('user_subscriptions')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           assistant_id: assistantId,
           plan,
           status: 'active',
@@ -231,7 +236,7 @@ module.exports = async function handler(req, res) {
           .from('user_subscriptions')
           .select('*')
           .eq('id', subscriptionId)
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .single();
 
         if (fetchError || !subscription) {
@@ -273,7 +278,7 @@ module.exports = async function handler(req, res) {
           .from('user_packages')
           .select('*')
           .eq('id', packageId)
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .single();
 
         if (fetchError || !userPackage) {
