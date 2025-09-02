@@ -390,25 +390,25 @@ export class ApiService {
     return this.post(`/assistants/${assistantId}/validate-access`);
   }
 
-  // Chat methods - Using v3 API to bypass cache issues
+  // Chat methods - Using EMERGENCY API for guaranteed functionality
   async createConversation(assistantId: string, title?: string): Promise<ApiResponse<any>> {
-    return this.post('/chat-v3/conversations', { assistant_id: assistantId, title });
+    return this.post('/chat-emergency/conversations', { assistant_id: assistantId, title });
   }
 
   async getConversations(): Promise<ApiResponse<any[]>> {
-    return this.get('/chat-v3/conversations');
+    return this.get('/chat-emergency/conversations');
   }
 
   async sendMessage(conversationId: string, message: string): Promise<ApiResponse<any>> {
-    return this.post(`/chat-v3/conversations/${conversationId}/messages`, { content: message });
+    return this.post(`/chat-emergency/conversations/${conversationId}/messages`, { content: message });
   }
 
   async getMessages(conversationId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/chat-v3/conversations/${conversationId}/messages`);
+    return this.get(`/chat-emergency/conversations/${conversationId}/messages`);
   }
 
   async deleteConversation(conversationId: string): Promise<ApiResponse<any>> {
-    return this.delete(`/chat-v3/conversations/${conversationId}`);
+    return this.delete(`/chat-emergency/conversations/${conversationId}`);
   }
 
   // Profile methods
