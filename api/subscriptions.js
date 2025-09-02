@@ -139,41 +139,82 @@ module.exports = async function handler(req, res) {
         error: checkError ? checkError.message : 'none'
       });
       
-      const { data: subscriptions, error } = await supabase
+      // First get the user subscriptions
+      const { data: subscriptions, error: subsError } = await supabase
         .from('user_subscriptions')
-        .select(`
-          *,
-          assistants (
-            id,
-            name,
-            description,
-            icon,
-            openai_assistant_id,
-            color_theme
-          )
-        `)
+        .select('*')
         .eq('user_id', userId)
         .eq('status', 'active');
 
-      console.log('📊 Database query result:', {
+      console.log('📊 Subscriptions query result:', {
         hasSubscriptions: !!subscriptions,
         subscriptionsCount: subscriptions ? subscriptions.length : 0,
-        error: error ? error.message : 'none',
-        errorCode: error ? error.code : 'none',
-        errorDetails: error ? error.details : 'none'
+        subsError: subsError ? subsError.message : 'none',
+        userId: userId,
+        userIdType: typeof userId
       });
 
-      if (error) {
-        console.error('❌ Database error:', error);
+      if (subsError) {
+        console.error('❌ Subscriptions query error:', subsError);
         return res.status(500).json({
           success: false,
-          error: `Erro ao buscar assinaturas: ${error.message}`
+          error: `Erro ao buscar assinaturas: ${subsError.message}`
         });
       }
 
+      if (!subscriptions || subscriptions.length === 0) {
+        console.log('⚠️ No subscriptions found for user:', userId);
+        return res.status(200).json({
+          success: true,
+          data: []
+        });
+      }
+
+      // Get assistant details separately
+      const assistantIds = subscriptions.map(sub => sub.assistant_id);
+      console.log('🔍 Looking for assistants:', assistantIds);
+
+      const { data: assistants, error: assistError } = await supabase
+        .from('assistants')
+        .select('id, name, description, icon, openai_assistant_id, color_theme')
+        .in('id', assistantIds);
+
+      console.log('🤖 Assistants query result:', {
+        hasAssistants: !!assistants,
+        assistantsCount: assistants ? assistants.length : 0,
+        assistError: assistError ? assistError.message : 'none'
+      });
+
+      if (assistError) {
+        console.error('❌ Assistants query error:', assistError);
+        // Return subscriptions without assistant details if assistant query fails
+        return res.status(200).json({
+          success: true,
+          data: subscriptions
+        });
+      }
+
+      // Merge subscription and assistant data
+      const enrichedSubscriptions = subscriptions.map(subscription => {
+        const assistant = assistants?.find(a => a.id === subscription.assistant_id);
+        return {
+          ...subscription,
+          assistants: assistant || null
+        };
+      });
+
+      console.log('✅ Final enriched subscriptions:', {
+        count: enrichedSubscriptions.length,
+        sample: enrichedSubscriptions[0] ? {
+          id: enrichedSubscriptions[0].id,
+          assistant_id: enrichedSubscriptions[0].assistant_id,
+          hasAssistantData: !!enrichedSubscriptions[0].assistants
+        } : null
+      });
+
       return res.status(200).json({
         success: true,
-        data: subscriptions || []
+        data: enrichedSubscriptions
       });
     }
 

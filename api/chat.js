@@ -300,8 +300,13 @@ module.exports = async function handler(req, res) {
         assistantId: conversation.assistants?.openai_assistant_id || 'none',
         threadId: conversation.thread_id
       });
-      
-      if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('placeholder') && conversation.assistants?.openai_assistant_id) {
+
+      // Validate OpenAI configuration before proceeding
+      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('placeholder')) {
+        console.log('⚠️ OpenAI API key not configured, skipping AI response');
+      } else if (!conversation.assistants?.openai_assistant_id) {
+        console.error('❌ No OpenAI assistant ID found for assistant:', conversation.assistant_id);
+      } else {
         try {
           console.log('🚀 Initiating OpenAI request...');
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -323,12 +328,16 @@ module.exports = async function handler(req, res) {
             runId: run.id, 
             status: run.status,
             hasRunId: !!run.id,
-            runObject: run
+            runObject: Object.keys(run || {})
           });
 
-          if (!run.id) {
-            console.error('❌ Run ID is undefined!', { run });
-            throw new Error('Failed to create run - no run ID returned');
+          if (!run || !run.id) {
+            console.error('❌ Invalid run object returned from OpenAI:', { 
+              run,
+              threadId: conversation.thread_id,
+              assistantId: conversation.assistants.openai_assistant_id
+            });
+            throw new Error('Failed to create run - invalid response from OpenAI');
           }
 
           // Wait for completion (simplified)

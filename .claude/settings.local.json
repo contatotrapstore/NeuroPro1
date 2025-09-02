@@ -55,7 +55,8 @@
       "WebFetch(domain:neuroai-lab.vercel.app)",
       "Bash(npm run type-check:*)",
       "Bash(npm run lint)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebFetch(domain:neuro-pro-backend-phi.vercel.app)"
     ],
     "deny": [],
     "ask": [],
