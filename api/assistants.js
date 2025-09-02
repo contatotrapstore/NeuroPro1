@@ -1,213 +1,140 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  console.log('🚀 Function started - assistants endpoint');
+  console.log('Request method:', req.method);
+  console.log('Request headers:', req.headers);
+  
   // Always set CORS headers first
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
-    'http://localhost:5173', // Development
-    'http://localhost:3000'  // Development backend
+    'http://localhost:5173',
+    'http://localhost:3000'
   ];
   
   const origin = req.headers.origin;
   console.log('Request origin:', origin);
   
+  // Set CORS headers
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-    console.log('CORS origin allowed:', origin);
+    console.log('✅ CORS origin allowed:', origin);
   } else {
-    // Allow all origins temporarily for debugging
     res.setHeader('Access-Control-Allow-Origin', '*');
-    console.log('CORS fallback to * for origin:', origin);
+    console.log('⚠️ CORS fallback to * for origin:', origin);
   }
   
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Allow-Credentials', 'false');
   
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    console.log('Preflight OPTIONS request handled');
-    res.status(200).end();
-    return;
+    console.log('✅ Preflight OPTIONS request handled');
+    return res.status(200).end();
   }
 
-  // Initialize Supabase client
-  const supabaseUrl = process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co';
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Z295ZmFydG16ZXBkZ3pocm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDA5MDksImV4cCI6MjA3MTgxNjkwOX0.WiRurAg7vCXk-cAOTYOpFcvHrYPCuQPRvnujmtNnVEo';
-  
-  console.log('Supabase URL:', supabaseUrl);
-  console.log('Supabase Key available:', !!supabaseKey);
-  
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  // Only handle GET requests
+  if (req.method !== 'GET') {
+    console.log('❌ Method not allowed:', req.method);
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed'
+    });
+  }
 
   try {
-    console.log('Request method:', req.method);
+    console.log('🔧 Initializing Supabase client...');
     
-    if (req.method === 'GET') {
-      console.log('Fetching assistants from database...');
-      
-      // Get all assistants (public endpoint)
-      const { data: assistants, error } = await supabase
-        .from('assistants')
-        .select('*')
-        .eq('status', 'active')
-        .order('name');
+    // Initialize Supabase client
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                       process.env.SUPABASE_ANON_KEY || 
+                       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Z295ZmFydG16ZXBkZ3pocm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDA5MDksImV4cCI6MjA3MTgxNjkwOX0.WiRurAg7vCXk-cAOTYOpFcvHrYPCuQPRvnujmtNnVEo';
+    
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key length:', supabaseKey ? supabaseKey.length : 0);
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase client created');
 
-      console.log('Database query result:', { 
-        assistants: assistants ? assistants.length + ' records' : 'null',
-        error: error ? error.message : 'none'
-      });
+    console.log('📊 Querying assistants table...');
+    
+    // Query database for assistants
+    const { data: assistants, error } = await supabase
+      .from('assistants')
+      .select('*')
+      .eq('status', 'active')
+      .order('name');
 
-      if (error) {
-        console.error('Database error:', error);
-        return res.status(500).json({
-          success: false,
-          error: 'Erro ao buscar assistentes',
-          details: error.message
-        });
-      }
+    console.log('Database response:', { 
+      assistants: assistants ? `${assistants.length} records` : 'null',
+      error: error ? error.message : 'none',
+      errorCode: error ? error.code : 'none'
+    });
 
-      // If no assistants in database, return default list
-      if (!assistants || assistants.length === 0) {
-        const defaultAssistants = [
-          {
-            id: 'asst_8kNKRg68rR8zguhYzdlMEvQc',
-            name: 'PsicoPlano',
-            description: 'Therapeutic Route Formulator',
-            icon: 'map-route',
-            specialization: 'Therapeutic Planning',
-            status: 'active'
-          },
-          {
-            id: 'asst_Ohn9w46OmgwLJhxw08jSbM2f',
-            name: 'NeuroCase',
-            description: 'Clinical Case Reviewer',
-            icon: 'brain-case',
-            specialization: 'Case Analysis',
-            status: 'active'
-          },
-          {
-            id: 'asst_hH374jNSOTSqrsbC9Aq5MKo3',
-            name: 'Guia Ético',
-            description: 'Professional Ethics Guide',
-            icon: 'shield-check',
-            specialization: 'Professional Ethics',
-            status: 'active'
-          },
-          {
-            id: 'asst_jlRLzTb4OrBKYWLtjscO3vJN',
-            name: 'SessãoMap',
-            description: 'Session Structure Formulator',
-            icon: 'session-map',
-            specialization: 'Session Planning',
-            status: 'active'
-          },
-          {
-            id: 'asst_ZuPRuYG9eqxmb6tIIcBNSSWd',
-            name: 'ClinReplay',
-            description: 'Session Trainer (AI Patient)',
-            icon: 'replay-circle',
-            specialization: 'Training Simulation',
-            status: 'active'
-          },
-          {
-            id: 'asst_WdzCxpQ3s04GqyDKfUsmxWRg',
-            name: 'CognitiMap',
-            description: 'Cognitive Restructuring Builder',
-            icon: 'brain-gear',
-            specialization: 'Cognitive Therapy',
-            status: 'active'
-          },
-          {
-            id: 'asst_Gto0pHqdCHdM7iBtdB9XUvkU',
-            name: 'MindRoute',
-            description: 'Psychological Approaches Guide',
-            icon: 'compass-mind',
-            specialization: 'Therapeutic Approaches',
-            status: 'active'
-          },
-          {
-            id: 'asst_9RGTNpAvpwBtNps5krM051km',
-            name: 'TheraTrack',
-            description: 'Therapeutic Evolution Evaluator',
-            icon: 'progress-chart',
-            specialization: 'Progress Tracking',
-            status: 'active'
-          },
-          {
-            id: 'asst_FHXh63UfotWmtzfwdAORvH1s',
-            name: 'NeuroLaudo',
-            description: 'Psychological Report Elaborator',
-            icon: 'document-report',
-            specialization: 'Report Writing',
-            status: 'active'
-          },
-          {
-            id: 'asst_ZtY1hAFirpsA3vRdCuuOEebf',
-            name: 'PsicoTest',
-            description: 'Psychological Tests Consultant',
-            icon: 'test-clipboard',
-            specialization: 'Psychological Testing',
-            status: 'active'
-          },
-          {
-            id: 'asst_bdfbravG0rjZfp40SFue89ge',
-            name: 'TheraFocus',
-            description: 'Specific Disorder Interventions Organizer',
-            icon: 'target-focus',
-            specialization: 'Disorder-Specific Treatment',
-            status: 'active'
-          },
-          {
-            id: 'asst_nqL5L0hIfOMe2wNQn9wambGr',
-            name: 'PsicoBase',
-            description: 'Evidence-Based Clinical Strategies',
-            icon: 'database-brain',
-            specialization: 'Evidence-Based Practice',
-            status: 'active'
-          },
-          {
-            id: 'asst_62QzPGQdr9KJMqqJIRVI787r',
-            name: 'MindHome',
-            description: 'Therapeutic Home Activities Elaborator',
-            icon: 'home-heart',
-            specialization: 'Home-Based Therapy',
-            status: 'active'
-          },
-          {
-            id: 'asst_NoCnwSoviZBasOxgbac9USkg',
-            name: 'ClinPrice',
-            description: 'Clinical Session Cost Evaluator',
-            icon: 'calculator-cost',
-            specialization: 'Cost Analysis',
-            status: 'active'
-          }
-        ];
-
-        return res.status(200).json({
-          success: true,
-          data: defaultAssistants
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        data: assistants
+    if (error) {
+      console.error('❌ Database error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Database error',
+        details: error.message,
+        code: error.code
       });
     }
 
-    return res.status(405).json({
-      success: false,
-      error: 'Método não permitido'
+    // If no assistants found, return default set
+    if (!assistants || assistants.length === 0) {
+      console.log('⚠️ No assistants in database, returning defaults');
+      
+      const defaultAssistants = [
+        {
+          id: 'asst_8kNKRg68rR8zguhYzdlMEvQc',
+          name: 'PsicoPlano',
+          description: 'Therapeutic Route Formulator',
+          icon: 'map-route',
+          specialization: 'Therapeutic Planning',
+          status: 'active'
+        },
+        {
+          id: 'asst_Ohn9w46OmgwLJhxw08jSbM2f',
+          name: 'NeuroCase', 
+          description: 'Clinical Case Reviewer',
+          icon: 'brain-case',
+          specialization: 'Case Analysis',
+          status: 'active'
+        }
+      ];
+
+      return res.status(200).json({
+        success: true,
+        data: defaultAssistants,
+        count: defaultAssistants.length,
+        source: 'default'
+      });
+    }
+
+    // Return database results
+    console.log('✅ Returning', assistants.length, 'assistants from database');
+    
+    return res.status(200).json({
+      success: true,
+      data: assistants,
+      count: assistants.length,
+      source: 'database'
     });
 
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('💥 Function error:', error);
     console.error('Error stack:', error.stack);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    
     return res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor',
+      error: 'Internal server error',
       details: error.message,
       type: error.name
     });
   }
-}
+};

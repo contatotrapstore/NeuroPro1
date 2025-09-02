@@ -2,7 +2,6 @@
   "name": "neuroai-lab-api",
   "version": "1.0.0",
   "description": "NeuroIA Lab API Functions for Vercel",
-  "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0"
   }
