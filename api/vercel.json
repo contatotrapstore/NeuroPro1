@@ -1,26 +1,27 @@
 {
   "version": 2,
-  "functions": {
-    "*.js": {
-      "runtime": "@vercel/node@3"
+  "builds": [
+    {
+      "src": "*.js",
+      "use": "@vercel/node"
     }
-  },
-  "rewrites": [
+  ],
+  "routes": [
     {
-      "source": "/assistants",
-      "destination": "/assistants.js"
+      "src": "/assistants",
+      "dest": "/assistants.js"
     },
     {
-      "source": "/health", 
-      "destination": "/health.js"
+      "src": "/health", 
+      "dest": "/health.js"
     },
     {
-      "source": "/subscriptions",
-      "destination": "/subscriptions.js"
+      "src": "/subscriptions",
+      "dest": "/subscriptions.js"
     },
     {
-      "source": "/test",
-      "destination": "/test.js"
+      "src": "/test",
+      "dest": "/test.js"
     }
   ]
 }
