@@ -8,7 +8,7 @@
   ],
   "routes": [
     {
-      "src": "/assistants",
+      "src": "/assistants(.*)",
       "dest": "/assistants.js"
     },
     {
@@ -16,11 +16,11 @@
       "dest": "/health.js"
     },
     {
-      "src": "/subscriptions",
+      "src": "/subscriptions(.*)",
       "dest": "/subscriptions.js"
     },
     {
-      "src": "/packages",
+      "src": "/packages(.*)",
       "dest": "/packages.js"
     },
     {

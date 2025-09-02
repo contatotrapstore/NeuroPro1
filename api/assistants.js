@@ -44,10 +44,18 @@ module.exports = async function handler(req, res) {
     console.log('🔧 Initializing Supabase client...');
     
     // Initialize Supabase client
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                       process.env.SUPABASE_ANON_KEY || 
-                       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Z295ZmFydG16ZXBkZ3pocm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDA5MDksImV4cCI6MjA3MTgxNjkwOX0.WiRurAg7vCXk-cAOTYOpFcvHrYPCuQPRvnujmtNnVEo';
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Configuração do servidor incompleta'
+      });
+    }
+    
+    const supabaseKey = supabaseServiceKey || supabaseAnonKey;
     
     console.log('Supabase URL:', supabaseUrl);
     console.log('Supabase Key length:', supabaseKey ? supabaseKey.length : 0);
@@ -417,7 +425,7 @@ module.exports = async function handler(req, res) {
       }
 
       // Create user-specific client
-      const userClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || supabaseKey, {
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false
@@ -552,7 +560,7 @@ module.exports = async function handler(req, res) {
       }
 
       // Create user-specific client
-      const userClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || supabaseKey, {
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false
