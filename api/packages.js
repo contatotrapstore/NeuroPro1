@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
   
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'false');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -49,9 +49,19 @@ module.exports = async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     console.log('✅ Supabase client created');
 
-    // Handle different HTTP methods
-    if (req.method === 'GET') {
+    // Parse URL for routing
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathParts = url.pathname.split('/').filter(part => part);
+    
+    console.log('Packages path parts:', pathParts);
+
+    // Handle different HTTP methods and routes
+    if (req.method === 'GET' && pathParts.length === 1) {
+      // GET /packages - List available packages
       return handleGetPackages(req, res, supabase);
+    } else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'user') {
+      // GET /packages/user - Get user's packages
+      return handleGetUserPackages(req, res, supabase);
     } else if (req.method === 'POST') {
       return handleCreatePackage(req, res, supabase);
     } else {
@@ -265,5 +275,103 @@ async function handleCreatePackage(req, res, supabase) {
   } catch (error) {
     console.error('💥 Error creating package:', error);
     throw error;
+  }
+}
+
+// Handle GET /packages/user - Get user's packages
+async function handleGetUserPackages(req, res, supabase) {
+  try {
+    // Extract user token for authentication
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token de acesso não fornecido'
+      });
+    }
+
+    // Create user-specific client
+    const userClient = require('@supabase/supabase-js').createClient(
+      process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co',
+      process.env.SUPABASE_ANON_KEY || supabase.supabaseKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    );
+
+    // Get user from token
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    
+    if (userError || !user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token inválido'
+      });
+    }
+
+    const userId = user.id;
+
+    console.log('📊 Querying user packages for user:', userId);
+
+    // Get user's packages
+    const { data: packages, error } = await userClient
+      .from('user_packages')
+      .select(`
+        *,
+        assistants:user_package_assistants (
+          assistants (
+            id,
+            name,
+            description,
+            icon,
+            color_theme,
+            monthly_price,
+            semester_price
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    console.log('Database response:', { 
+      packages: packages ? `${packages.length} records` : 'null',
+      error: error ? error.message : 'none'
+    });
+
+    if (error) {
+      console.error('❌ Database error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao buscar pacotes do usuário',
+        error: error.message
+      });
+    }
+
+    console.log('✅ Returning user packages');
+    
+    return res.json({
+      success: true,
+      data: packages || [],
+      count: packages ? packages.length : 0,
+      message: 'Pacotes do usuário recuperados com sucesso'
+    });
+
+  } catch (error) {
+    console.error('💥 Error getting user packages:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor',
+      error: error.message
+    });
   }
 }

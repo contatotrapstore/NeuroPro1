@@ -7,9 +7,22 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'https://neuroai-lab.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -128,6 +141,105 @@ export default async function handler(req, res) {
         success: true,
         data: subscription
       });
+    }
+
+    if (req.method === 'DELETE') {
+      // Parse URL for routing
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const pathParts = url.pathname.split('/').filter(part => part);
+      
+      console.log('DELETE path parts:', pathParts);
+
+      if (pathParts.length === 2) {
+        // DELETE /subscriptions/:id - Cancel individual subscription
+        const subscriptionId = pathParts[1];
+
+        // Verify subscription belongs to user
+        const { data: subscription, error: fetchError } = await supabase
+          .from('user_subscriptions')
+          .select('*')
+          .eq('id', subscriptionId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError || !subscription) {
+          return res.status(404).json({
+            success: false,
+            error: 'Assinatura não encontrada'
+          });
+        }
+
+        // Update subscription status to cancelled
+        const { error: updateError } = await supabase
+          .from('user_subscriptions')
+          .update({
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString()
+          })
+          .eq('id', subscriptionId);
+
+        if (updateError) {
+          console.error('Database error:', updateError);
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao cancelar assinatura'
+          });
+        }
+
+        return res.json({
+          success: true,
+          message: 'Assinatura cancelada com sucesso'
+        });
+      }
+
+      else if (pathParts.length === 3 && pathParts[1] === 'packages') {
+        // DELETE /subscriptions/packages/:id - Cancel package subscription
+        const packageId = pathParts[2];
+
+        // Verify package belongs to user
+        const { data: userPackage, error: fetchError } = await supabase
+          .from('user_packages')
+          .select('*')
+          .eq('id', packageId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError || !userPackage) {
+          return res.status(404).json({
+            success: false,
+            error: 'Pacote não encontrado'
+          });
+        }
+
+        // Update package status to cancelled
+        const { error: updateError } = await supabase
+          .from('user_packages')
+          .update({
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString()
+          })
+          .eq('id', packageId);
+
+        if (updateError) {
+          console.error('Database error:', updateError);
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao cancelar pacote'
+          });
+        }
+
+        return res.json({
+          success: true,
+          message: 'Pacote cancelado com sucesso'
+        });
+      }
+
+      else {
+        return res.status(404).json({
+          success: false,
+          error: 'Rota não encontrada'
+        });
+      }
     }
 
     return res.status(405).json({

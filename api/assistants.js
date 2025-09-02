@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
   
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'false');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -34,14 +34,11 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Only handle GET requests
-  if (req.method !== 'GET') {
-    console.log('❌ Method not allowed:', req.method);
-    return res.status(405).json({
-      success: false,
-      error: 'Method not allowed'
-    });
-  }
+  // Route handling based on URL
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathParts = url.pathname.split('/').filter(part => part);
+  
+  console.log('Assistants path parts:', pathParts);
 
   try {
     console.log('🔧 Initializing Supabase client...');
@@ -58,22 +55,25 @@ module.exports = async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     console.log('✅ Supabase client created');
 
-    console.log('📊 Querying assistants table...');
-    
-    // Query database for assistants
-    const { data: assistants, error } = await supabase
-      .from('assistants')
-      .select('*')
-      .eq('status', 'active')
-      .order('name');
+    // Handle different assistant endpoints
+    if (req.method === 'GET' && pathParts.length === 1) {
+      // GET /assistants - List all assistants (public)
+      console.log('📊 Querying assistants table...');
+      
+      // Query database for assistants
+      const { data: assistants, error } = await supabase
+        .from('assistants')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
 
-    console.log('Database response:', { 
-      assistants: assistants ? `${assistants.length} records` : 'null',
-      error: error ? error.message : 'none',
-      errorCode: error ? error.code : 'none'
-    });
+      console.log('Database response:', { 
+        assistants: assistants ? `${assistants.length} records` : 'null',
+        error: error ? error.message : 'none',
+        errorCode: error ? error.code : 'none'
+      });
 
-    if (error) {
+      if (error) {
       console.error('❌ Database error:', error);
       console.log('⚠️ Database error occurred, returning all 14 default assistants');
       
@@ -330,12 +330,252 @@ module.exports = async function handler(req, res) {
     // Return database results
     console.log('✅ Returning', assistants.length, 'assistants from database');
     
-    return res.status(200).json({
-      success: true,
-      data: assistants,
-      count: assistants.length,
-      source: 'database'
-    });
+      return res.status(200).json({
+        success: true,
+        data: assistants,
+        count: assistants.length,
+        source: 'database'
+      });
+    }
+
+    else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'user') {
+      // GET /assistants/user - List assistants available to authenticated user
+      
+      // Extract user token for authentication
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          error: 'Token de acesso não fornecido'
+        });
+      }
+
+      // Create user-specific client
+      const userClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
+      // Get user from token
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      
+      if (userError || !user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Token inválido'
+        });
+      }
+
+      const userId = user.id;
+
+      // Get user's subscriptions (individual + packages)
+      const { data: subscriptions, error: subError } = await userClient
+        .from('user_subscriptions')
+        .select(`
+          assistant_id,
+          assistants (
+            id, name, description, icon, color_theme, 
+            monthly_price, semester_price, is_active
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString());
+
+      if (subError) {
+        console.error('Error getting subscriptions:', subError);
+      }
+
+      // Get user's package assistants
+      const { data: packageAssistants, error: packageError } = await userClient
+        .from('user_package_assistants')
+        .select(`
+          assistant_id,
+          assistants (
+            id, name, description, icon, color_theme,
+            monthly_price, semester_price, is_active
+          ),
+          user_packages!inner (
+            user_id, status, expires_at
+          )
+        `)
+        .eq('user_packages.user_id', userId)
+        .eq('user_packages.status', 'active')
+        .gte('user_packages.expires_at', new Date().toISOString());
+
+      if (packageError) {
+        console.error('Error getting package assistants:', packageError);
+      }
+
+      // Combine and deduplicate assistants
+      const userAssistants = new Map();
+      
+      // Add individual subscriptions
+      if (subscriptions) {
+        subscriptions.forEach(sub => {
+          if (sub.assistants) {
+            userAssistants.set(sub.assistants.id, sub.assistants);
+          }
+        });
+      }
+
+      // Add package assistants
+      if (packageAssistants) {
+        packageAssistants.forEach(pkg => {
+          if (pkg.assistants) {
+            userAssistants.set(pkg.assistants.id, pkg.assistants);
+          }
+        });
+      }
+
+      const availableAssistants = Array.from(userAssistants.values());
+
+      return res.json({
+        success: true,
+        data: availableAssistants,
+        count: availableAssistants.length,
+        message: 'Assistentes do usuário recuperados com sucesso'
+      });
+    }
+
+    else if (req.method === 'GET' && pathParts.length === 2) {
+      // GET /assistants/:id - Get specific assistant
+      const assistantId = pathParts[1];
+
+      const { data: assistant, error } = await supabase
+        .from('assistants')
+        .select('*')
+        .eq('id', assistantId)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !assistant) {
+        return res.status(404).json({
+          success: false,
+          error: 'Assistente não encontrado'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: assistant,
+        message: 'Assistente recuperado com sucesso'
+      });
+    }
+
+    else if (req.method === 'POST' && pathParts.length === 3 && pathParts[2] === 'validate-access') {
+      // POST /assistants/:id/validate-access - Validate user access to assistant
+      const assistantId = pathParts[1];
+
+      // Extract user token for authentication
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          error: 'Token de acesso não fornecido'
+        });
+      }
+
+      // Create user-specific client
+      const userClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
+      // Get user from token
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      
+      if (userError || !user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Token inválido'
+        });
+      }
+
+      const userId = user.id;
+
+      // Check individual subscription
+      const { data: subscription, error: subError } = await userClient
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('assistant_id', assistantId)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .single();
+
+      if (!subError && subscription) {
+        return res.json({
+          success: true,
+          data: {
+            hasAccess: true,
+            accessType: 'individual_subscription'
+          },
+          message: 'Usuário tem acesso via assinatura individual'
+        });
+      }
+
+      // Check package subscription
+      const { data: packageAccess, error: packageError } = await userClient
+        .from('user_package_assistants')
+        .select(`
+          *,
+          user_packages!inner (
+            user_id, status, expires_at
+          )
+        `)
+        .eq('assistant_id', assistantId)
+        .eq('user_packages.user_id', userId)
+        .eq('user_packages.status', 'active')
+        .gte('user_packages.expires_at', new Date().toISOString())
+        .single();
+
+      if (!packageError && packageAccess) {
+        return res.json({
+          success: true,
+          data: {
+            hasAccess: true,
+            accessType: 'package_subscription'
+          },
+          message: 'Usuário tem acesso via pacote'
+        });
+      }
+
+      // No access found
+      return res.json({
+        success: true,
+        data: {
+          hasAccess: false,
+          accessType: 'none'
+        },
+        message: 'Usuário não possui acesso a este assistente'
+      });
+    }
+
+    else {
+      return res.status(404).json({
+        success: false,
+        error: 'Endpoint não encontrado'
+      });
+    }
 
   } catch (error) {
     console.error('💥 Function error:', error);
