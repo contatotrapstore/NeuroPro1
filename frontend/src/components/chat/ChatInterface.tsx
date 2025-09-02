@@ -165,12 +165,12 @@ export function ChatInterface() {
         />
       )}
 
-      {/* Loading Overlay */}
-      {state.isLoading && (
+      {/* Loading Overlay - Only for conversation operations */}
+      {state.isLoading && state.conversations.length === 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg flex items-center space-x-3">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-neuro-primary"></div>
-            <span className="text-gray-900">Carregando...</span>
+            <span className="text-gray-900">Carregando conversas...</span>
           </div>
         </div>
       )}

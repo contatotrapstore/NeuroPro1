@@ -223,6 +223,16 @@ npm run lint && npm run test
 - **Icons Library**: Custom SVG icons defined in `frontend/src/components/icons/AssistantIcons.tsx`
 - **Fixed Pages**: PackageSelector, Checkout, and Admin pages now display proper SVG icons
 
+### ✅ Chat System Overhaul (September 2025)
+- **Real-time Message Updates**: Fixed AI responses appearing without page refresh by using response data directly
+- **Race Condition Prevention**: Implemented AbortController API for canceling pending requests when switching conversations
+- **Debounced Conversation Selection**: Added 200ms debounce to prevent rapid-fire conversation switching issues
+- **Immediate State Cleanup**: CLEAR_MESSAGES action clears messages instantly when switching conversations
+- **Transition State Management**: Added `isTransitioning` state to prevent concurrent operations and UI freezing
+- **Complete Conversation Deletion**: Full implementation with API calls, local state updates, and visual feedback
+- **Message Synchronization**: Validation checks ensure messages belong to current conversation
+- **Performance Optimization**: Reduced unnecessary API calls and improved error handling
+
 ## Environment Configuration
 
 ### Required Services
@@ -255,6 +265,25 @@ npm run lint && npm run test
 - Database query optimization for subscription checks
 - Rate limiting to prevent abuse
 - CDN for static assets in production
+
+## Deployment Configuration
+
+### Production URLs
+- **Frontend**: https://neuroai-lab.vercel.app (Vercel)
+- **Backend API**: https://neuro-pro-backend.vercel.app (Vercel)
+- **Status**: ✅ Fully operational with real-time chat
+
+### Vercel Configuration
+- **Frontend Build**: `cd frontend && npm run build`
+- **Output Directory**: `frontend/dist`
+- **Framework**: Vite (React)
+- **CSP Headers**: Configured for Supabase and API communication
+- **SPA Rewrites**: All routes redirect to `/index.html`
+
+### Environment Variables Required
+- **Frontend**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_BASE_URL`
+- **Backend**: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `OPENAI_API_KEY`, `PORT`
+- **Database**: Row Level Security (RLS) enabled in Supabase
 
 ## Documentation References
 

@@ -400,11 +400,15 @@ export class ApiService {
   }
 
   async sendMessage(conversationId: string, message: string): Promise<ApiResponse<any>> {
-    return this.post(`/chat/conversations/${conversationId}/message`, { message });
+    return this.post(`/chat/conversations/${conversationId}/messages`, { content: message });
   }
 
   async getMessages(conversationId: string): Promise<ApiResponse<any[]>> {
     return this.get(`/chat/conversations/${conversationId}/messages`);
+  }
+
+  async deleteConversation(conversationId: string): Promise<ApiResponse<any>> {
+    return this.delete(`/chat/conversations/${conversationId}`);
   }
 
   // Profile methods

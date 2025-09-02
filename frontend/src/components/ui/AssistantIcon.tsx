@@ -10,6 +10,28 @@ interface AssistantIconProps {
   className?: string;
 }
 
+// Mapeamento de IDs de assistentes para ícones
+const assistantIdToIcon: Record<string, string> = {
+  'psicoplano': 'map-route',
+  'neurocase': 'clipboard-check', 
+  'guia-etico': 'balance-scale',
+  'sessaomap': 'calendar-clock',
+  'clinreplay': 'conversation',
+  'cognitimap': 'brain-gear',
+  'mindroute': 'compass',
+  'theratrack': 'trending-up',
+  'neurolaudo': 'document-seal',
+  'psicotest': 'test-clipboard',
+  'therafocus': 'target',
+  'psicobase': 'book-search',
+  'mindhome': 'home-heart',
+  'clinprice': 'calculator-dollar',
+  'harmonia-sistemica': 'family-tree',
+  'neuroaba': 'graduation-brain',
+  'psicopedia': 'puzzle',
+  'theracasal': 'rings'
+};
+
 export const AssistantIcon: React.FC<AssistantIconProps> = ({ 
   iconType, 
   color = 'currentColor', 
@@ -18,15 +40,22 @@ export const AssistantIcon: React.FC<AssistantIconProps> = ({
 }) => {
   console.log('AssistantIcon rendering:', { iconType, availableIcons: Object.keys(iconMap) });
   
+  // Se o iconType é um ID de assistente, converter para o ícone correto
+  let finalIconType = iconType;
+  if (assistantIdToIcon[iconType]) {
+    finalIconType = assistantIdToIcon[iconType];
+    console.log(`🔄 Convertendo ID '${iconType}' para ícone '${finalIconType}'`);
+  }
+  
   // Usar o iconMap diretamente
-  const IconComponent = iconMap[iconType as IconType];
+  const IconComponent = iconMap[finalIconType as IconType];
   
   if (IconComponent) {
-    console.log('✅ Ícone SVG encontrado:', iconType);
+    console.log('✅ Ícone SVG encontrado:', finalIconType);
     return <IconComponent color={color} size={size} className={className} />;
   }
   
-  console.log('⚠️ Ícone SVG não encontrado, usando fallback para:', iconType);
+  console.log('⚠️ Ícone SVG não encontrado, usando fallback para:', finalIconType);
   
   // Fallback melhorado - verificar se é emoji primeiro
   if (iconType && /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(iconType)) {

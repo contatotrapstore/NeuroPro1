@@ -9,7 +9,7 @@ export function MessageInput() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!message.trim() || state.isLoading || state.isTyping) {
+    if (!message.trim() || state.isTyping) {
       return;
     }
 
@@ -34,7 +34,7 @@ export function MessageInput() {
     }
   }, [message]);
 
-  const isDisabled = state.isLoading || state.isTyping || !state.currentConversation;
+  const isDisabled = state.isTyping || state.isTransitioning || !state.currentConversation;
 
   return (
     <div className="w-full">
@@ -46,7 +46,9 @@ export function MessageInput() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              isDisabled 
+              state.isTransitioning 
+                ? 'Carregando conversa...'
+                : isDisabled 
                 ? 'Aguarde...' 
                 : 'Digite sua mensagem... (Enter para enviar, Shift+Enter para nova linha)'
             }

@@ -3,14 +3,26 @@ import { useState, memo } from 'react';
 import { AssistantIcon } from '../ui/AssistantIcon';
 import { ConversationListSkeleton } from '../ui/SkeletonLoader';
 
+interface Conversation {
+  id: string;
+  title: string;
+  updated_at: string;
+  assistants?: {
+    name: string;
+    icon: string;
+    color_theme: string;
+  };
+}
+
 interface ConversationItemProps {
-  conversation: any;
+  conversation: Conversation;
   isActive: boolean;
   onClick: () => void;
   onDelete: () => void;
+  isDeleting?: boolean;
 }
 
-const ConversationItem = memo(function ConversationItem({ conversation, isActive, onClick, onDelete }: ConversationItemProps) {
+const ConversationItem = memo(function ConversationItem({ conversation, isActive, onClick, onDelete, isDeleting = false }: ConversationItemProps) {
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
 
   const formatDate = (date: string) => {
@@ -37,7 +49,8 @@ const ConversationItem = memo(function ConversationItem({ conversation, isActive
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Tem certeza que deseja deletar esta conversa?')) {
+    const confirmMessage = `Tem certeza que deseja deletar a conversa "${conversation.title}"?\n\nEsta ação não pode ser desfeita e todas as mensagens serão perdidas permanentemente.`;
+    if (confirm(confirmMessage)) {
       onDelete();
     }
     setShowDeleteMenu(false);
@@ -45,12 +58,12 @@ const ConversationItem = memo(function ConversationItem({ conversation, isActive
 
   return (
     <div
-      className={`group relative p-3 cursor-pointer transition-colors ${
+      className={`group relative p-3 transition-colors ${
         isActive
           ? 'bg-green-50 border-r-2 border-neuro-primary'
           : 'hover:bg-gray-50'
-      }`}
-      onClick={onClick}
+      } ${isActive ? 'cursor-default' : 'cursor-pointer'} ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+      onClick={isActive || isDeleting ? undefined : onClick}
     >
       <div className="flex items-start space-x-3">
         <div 
@@ -75,17 +88,23 @@ const ConversationItem = memo(function ConversationItem({ conversation, isActive
                 {formatDate(conversation.updated_at)}
               </span>
               
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteMenu(!showDeleteMenu);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
-              >
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
-              </button>
+              {isDeleting ? (
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteMenu(!showDeleteMenu);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
 
@@ -112,8 +131,9 @@ const ConversationItem = memo(function ConversationItem({ conversation, isActive
 
 export function ConversationList() {
   const { state, selectConversation, deleteConversation } = useChat();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Mostrar skeleton durante carregamento
+  // Mostrar skeleton durante carregamento inicial
   if (state.isLoading && state.conversations.length === 0) {
     return <ConversationListSkeleton />;
   }
@@ -138,10 +158,33 @@ export function ConversationList() {
           key={conversation.id}
           conversation={conversation}
           isActive={state.currentConversation?.id === conversation.id}
-          onClick={() => selectConversation(conversation.id)}
-          onDelete={() => deleteConversation(conversation.id)}
+          isDeleting={deletingId === conversation.id}
+          onClick={() => {
+            // Prevenir cliques durante transição
+            if (!state.isTransitioning) {
+              selectConversation(conversation.id);
+            }
+          }}
+          onDelete={async () => {
+            setDeletingId(conversation.id);
+            try {
+              await deleteConversation(conversation.id);
+            } finally {
+              setDeletingId(null);
+            }
+          }}
         />
       ))}
+      
+      {/* Indicador de transição */}
+      {state.isTransitioning && (
+        <div className="p-3 bg-blue-50 border-l-2 border-blue-400">
+          <div className="flex items-center space-x-2 text-blue-600 text-sm">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span>Carregando conversa...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

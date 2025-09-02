@@ -119,8 +119,18 @@ export function MessageList() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Loading Messages */}
+      {state.isLoadingMessages && state.messages.length === 0 && (
+        <div className="text-center py-8">
+          <div className="flex justify-center mb-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neuro-primary"></div>
+          </div>
+          <p className="text-gray-600">Carregando mensagens...</p>
+        </div>
+      )}
+
       {/* Welcome Message */}
-      {state.messages.length === 0 && (
+      {!state.isLoadingMessages && state.messages.length === 0 && (
         <div className="text-center py-8">
           <div className="flex justify-center mb-4">
             <div 

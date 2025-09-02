@@ -1,5 +1,60 @@
 # Changelog - NeuroIA Lab
 
+## [v2.2.0] - 2025-09-02
+
+### ✅ Major Chat System Improvements
+
+#### Real-time Chat Experience
+- **Instant AI Responses**: Fixed AI messages appearing immediately without page refresh
+- **Response Data Integration**: AI responses now use direct API data instead of reloading messages
+- **Smooth UX**: Eliminated need for manual page refreshes during conversations
+
+#### Race Condition Prevention
+- **AbortController Implementation**: Added request cancellation for pending operations
+- **Debounced Selection**: 200ms debounce prevents rapid-fire conversation switching
+- **State Synchronization**: Messages instantly clear when switching conversations
+- **Concurrent Operation Prevention**: `isTransitioning` state blocks overlapping actions
+
+#### Complete Conversation Management  
+- **Delete Functionality**: Full conversation deletion with API integration
+- **Visual Feedback**: Loading spinners and confirmation dialogs in Portuguese
+- **Local State Updates**: Immediate UI updates with cache management
+- **Error Handling**: Comprehensive error management for all chat operations
+
+### 🔧 Technical Architecture Improvements
+
+#### Frontend Enhancements
+- **ChatContext Overhaul**: Complete state management redesign
+- **Message Synchronization**: Validation ensures messages belong to current conversation
+- **Performance Optimization**: Reduced unnecessary API calls and improved caching
+- **TypeScript Improvements**: Fixed typing issues in ConversationList component
+
+#### Backend Stability
+- **API Service**: Enhanced deleteConversation endpoint integration
+- **Database Operations**: Optimized conversation and message queries
+- **Authentication**: Improved JWT token handling across all chat operations
+
+### 🐛 Critical Bug Fixes
+- **Message Loading**: Fixed messages not appearing after sending
+- **Conversation Switching**: Resolved old conversation messages appearing in new chats
+- **UI Freezing**: Eliminated interface freezing during rapid operations
+- **Delete Operations**: Fixed conversation deletion not working
+- **State Management**: Resolved race conditions in message state
+
+### 📱 Production Deployment
+- **Vercel Integration**: Full deployment configuration for frontend and backend
+- **Environment Variables**: Proper configuration for production environments
+- **CSP Headers**: Security headers configured for Supabase and OpenAI integration
+- **Performance**: Optimized build and deployment processes
+
+### 🚀 Performance Optimizations
+- **Request Management**: Intelligent request queuing and cancellation
+- **State Updates**: Optimized React state updates for better performance  
+- **Memory Management**: Proper cleanup of event listeners and timeouts
+- **API Efficiency**: Reduced redundant API calls through better state management
+
+---
+
 ## [v2.1.0] - 2025-01-31
 
 ### ✅ Major Features Added
