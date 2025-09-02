@@ -2,9 +2,10 @@ const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
 
 module.exports = async function handler(req, res) {
-  console.log('🚀 Chat API v2.1 - Fixed OpenAI integration');
+  console.log('🚀 Chat API v2.2 - FORCED DEPLOY - Fixed thread_id issue');
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
+  console.log('Deploy timestamp:', new Date().toISOString());
   
   // CORS Headers
   const allowedOrigins = [
