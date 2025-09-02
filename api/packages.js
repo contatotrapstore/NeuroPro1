@@ -331,23 +331,10 @@ async function handleGetUserPackages(req, res, supabase) {
 
     console.log('📊 Querying user packages for user:', userId);
 
-    // Get user's packages
+    // Get user's packages (simplified query to avoid relation errors)
     const { data: packages, error } = await userClient
       .from('user_packages')
-      .select(`
-        *,
-        assistants:user_package_assistants (
-          assistants (
-            id,
-            name,
-            description,
-            icon,
-            color_theme,
-            monthly_price,
-            semester_price
-          )
-        )
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 

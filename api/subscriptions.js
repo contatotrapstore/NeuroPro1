@@ -41,15 +41,30 @@ module.exports = async function handler(req, res) {
 
     // Get user from auth token
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
       return res.status(401).json({
         success: false,
-        error: 'Token de autorização não encontrado'
+        error: 'Token de acesso não fornecido'
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Create user-specific client
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+
+    // Get user from token
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
 
     if (authError || !user) {
       return res.status(401).json({
@@ -60,7 +75,7 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Get user subscriptions
-      const { data: subscriptions, error } = await supabase
+      const { data: subscriptions, error } = await userClient
         .from('user_subscriptions')
         .select(`
           *,
