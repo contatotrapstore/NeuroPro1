@@ -302,8 +302,8 @@ async function handleGetUserPackages(req, res, supabase) {
 
     // Create user-specific client
     const userClient = require('@supabase/supabase-js').createClient(
-      process.env.SUPABASE_URL || 'https://avgoyfartmzepdgzhroc.supabase.co',
-      supabaseAnonKey,
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY,
       {
         auth: {
           autoRefreshToken: false,

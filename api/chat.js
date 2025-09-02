@@ -342,7 +342,16 @@ module.exports = async function handler(req, res) {
             }
           }
         } catch (openaiError) {
-          console.warn('OpenAI processing failed:', openaiError.message);
+          console.error('🤖 OpenAI Error Details:', {
+            message: openaiError.message,
+            status: openaiError.status,
+            code: openaiError.code,
+            type: openaiError.type,
+            conversationId,
+            assistantId: conversation.assistants?.openai_assistant_id,
+            hasAPIKey: !!process.env.OPENAI_API_KEY,
+            apiKeyLength: process.env.OPENAI_API_KEY?.length
+          });
           // Continue without AI response
         }
       }
