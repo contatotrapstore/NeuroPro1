@@ -1,19 +1,26 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "*.js",
-      "use": "@vercel/node"
+  "functions": {
+    "*.js": {
+      "runtime": "@vercel/node@3"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "source": "/assistants",
+      "destination": "/assistants.js"
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/health", 
+      "destination": "/health.js"
+    },
+    {
+      "source": "/subscriptions",
+      "destination": "/subscriptions.js"
+    },
+    {
+      "source": "/test",
+      "destination": "/test.js"
     }
   ]
 }
