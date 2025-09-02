@@ -14,7 +14,7 @@ export class ApiService {
   private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
   }
 
   // Singleton pattern
