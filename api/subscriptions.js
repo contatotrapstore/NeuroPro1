@@ -25,15 +25,33 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with detailed logging
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
     
-    if (!supabaseUrl || !supabaseAnonKey) {
+    console.log('🔧 Subscriptions API - Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      hasAnonKey: !!supabaseAnonKey,
+      urlPrefix: supabaseUrl ? supabaseUrl.substring(0, 20) + '...' : 'null',
+      serviceKeyLength: supabaseServiceKey ? supabaseServiceKey.length : 0,
+      anonKeyLength: supabaseAnonKey ? supabaseAnonKey.length : 0
+    });
+    
+    if (!supabaseUrl) {
+      console.error('❌ SUPABASE_URL não configurada');
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'SUPABASE_URL não configurada'
+      });
+    }
+    
+    if (!supabaseAnonKey) {
+      console.error('❌ SUPABASE_ANON_KEY não configurada');
+      return res.status(500).json({
+        success: false,
+        error: 'SUPABASE_ANON_KEY não configurada'
       });
     }
     
@@ -43,7 +61,15 @@ module.exports = async function handler(req, res) {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
 
+    console.log('🔐 Token check:', {
+      hasAuthHeader: !!authHeader,
+      hasToken: !!token,
+      tokenLength: token ? token.length : 0,
+      tokenPrefix: token ? token.substring(0, 10) + '...' : 'null'
+    });
+
     if (!token) {
+      console.error('❌ Token não fornecido');
       return res.status(401).json({
         success: false,
         error: 'Token de acesso não fornecido'
@@ -51,6 +77,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Create user-specific client
+    console.log('👤 Criando client autenticado...');
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: false,
@@ -64,9 +91,18 @@ module.exports = async function handler(req, res) {
     });
 
     // Get user from token
+    console.log('🔍 Validando usuário com token...');
     const { data: { user }, error: authError } = await userClient.auth.getUser();
 
+    console.log('👤 User validation result:', {
+      hasUser: !!user,
+      userId: user ? user.id : 'null',
+      userEmail: user ? user.email : 'null',
+      authError: authError ? authError.message : 'none'
+    });
+
     if (authError || !user) {
+      console.error('❌ Erro de autenticação:', authError?.message || 'User não encontrado');
       return res.status(401).json({
         success: false,
         error: 'Token inválido ou expirado'
@@ -75,6 +111,8 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Get user subscriptions
+      console.log('📊 Buscando assinaturas do usuário:', user.id);
+      
       const { data: subscriptions, error } = await userClient
         .from('user_subscriptions')
         .select(`
@@ -90,11 +128,19 @@ module.exports = async function handler(req, res) {
         .eq('user_id', user.id)
         .eq('status', 'active');
 
+      console.log('📊 Database query result:', {
+        hasSubscriptions: !!subscriptions,
+        subscriptionsCount: subscriptions ? subscriptions.length : 0,
+        error: error ? error.message : 'none',
+        errorCode: error ? error.code : 'none',
+        errorDetails: error ? error.details : 'none'
+      });
+
       if (error) {
-        console.error('Database error:', error);
+        console.error('❌ Database error:', error);
         return res.status(500).json({
           success: false,
-          error: 'Erro ao buscar assinaturas'
+          error: `Erro ao buscar assinaturas: ${error.message}`
         });
       }
 

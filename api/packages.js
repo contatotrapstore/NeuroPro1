@@ -37,15 +37,33 @@ module.exports = async function handler(req, res) {
   try {
     console.log('🔧 Initializing Supabase client...');
     
-    // Initialize Supabase client
+    // Initialize Supabase client with detailed logging
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
     
-    if (!supabaseUrl || !supabaseAnonKey) {
+    console.log('🔧 Packages API - Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      hasAnonKey: !!supabaseAnonKey,
+      urlPrefix: supabaseUrl ? supabaseUrl.substring(0, 20) + '...' : 'null',
+      serviceKeyLength: supabaseServiceKey ? supabaseServiceKey.length : 0,
+      anonKeyLength: supabaseAnonKey ? supabaseAnonKey.length : 0
+    });
+    
+    if (!supabaseUrl) {
+      console.error('❌ SUPABASE_URL não configurada');
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'SUPABASE_URL não configurada'
+      });
+    }
+    
+    if (!supabaseAnonKey) {
+      console.error('❌ SUPABASE_ANON_KEY não configurada');
+      return res.status(500).json({
+        success: false,
+        error: 'SUPABASE_ANON_KEY não configurada'
       });
     }
     
@@ -332,22 +350,27 @@ async function handleGetUserPackages(req, res, supabase) {
     console.log('📊 Querying user packages for user:', userId);
 
     // Get user's packages (simplified query to avoid relation errors)
+    console.log('📊 Buscando packages do usuário:', userId);
+    
     const { data: packages, error } = await userClient
       .from('user_packages')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    console.log('Database response:', { 
-      packages: packages ? `${packages.length} records` : 'null',
-      error: error ? error.message : 'none'
+    console.log('📊 Database query result:', { 
+      hasPackages: !!packages,
+      packagesCount: packages ? packages.length : 0,
+      error: error ? error.message : 'none',
+      errorCode: error ? error.code : 'none',
+      errorDetails: error ? error.details : 'none'
     });
 
     if (error) {
       console.error('❌ Database error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Erro ao buscar pacotes do usuário',
+        message: `Erro ao buscar pacotes do usuário: ${error.message}`,
         error: error.message
       });
     }
