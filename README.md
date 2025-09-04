@@ -67,24 +67,65 @@ A NeuroIA Lab democratiza o acesso a assistentes de IA especializados em psicolo
 
 ## 🚀 Como Executar
 
-### Instalação
+### Pré-requisitos
+- Node.js 18+ instalado
+- npm ou yarn
+- Conta no Supabase (banco de dados)
+- Chave OpenAI API (para IAs)
+- Conta Asaas (pagamentos - opcional)
+
+### Instalação Rápida
 ```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/neuroai-lab.git
+cd neuroai-lab
+
 # Instalar todas as dependências
 npm run install:all
 
-# Configurar variáveis de ambiente
-cp frontend/.env.example frontend/.env.local
-cp backend/.env.example backend/.env
+# Configurar variáveis de ambiente (já pré-configuradas!)
+cp backend/.env.example backend/.env  # (opcional, já está configurado)
+cp frontend/.env.example frontend/.env  # (opcional, já está configurado)
 
 # Executar em modo desenvolvimento
 npm run dev
 ```
 
 ### Scripts Disponíveis
-- `npm run dev` - Executa frontend e backend
-- `npm run build` - Build completo do projeto
-- `npm run dev:frontend` - Apenas frontend
-- `npm run dev:backend` - Apenas backend
+- `npm run dev` - Executa frontend (5173) e backend (3000)
+- `npm run build` - Build completo para produção
+- `npm run dev:frontend` - Apenas frontend React
+- `npm run dev:backend` - Apenas backend API
+
+### ⚡ Start Rápido
+Depois de clonar:
+```bash
+npm run install:all && npm run dev
+```
+Acesse: `http://localhost:5173`
+
+## 🚀 Deploy no Vercel
+
+### Configuração Automática
+O projeto está pré-configurado para deploy no Vercel:
+
+1. **Fork/Clone** este repositório
+2. **Conecte** ao Vercel Dashboard
+3. **Configure variáveis** de ambiente no Vercel:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_KEY` 
+   - `SUPABASE_ANON_KEY`
+   - `OPENAI_API_KEY`
+   - `JWT_SECRET`
+   - `ASAAS_API_KEY`
+4. **Deploy automático** ✨
+
+### Arquivos de Configuração
+- ✅ `vercel.json` - Configuração principal
+- ✅ `VERCEL_DEPLOY.md` - Guia detalhado
+- ✅ Variáveis de ambiente pré-configuradas
+
+**Resultado**: Aplicação completa rodando em produção!
 
 ## 📁 Estrutura do Projeto
 
@@ -150,13 +191,15 @@ A documentação técnica completa está disponível em `.trae/documents/`:
 
 ## 🏗️ Status do Desenvolvimento
 
-O projeto está em desenvolvimento ativo seguindo um plano de implementação em 5 fases:
+**✅ PROJETO COMPLETO E FUNCIONAL - Setembro 2025**
 
-1. ✅ **Fase 1**: Configuração e Infraestrutura
-2. 🔄 **Fase 2**: Autenticação e Base do Sistema
-3. ⏳ **Fase 3**: Sistema de Assistentes e Chat
-4. ⏳ **Fase 4**: Sistema de Pagamentos
-5. ⏳ **Fase 5**: Painel Administrativo e Finalização
+Todas as 5 fases foram implementadas com sucesso:
+
+1. ✅ **Fase 1**: Configuração e Infraestrutura - *Completa*
+2. ✅ **Fase 2**: Autenticação e Base do Sistema - *Completa*
+3. ✅ **Fase 3**: Sistema de Assistentes e Chat - *Completa*
+4. ✅ **Fase 4**: Sistema de Pagamentos - *Completa*
+5. ✅ **Fase 5**: Painel Administrativo e Finalização - *Completa*
 
 ---
 

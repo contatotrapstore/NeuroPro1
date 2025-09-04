@@ -8,7 +8,7 @@ import 'express-async-errors';
 import { env, isDevelopment } from './config/env.validation';
 
 const app = express();
-const PORT = env.PORT || 3007;
+const PORT = env.PORT || 3000;
 
 // Security middleware - Disable CSP for development
 app.use(helmet({
@@ -16,10 +16,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", env.SUPABASE_URL, env.SUPABASE_URL.replace('https://', 'wss://')],
+      connectSrc: ["'self'", env.SUPABASE_URL, env.SUPABASE_URL.replace('https://', 'wss://'), "https://*.supabase.co", "wss://*.supabase.co"],
     },
   },
   crossOriginEmbedderPolicy: false,
@@ -65,7 +65,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'apikey', 'prefer']
 };
 
 app.use(cors(corsOptions));

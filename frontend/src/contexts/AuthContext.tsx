@@ -92,56 +92,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
-      // Se for o admin e não existir, criar a conta
-      if (email === 'admin@neuroialab.com') {
-        // Tentar fazer login primeiro
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+      // Lista de emails admin
+      const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
+      const isAdminEmail = adminEmails.includes(email);
+      
+      if (isAdminEmail) {
+        console.log(`🔑 Tentando login admin para: ${email}`);
+      }
+      
+      // Tentar login normal primeiro
+      let { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      // Se falhar e for admin@neuroialab.com, tentar criar automaticamente
+      if (error && error.message.includes('Invalid login credentials') && email === 'admin@neuroialab.com') {
+        console.log('👤 Admin padrão não existe, criando conta...');
+        
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({
           email,
           password,
-        });
-        
-        // Se falhar, tentar criar a conta admin
-        if (loginError && loginError.message.includes('Invalid login credentials')) {
-          console.log('Admin não existe, criando conta...');
-          const { data: signupData, error: signupError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                name: 'Administrador',
-                role: 'admin'
-              }
+          options: {
+            data: {
+              name: 'Administrador',
+              role: 'admin'
             }
-          });
-          
-          if (signupError) {
-            throw signupError;
           }
-          
-          // Confirmar o email imediatamente para admin
-          if (signupData.user) {
-            await supabase.auth.signInWithPassword({ email, password });
-          }
-          
-          return { user: signupData.user };
-        } else if (loginError) {
-          throw loginError;
-        }
-        
-        return loginData;
-      } else {
-        // Login normal para outros usuários
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
         });
 
-        if (error) {
-          throw error;
+        if (signupError) {
+          if (signupError.message.includes('already registered')) {
+            throw new Error('Admin já existe mas não consegue fazer login. Email pode precisar ser confirmado no painel do Supabase.');
+          } else {
+            throw signupError;
+          }
         }
-        
-        return data;
+
+        console.log('✅ Admin criado, aguarde confirmação de email ou configure no Supabase para não exigir confirmação');
+        throw new Error('Conta admin criada com sucesso! Se o Supabase exigir confirmação de email, confirme primeiro ou desabilite essa opção no painel.');
+      } else if (error) {
+        throw error;
       }
+
+      if (isAdminEmail) {
+        console.log(`✅ Login admin realizado com sucesso para: ${email}`);
+      }
+      
+      return data;
     } catch (error) {
       console.error('Error signing in:', error);
       throw error;

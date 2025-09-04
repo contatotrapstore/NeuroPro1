@@ -47,7 +47,17 @@
       "Bash(Stop-Process -Id 22436 -Force)",
       "Bash(powershell Stop-Process:*)",
       "Bash(del frontend/temp-debug-auth.js)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(del test-supabase.js)",
+      "Bash(del test-auth-backend.js)",
+      "Bash(find:*)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend\\src\\controllers/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend\\src\\controllers/**)",
+      "Bash(del mcp-monitor.js)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)"
     ],
     "deny": [],
     "ask": [],

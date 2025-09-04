@@ -20,6 +20,11 @@ export interface AdminUser {
   active_packages: number;
   subscriptions: any[];
   packages: any[];
+  availableAssistants?: Array<{
+    id: string;
+    name: string;
+    icon: string;
+  }>;
 }
 
 export interface AdminSubscription {
@@ -39,6 +44,44 @@ export interface AdminSubscription {
   user_packages?: {
     package_type: string;
     total_amount: number;
+  };
+}
+
+export interface AdminAssistant {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  monthly_price: number;
+  semester_price: number;
+  is_active: boolean;
+  openai_id: string;
+  stats?: {
+    activeSubscriptions: number;
+    monthlyRevenue: number;
+    recentConversations: number;
+  };
+}
+
+export interface AdminAnalytics {
+  mrr: number;
+  newUsers: number;
+  conversionRate: number;
+  totalActiveSubscriptions: number;
+  mostPopularAssistants: Array<{
+    assistant_id: string;
+    count: number;
+    name: string;
+  }>;
+  monthlyEvolution: Array<{
+    month: string;
+    revenue: number;
+    date: string;
+  }>;
+  period: {
+    startDate: string;
+    endDate: string;
+    type: string;
   };
 }
 
@@ -119,6 +162,19 @@ export class AdminService {
     }
   }
 
+  // Listar assistentes com estatísticas
+  async getAssistants(): Promise<{ success: boolean; data?: AdminAssistant[]; error?: string }> {
+    try {
+      return await this.apiService.get('/admin/assistants');
+    } catch (error: any) {
+      console.error('Error fetching admin assistants:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao buscar assistentes'
+      };
+    }
+  }
+
   // Atualizar assistente
   async updateAssistant(assistantId: string, updateData: {
     name?: string;
@@ -134,6 +190,137 @@ export class AdminService {
       return {
         success: false,
         error: error.message || 'Erro ao atualizar assistente'
+      };
+    }
+  }
+
+  // Atualizar múltiplos assistentes (ação em lote)
+  async bulkUpdateAssistants(assistants: Array<{ id: string; is_active: boolean }>, action: string): Promise<{ 
+    success: boolean; 
+    data?: any; 
+    error?: string 
+  }> {
+    try {
+      return await this.apiService.put('/admin/assistants/bulk', { assistants, action });
+    } catch (error: any) {
+      console.error('Error bulk updating assistants:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao atualizar assistentes em lote'
+      };
+    }
+  }
+
+  // Obter analytics avançados com filtros
+  async getAnalytics(params?: {
+    startDate?: string;
+    endDate?: string;
+    period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  }): Promise<{ success: boolean; data?: AdminAnalytics; error?: string }> {
+    try {
+      let url = '/admin/analytics';
+      if (params) {
+        const queryParams = new URLSearchParams();
+        if (params.startDate) queryParams.append('startDate', params.startDate);
+        if (params.endDate) queryParams.append('endDate', params.endDate);
+        if (params.period) queryParams.append('period', params.period);
+        
+        if (queryParams.toString()) {
+          url += `?${queryParams.toString()}`;
+        }
+      }
+      
+      return await this.apiService.get(url);
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao buscar analytics'
+      };
+    }
+  }
+
+  // Exportar dados
+  async exportData(type: 'users' | 'subscriptions' | 'revenue', format: 'csv' | 'json' = 'csv'): Promise<{ 
+    success: boolean; 
+    data?: any; 
+    error?: string 
+  }> {
+    try {
+      const url = `/admin/export?type=${type}&format=${format}`;
+      return await this.apiService.get(url);
+    } catch (error: any) {
+      console.error('Error exporting data:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao exportar dados'
+      };
+    }
+  }
+
+  // Baixar arquivo de exportação
+  async downloadExport(type: 'users' | 'subscriptions' | 'revenue'): Promise<void> {
+    try {
+      const apiService = this.apiService as any;
+      const response = await fetch(`${apiService.baseURL}/admin/export?type=${type}&format=csv`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${await apiService.getAuthToken()}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading export:', error);
+      throw error;
+    }
+  }
+
+  // Obter assistentes disponíveis para um usuário
+  async getUserAvailableAssistants(userId: string): Promise<{ 
+    success: boolean; 
+    data?: Array<{
+      id: string;
+      name: string;
+      icon: string;
+      hasAccess: boolean;
+    }>; 
+    error?: string 
+  }> {
+    try {
+      return await this.apiService.get(`/admin/users/${userId}/assistants`);
+    } catch (error: any) {
+      console.error('Error fetching user assistants:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao buscar assistentes do usuário'
+      };
+    }
+  }
+
+  // Gerenciar IAs de um usuário
+  async manageUserAssistants(userId: string, assistantIds: string[], action: 'add' | 'remove'): Promise<{ 
+    success: boolean; 
+    data?: any; 
+    error?: string 
+  }> {
+    try {
+      return await this.apiService.put(`/admin/users/${userId}/assistants`, { assistantIds, action });
+    } catch (error: any) {
+      console.error('Error managing user assistants:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao gerenciar assistentes do usuário'
       };
     }
   }
