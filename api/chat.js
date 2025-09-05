@@ -300,7 +300,11 @@ module.exports = async function handler(req, res) {
         keyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'none',
         hasAssistantId: !!conversation.assistants?.openai_assistant_id,
         assistantId: conversation.assistants?.openai_assistant_id || 'none',
-        threadId: conversation.thread_id
+        threadId: conversation.thread_id,
+        conversationData: conversation,
+        hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        supabaseServiceKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0,
+        debugStep: 'BEFORE_OPENAI_VALIDATION'
       });
 
       // Validate OpenAI configuration before proceeding
@@ -358,48 +362,94 @@ module.exports = async function handler(req, res) {
             throw new Error('Failed to create run - invalid response from OpenAI');
           }
 
-          // Wait for completion (simplified)
+          // Wait for completion (extended timeout)
           let runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
           let attempts = 0;
+          const maxAttempts = 90; // Increased to 90 seconds
           
           console.log('⏳ Waiting for run completion...', { 
             initialStatus: runStatus.status,
-            runId: run.id 
+            runId: run.id,
+            maxAttempts: maxAttempts
           });
           
-          while (runStatus.status === 'running' && attempts < 30) {
+          while (runStatus.status === 'running' && attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
-            attempts++;
             
-            if (attempts % 5 === 0) {
-              console.log(`⏳ Still waiting... attempt ${attempts}, status: ${runStatus.status}`);
-            }
-          }
-
-          if (runStatus.status === 'completed') {
-            // Get messages
-            const messages = await openai.beta.threads.messages.list(workingThreadId);
-            const assistantMessage = messages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
-            
-            if (assistantMessage && assistantMessage.content[0]?.text?.value) {
-              const assistantContent = assistantMessage.content[0].text.value;
+            try {
+              runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
+              attempts++;
               
-              // Save assistant reply
-              const { data: reply, error: replyError } = await userClient
-                .from('messages')
-                .insert({
-                  conversation_id: conversationId,
-                  role: 'assistant',
-                  content: assistantContent
-                })
-                .select()
-                .single();
-
-              if (!replyError) {
-                assistantReply = reply;
+              if (attempts % 10 === 0) {
+                console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}`);
+              }
+            } catch (retrieveError) {
+              console.error('❌ Error retrieving run status:', retrieveError);
+              attempts++;
+              
+              // If we can't retrieve status, wait a bit longer and try again
+              if (attempts >= maxAttempts) {
+                throw new Error('Failed to retrieve run status after multiple attempts');
               }
             }
+          }
+          
+          console.log('🏁 Run completion loop finished:', {
+            finalStatus: runStatus.status,
+            totalAttempts: attempts,
+            wasTimeout: attempts >= maxAttempts
+          });
+
+          if (runStatus.status === 'completed') {
+            console.log('✅ Run completed successfully, retrieving messages');
+            
+            // Get messages
+            try {
+              const messages = await openai.beta.threads.messages.list(workingThreadId);
+              console.log('📜 Messages retrieved:', {
+                totalMessages: messages.data.length,
+                messageTypes: messages.data.map(msg => ({ role: msg.role, runId: msg.run_id }))
+              });
+              
+              const assistantMessage = messages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
+              
+              if (assistantMessage && assistantMessage.content[0]?.text?.value) {
+                const assistantContent = assistantMessage.content[0].text.value;
+                console.log('💬 Assistant response found:', {
+                  messageId: assistantMessage.id,
+                  contentLength: assistantContent.length,
+                  contentPreview: assistantContent.substring(0, 200) + '...'
+                });
+                
+                // Save assistant reply
+                const { data: reply, error: replyError } = await userClient
+                  .from('messages')
+                  .insert({
+                    conversation_id: conversationId,
+                    role: 'assistant',
+                    content: assistantContent
+                  })
+                  .select()
+                  .single();
+
+                if (!replyError) {
+                  assistantReply = reply;
+                  console.log('✅ Assistant reply saved to database');
+                } else {
+                  console.error('❌ Error saving assistant reply:', replyError);
+                }
+              } else {
+                console.error('❌ No assistant message found or empty content');
+              }
+            } catch (messagesError) {
+              console.error('❌ Error retrieving messages:', messagesError);
+              throw messagesError;
+            }
+          } else {
+            console.log('⚠️ Run did not complete successfully:', {
+              status: runStatus.status,
+              lastError: runStatus.last_error
+            });
           }
         } catch (openaiError) {
           console.error('🤖 OpenAI Error Details:', {
@@ -410,7 +460,10 @@ module.exports = async function handler(req, res) {
             conversationId,
             assistantId: conversation.assistants?.openai_assistant_id,
             hasAPIKey: !!process.env.OPENAI_API_KEY,
-            apiKeyLength: process.env.OPENAI_API_KEY?.length
+            apiKeyLength: process.env.OPENAI_API_KEY?.length,
+            stack: openaiError.stack,
+            fullError: JSON.stringify(openaiError, null, 2),
+            debugStep: 'OPENAI_ERROR_CAUGHT'
           });
           
           // Create a fallback response when OpenAI fails

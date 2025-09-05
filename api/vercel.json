@@ -28,6 +28,10 @@
       "dest": "/test.js"
     },
     {
+      "src": "/test-openai",
+      "dest": "/test-openai.js"
+    },
+    {
       "src": "/chat/(.*)",
       "dest": "/chat.js"
     },
