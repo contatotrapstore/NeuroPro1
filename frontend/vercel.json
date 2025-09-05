@@ -6,8 +6,7 @@
   "devCommand": "npm run dev",
   "env": {
     "VITE_ENVIRONMENT": "production",
-    "VITE_DEBUG": "false",
-    "VITE_API_BASE_URL": "https://neuro-pro-backend-phi.vercel.app"
+    "VITE_DEBUG": "false"
   },
   "headers": [
     {
