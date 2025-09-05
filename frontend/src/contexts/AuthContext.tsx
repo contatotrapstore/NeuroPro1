@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string): Promise<void> => {
+  const signUp = async (email: string, password: string, name: string): Promise<{ needsConfirmation: boolean } | void> => {
     try {
       setLoading(true);
       
@@ -170,7 +170,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // If signup was successful but email confirmation is required
       if (data.user && !data.session) {
         // User created but needs email confirmation
-        throw new AuthError('Por favor, verifique seu email para confirmar a conta', 400, 'email_confirmation_required');
+        return { needsConfirmation: true };
+      }
+      
+      // If we have a session, login was automatic
+      if (data.session) {
+        return { needsConfirmation: false };
       }
     } catch (error) {
       console.error('Error signing up:', error);
@@ -190,6 +195,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Error signing out:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendConfirmation = async (email: string): Promise<void> => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error resending confirmation:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -235,6 +259,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signOut,
     resetPassword,
+    resendConfirmation,
     updateProfile,
   };
 

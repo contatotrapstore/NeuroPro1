@@ -19,6 +19,7 @@ const Register: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
 
   const { signUp } = useAuth();
   const navigate = useNavigate();
@@ -73,14 +74,14 @@ const Register: React.FC = () => {
       setError('');
       setLoading(true);
       
-      await signUp(formData.email, formData.password, formData.name);
+      const result = await signUp(formData.email, formData.password, formData.name);
+      
+      // Check if email confirmation is required
+      if (result?.needsConfirmation) {
+        setNeedsEmailConfirmation(true);
+      }
       
       setSuccess(true);
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/auth/login');
-      }, 3000);
       
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -88,14 +89,31 @@ const Register: React.FC = () => {
       if (error.message?.includes('already registered')) {
         setError('Este email já está cadastrado');
       } else if (error.message?.includes('email_confirmation_required')) {
-        setError('Conta criada! Verifique seu email para confirmar.');
+        setNeedsEmailConfirmation(true);
         setSuccess(true);
-        setTimeout(() => navigate('/auth/login'), 3000);
       } else {
         setError('Erro ao criar conta. Tente novamente.');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    try {
+      setResendingEmail(true);
+      setError('');
+      
+      await resendConfirmation(formData.email);
+      
+      // Show success message temporarily
+      setError('Email de confirmação reenviado com sucesso!');
+      setTimeout(() => setError(''), 5000);
+    } catch (error: any) {
+      console.error('Resend error:', error);
+      setError('Erro ao reenviar email. Tente novamente.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -109,14 +127,62 @@ const Register: React.FC = () => {
                 <Check className="h-8 w-8 text-neuro-success" />
               </div>
               <h2 className="text-2xl font-bold text-neuro-gray-900 mb-4">
-                Conta Criada!
+                {needsEmailConfirmation ? 'Confirme seu Email!' : 'Conta Criada!'}
               </h2>
-              <p className="text-neuro-gray-600 mb-6 leading-relaxed">
-                Sua conta foi criada com sucesso. Você será redirecionado para o login em alguns segundos.
-              </p>
-              <p className="text-sm text-neuro-gray-400">
-                Se você não recebeu um email de confirmação, verifique sua pasta de spam.
-              </p>
+              
+              {needsEmailConfirmation ? (
+                <div className="space-y-4">
+                  <p className="text-neuro-gray-600 leading-relaxed">
+                    Enviamos um link de confirmação para <strong>{formData.email}</strong>
+                  </p>
+                  <div className="bg-neuro-primary/5 border border-neuro-primary/10 rounded-lg p-4">
+                    <p className="text-sm text-neuro-gray-700 mb-2">
+                      <strong>Próximos passos:</strong>
+                    </p>
+                    <ul className="text-sm text-neuro-gray-600 text-left space-y-1">
+                      <li>1. Verifique sua caixa de entrada</li>
+                      <li>2. Clique no link de confirmação</li>
+                      <li>3. Faça login com suas credenciais</li>
+                    </ul>
+                  </div>
+                  <p className="text-xs text-neuro-gray-400">
+                    Não recebeu o email? Verifique a pasta de spam ou lixo eletrônico
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-neuro-gray-600 leading-relaxed">
+                    Sua conta foi criada com sucesso! Você já pode fazer login.
+                  </p>
+                  <div className="bg-neuro-success/5 border border-neuro-success/10 rounded-lg p-4">
+                    <p className="text-sm text-neuro-success font-medium">
+                      ✅ Cadastro concluído - Login liberado
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-8 space-y-3">
+                {needsEmailConfirmation && (
+                  <Button
+                    onClick={handleResendEmail}
+                    variant="outline"
+                    size="lg"
+                    loading={resendingEmail}
+                    className="w-full"
+                  >
+                    Reenviar Email de Confirmação
+                  </Button>
+                )}
+                <Button
+                  onClick={() => navigate('/auth/login')}
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                >
+                  {needsEmailConfirmation ? 'Ir para Login' : 'Fazer Login Agora'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

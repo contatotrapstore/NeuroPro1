@@ -67,9 +67,12 @@ export interface Conversation {
 export interface AuthContextType {
   user: SupabaseUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  logout: () => Promise<void>;
-  register: (email: string, password: string, userData?: any) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, name: string) => Promise<{ needsConfirmation: boolean } | void>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
+  updateProfile: (data: ProfileUpdateData) => Promise<{ error?: any }>;
 }
 
 // Profile update data

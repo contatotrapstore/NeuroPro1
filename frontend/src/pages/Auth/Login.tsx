@@ -13,8 +13,10 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showEmailConfirmationHelp, setShowEmailConfirmationHelp] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, resendConfirmation } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,13 +37,35 @@ const Login: React.FC = () => {
       
       if (error.message?.includes('Invalid login credentials')) {
         setError('Email ou senha incorretos');
-      } else if (error.message?.includes('Email not confirmed')) {
-        setError('Por favor, confirme seu email antes de fazer login');
+      } else if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
+        setError('Sua conta ainda não foi confirmada. Verifique seu email.');
+        setShowEmailConfirmationHelp(true);
       } else {
         setError('Erro ao fazer login. Tente novamente.');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    try {
+      setResendingEmail(true);
+      setError('');
+      
+      await resendConfirmation(email);
+      
+      setError('Email de confirmação reenviado com sucesso! Verifique sua caixa de entrada.');
+      setShowEmailConfirmationHelp(false);
+      
+      setTimeout(() => {
+        setError('');
+      }, 5000);
+    } catch (error: any) {
+      console.error('Resend error:', error);
+      setError('Erro ao reenviar email. Verifique se o email está correto.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -75,8 +99,22 @@ const Login: React.FC = () => {
           <CardContent className="p-8">
             <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-neuro-error/10 border border-neuro-error/20 rounded-lg p-4 animate-shake">
-                  <p className="text-sm text-neuro-error font-medium">{error}</p>
+                <div className={`${error.includes('sucesso') ? 'bg-neuro-success/10 border-neuro-success/20' : 'bg-neuro-error/10 border-neuro-error/20'} border rounded-lg p-4 animate-shake`}>
+                  <p className={`text-sm font-medium ${error.includes('sucesso') ? 'text-neuro-success' : 'text-neuro-error'}`}>{error}</p>
+                  {showEmailConfirmationHelp && email && (
+                    <div className="mt-3">
+                      <Button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        variant="outline"
+                        size="sm"
+                        loading={resendingEmail}
+                        className="text-xs"
+                      >
+                        Reenviar Email de Confirmação
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
