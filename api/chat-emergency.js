@@ -405,11 +405,23 @@ module.exports = async function handler(req, res) {
             conversationId,
             assistantId: conversation.assistants?.openai_assistant_id,
             hasAPIKey: !!process.env.OPENAI_API_KEY,
-            apiKeyLength: process.env.OPENAI_API_KEY?.length
+            apiKeyLength: process.env.OPENAI_API_KEY?.length,
+            fullError: openaiError
           });
           
-          // Create a fallback response when OpenAI fails
-          const fallbackContent = `Desculpe, não consegui processar sua mensagem no momento. O assistente está temporariamente indisponível. Tente novamente em alguns instantes.`;
+          // Create a fallback response with detailed error info
+          let fallbackContent = `Desculpe, não consegui processar sua mensagem no momento. O assistente está temporariamente indisponível. Tente novamente em alguns instantes.`;
+          
+          // Add specific error details for debugging
+          if (openaiError.status === 401) {
+            fallbackContent = `🔑 Erro de autenticação OpenAI: Chave API inválida ou expirada. Entre em contato com o suporte.`;
+          } else if (openaiError.status === 404) {
+            fallbackContent = `🤖 Assistente não encontrado na OpenAI (ID: ${conversation.assistants?.openai_assistant_id}). Entre em contato com o suporte.`;
+          } else if (openaiError.status === 429) {
+            fallbackContent = `⏰ Muitas requisições à OpenAI. Tente novamente em alguns segundos.`;
+          } else if (openaiError.message) {
+            fallbackContent = `❌ Erro OpenAI: ${openaiError.message}`;
+          }
           
           const { data: fallbackReply, error: fallbackError } = await userClient
             .from('messages')
