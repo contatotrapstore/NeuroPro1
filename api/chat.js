@@ -363,7 +363,8 @@ module.exports = async function handler(req, res) {
           }
 
           // Wait for completion (extended timeout)
-          let runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
+          // Fix: Use correct syntax for OpenAI v5 API - runId first, threadId in options
+          let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: workingThreadId });
           let attempts = 0;
           const maxAttempts = 90; // Increased to 90 seconds
           
@@ -385,7 +386,8 @@ module.exports = async function handler(req, res) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             try {
-              runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
+              // Fix: Use correct syntax for OpenAI v5 API - runId first, threadId in options
+              runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: workingThreadId });
               attempts++;
               
               if (attempts % 10 === 0 || attempts === 1) {
