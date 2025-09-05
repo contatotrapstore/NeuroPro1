@@ -78,15 +78,42 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Lista de emails admin autorizados
+    const ADMIN_EMAILS = [
+      'admin@neuroialab.com',
+      'gouveiarx@gmail.com',
+      'pstales@gmail.com' // Corrigido para coincidir com frontend
+    ];
+    
     // Check admin role
-    const isAdmin = user.user_metadata?.role === 'admin' || user.email === 'admin@neuroialab.com';
+    const hasAdminRole = user.user_metadata?.role === 'admin';
+    const isInAdminList = ADMIN_EMAILS.includes(user.email?.toLowerCase());
+    const isAdmin = hasAdminRole || isInAdminList;
+    
+    // Debug logs para troubleshooting
+    console.log('🔍 Admin Access Check:', {
+      userEmail: user.email,
+      hasAdminRole: hasAdminRole,
+      userMetadata: user.user_metadata,
+      isInAdminList: isInAdminList,
+      adminEmails: ADMIN_EMAILS,
+      finalIsAdmin: isAdmin
+    });
     
     if (!isAdmin) {
+      console.log('❌ Admin access denied for:', user.email);
       return res.status(403).json({
         success: false,
-        error: 'Acesso negado. Privilégios de administrador necessários.'
+        error: 'Acesso negado. Privilégios de administrador necessários.',
+        debug: {
+          userEmail: user.email,
+          hasAdminRole: hasAdminRole,
+          isInAdminList: isInAdminList
+        }
       });
     }
+    
+    console.log('✅ Admin access granted for:', user.email);
 
     // Route handling based on URL
     const url = new URL(req.url, `http://${req.headers.host}`);
