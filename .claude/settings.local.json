@@ -57,7 +57,10 @@
       "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
       "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend\\src\\controllers/**)",
       "Bash(del mcp-monitor.js)",
-      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)"
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],
