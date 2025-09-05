@@ -3,12 +3,12 @@
 ## 📍 CONFIGURAÇÃO PARA DOIS PROJETOS SEPARADOS
 
 ### 🎯 URLs dos Projetos:
-- **Frontend**: https://neuroai-lab.vercel.app (repositório: pasta frontend)
+- **Frontend**: https://neuro-pro-frontend.vercel.app (repositório: pasta frontend)
 - **Backend**: https://neuro-pro-backend.vercel.app (repositório: pasta backend)
 
 ## 📁 Estrutura de Deploys
 
-### 🖥️ PROJETO FRONTEND (neuroai-lab)
+### 🖥️ PROJETO FRONTEND (neuro-pro-frontend)
 **Pasta**: `frontend/`
 **Vercel.json**: `frontend/vercel.json`
 
@@ -34,7 +34,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 OPENAI_API_KEY=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
 ASAAS_API_KEY=$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojc3MDZhMDQyLTY5YWQtNDk5NC04OTU1LWZkNjJjYzg4ZTMyZTo6JGFhY2hfNmFjMGJlMzAtNDMxOC00NTY2LWExZGUtYWRlNGI0ZDI1Nzhl
 ASAAS_WEBHOOK_SECRET=your-asaas-webhook-secret
-CORS_ORIGIN=https://neuroai-lab.vercel.app
+CORS_ORIGIN=https://neuro-pro-frontend.vercel.app
 JWT_SECRET=e86dcb3f8deb1bc191b7afc4909efd3ced007d752b736d4a0918e9560ff0737f
 DEBUG=false
 ```
@@ -47,7 +47,7 @@ DEBUG=false
 3. Configure as variáveis de ambiente do backend (acima)
 4. Deploy será automático
 
-### 2️⃣ Deploy do Frontend (neuroai-lab)
+### 2️⃣ Deploy do Frontend (neuro-pro-frontend)
 1. No Vercel Dashboard, crie outro projeto 
 2. Conecte ao mesmo repositório, mas selecione apenas a pasta `frontend`
 3. Configure as variáveis de ambiente do frontend (acima)
@@ -80,13 +80,13 @@ Se preferir deploy do repositório raiz:
 ⚠️ **SUBSTITUA O SUPABASE_SERVICE_KEY** pelo valor real do painel Supabase
 
 ✅ **URLs já estão configuradas corretamente**:
-- Frontend aponta para: `neuroai-lab.vercel.app`
+- Frontend aponta para: `neuro-pro-frontend.vercel.app`
 - Backend responde em: `neuro-pro-backend.vercel.app`
 - CORS configurado entre os domínios
 
 ## 🧪 TESTES APÓS DEPLOY
 
-1. ✅ Teste o frontend: https://neuroai-lab.vercel.app
+1. ✅ Teste o frontend: https://neuro-pro-frontend.vercel.app
 2. ✅ Teste a API: https://neuro-pro-backend.vercel.app/api/
 3. 🔐 Teste login/registro
 4. 💬 Teste chat com assistentes

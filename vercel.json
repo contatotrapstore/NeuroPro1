@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "neuroai-lab-frontend",
+  "name": "neuro-pro-frontend",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",

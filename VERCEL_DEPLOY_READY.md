@@ -1,7 +1,7 @@
 # 🚀 NeuroIA Lab - PRONTO PARA DEPLOY NO VERCEL
 
 ## 📍 URLs DOS DEPLOYS
-- **Frontend**: https://neuroai-lab.vercel.app
+- **Frontend**: https://neuro-pro-frontend.vercel.app
 - **Backend API**: https://neuro-pro-backend.vercel.app
 
 ## ✅ CORREÇÕES DE SEGURANÇA APLICADAS
@@ -34,7 +34,7 @@ ASAAS_API_KEY=$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojc3MDZh
 ASAAS_WEBHOOK_SECRET=your-asaas-webhook-secret
 
 # Security & CORS - CONFIGURADO PARA FRONTEND
-CORS_ORIGIN=https://neuroai-lab.vercel.app
+CORS_ORIGIN=https://neuro-pro-frontend.vercel.app
 JWT_SECRET=e86dcb3f8deb1bc191b7afc4909efd3ced007d752b736d4a0918e9560ff0737f
 
 # Development Settings
@@ -67,7 +67,7 @@ VITE_DEBUG=false
 SUPABASE_SERVICE_KEY=SEU_SERVICE_KEY_REAL_AQUI
 
 # ✅ CONFIGURADO PARA OS DOMÍNIOS CORRETOS
-CORS_ORIGIN=https://neuroai-lab.vercel.app
+CORS_ORIGIN=https://neuro-pro-frontend.vercel.app
 VITE_API_BASE_URL=https://neuro-pro-backend.vercel.app/api
 
 # OPCIONAL - Configure se tiver webhook do Asaas
@@ -108,7 +108,7 @@ ASAAS_WEBHOOK_SECRET=seu-webhook-secret-real
 
 ### ⚠️ AÇÕES OBRIGATÓRIAS ANTES DO DEPLOY:
 
-1. **✅ URLs configuradas**: Frontend: neuroai-lab.vercel.app | Backend: neuro-pro-backend.vercel.app
+1. **✅ URLs configuradas**: Frontend: neuro-pro-frontend.vercel.app | Backend: neuro-pro-backend.vercel.app
 2. **⚠️ OBRIGATÓRIO**: Substitua SUPABASE_SERVICE_KEY pelo valor real do painel Supabase
 3. **OPCIONAL**: Configure ASAAS_WEBHOOK_SECRET se usar webhooks de pagamento
 
@@ -123,7 +123,7 @@ ASAAS_WEBHOOK_SECRET=seu-webhook-secret-real
 
 1. ✅ Faça commit das mudanças (arquivos .env estão protegidos)
 2. ✅ Configure as variáveis no Vercel Dashboard para cada projeto:
-   - **neuroai-lab** (Frontend): Configure as variáveis VITE_*
+   - **neuro-pro-frontend** (Frontend): Configure as variáveis VITE_*
    - **neuro-pro-backend** (Backend): Configure todas as outras variáveis
 3. ✅ Deploy automático será feito ao fazer push
 4. ✅ URLs já configuradas corretamente
