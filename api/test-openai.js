@@ -134,20 +134,36 @@ module.exports = async function handler(req, res) {
         let attempts = 0;
         const maxAttempts = 60; // 60 seconds max
 
-        while (runStatus.status === 'running' && attempts < maxAttempts) {
+        const startTime = Date.now();
+        const maxTimeMs = 90000; // 90 seconds
+        
+        // Status que indicam que o run ainda está processando
+        const processingStatuses = ['queued', 'in_progress', 'running'];
+        // Status que indicam conclusão (sucesso ou falha)
+        const finalStatuses = ['completed', 'failed', 'cancelled', 'expired', 'requires_action'];
+        
+        while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts && (Date.now() - startTime) < maxTimeMs) {
           await new Promise(resolve => setTimeout(resolve, 1000));
-          runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
-          attempts++;
           
-          if (attempts % 10 === 0) {
-            console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}`);
+          try {
+            runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+            attempts++;
+            
+            if (attempts % 5 === 0 || attempts === 1) {
+              console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}, elapsed: ${Math.round((Date.now() - startTime) / 1000)}s`);
+            }
+          } catch (retrieveError) {
+            console.error('❌ Error retrieving run status:', retrieveError);
+            attempts++;
           }
         }
 
         testResults.steps.run_completion = {
           status: runStatus.status,
           attempts: attempts,
-          final_status: runStatus.status
+          final_status: runStatus.status,
+          elapsed_time_ms: Date.now() - startTime,
+          last_error: runStatus.last_error || null
         };
 
         // Step 8: Get response if completed
@@ -173,8 +189,18 @@ module.exports = async function handler(req, res) {
             testResults.final_status = 'partial_success';
           }
         } else {
-          testResults.errors.push(`Run did not complete successfully. Final status: ${runStatus.status}`);
-          testResults.final_status = 'timeout_or_error';
+          // Log detailed error information
+          const errorInfo = {
+            status: runStatus.status,
+            last_error: runStatus.last_error,
+            elapsed_time: Math.round((Date.now() - startTime) / 1000) + 's',
+            attempts: attempts
+          };
+          
+          console.error('❌ Run did not complete successfully:', errorInfo);
+          
+          testResults.errors.push(`Run did not complete successfully. Final status: ${runStatus.status}, Error: ${JSON.stringify(runStatus.last_error || 'Unknown')}`);
+          testResults.final_status = runStatus.status === 'failed' ? 'failed' : 'timeout_or_error';
         }
 
       } catch (error) {

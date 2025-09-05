@@ -373,15 +373,23 @@ module.exports = async function handler(req, res) {
             maxAttempts: maxAttempts
           });
           
-          while (runStatus.status === 'running' && attempts < maxAttempts) {
+          const startTime = Date.now();
+          const maxTimeMs = 120000; // 120 seconds for chat
+          
+          // Status que indicam que o run ainda está processando
+          const processingStatuses = ['queued', 'in_progress', 'running'];
+          // Status que indicam conclusão (sucesso ou falha)
+          const finalStatuses = ['completed', 'failed', 'cancelled', 'expired', 'requires_action'];
+          
+          while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts && (Date.now() - startTime) < maxTimeMs) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             try {
               runStatus = await openai.beta.threads.runs.retrieve(workingThreadId, run.id);
               attempts++;
               
-              if (attempts % 10 === 0) {
-                console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}`);
+              if (attempts % 10 === 0 || attempts === 1) {
+                console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}, elapsed: ${Math.round((Date.now() - startTime) / 1000)}s`);
               }
             } catch (retrieveError) {
               console.error('❌ Error retrieving run status:', retrieveError);
@@ -397,7 +405,9 @@ module.exports = async function handler(req, res) {
           console.log('🏁 Run completion loop finished:', {
             finalStatus: runStatus.status,
             totalAttempts: attempts,
-            wasTimeout: attempts >= maxAttempts
+            wasTimeout: attempts >= maxAttempts,
+            elapsedTime: Math.round((Date.now() - startTime) / 1000) + 's',
+            lastError: runStatus.last_error || null
           });
 
           if (runStatus.status === 'completed') {
@@ -446,10 +456,21 @@ module.exports = async function handler(req, res) {
               throw messagesError;
             }
           } else {
-            console.log('⚠️ Run did not complete successfully:', {
+            const errorInfo = {
               status: runStatus.status,
-              lastError: runStatus.last_error
-            });
+              lastError: runStatus.last_error,
+              elapsedTime: Math.round((Date.now() - startTime) / 1000) + 's',
+              attempts: attempts
+            };
+            
+            console.error('⚠️ Run did not complete successfully:', errorInfo);
+            
+            // If run failed, throw specific error with details
+            if (runStatus.status === 'failed') {
+              throw new Error(`OpenAI run failed: ${JSON.stringify(runStatus.last_error || 'Unknown error')}`);
+            } else {
+              throw new Error(`OpenAI run timed out or stuck in status: ${runStatus.status} after ${Math.round((Date.now() - startTime) / 1000)}s`);
+            }
           }
         } catch (openaiError) {
           console.error('🤖 OpenAI Error Details:', {
