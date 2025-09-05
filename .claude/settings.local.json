@@ -48,6 +48,7 @@
       "Bash(powershell Stop-Process:*)",
       "Bash(del frontend/temp-debug-auth.js)",
       "Bash(nslookup:*)",
+<<<<<<< HEAD
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
@@ -57,6 +58,21 @@
       "Bash(npm run lint)",
       "Bash(git rm:*)",
       "WebFetch(domain:neuro-pro-backend-phi.vercel.app)"
+=======
+      "Bash(del test-supabase.js)",
+      "Bash(del test-auth-backend.js)",
+      "Bash(find:*)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend\\src\\controllers/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend\\src\\controllers/**)",
+      "Bash(del mcp-monitor.js)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Read(/C:\\Users\\GouveiaRx\\Downloads\\Neuro\\backend/**)",
+      "Bash(git add:*)"
+>>>>>>> vercel-deploy-config
     ],
     "deny": [],
     "ask": [],

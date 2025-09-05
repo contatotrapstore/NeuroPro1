@@ -1,4 +1,6 @@
 {
+  "version": 2,
+  "name": "neuroai-lab-frontend",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",
@@ -9,7 +11,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://neuro-pro-backend-phi.vercel.app https://avgoyfartmzepdgzhroc.supabase.co;"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://neuro-pro-backend.vercel.app https://avgoyfartmzepdgzhroc.supabase.co;"
         }
       ]
     }

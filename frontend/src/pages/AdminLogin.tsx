@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -13,8 +13,31 @@ const AdminLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Verificar se há erro vindo do state (redirecionamento de AdminProtectedRoute)
+    if (location.state?.error) {
+      setError(location.state.error);
+    }
+  }, [location.state]);
+
+  // Watch for auth state changes and navigate when admin is authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      // Lista de emails admin
+      const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
+      const isAdminEmail = adminEmails.includes(user.email || '');
+      const hasAdminRole = user.user_metadata?.role === 'admin';
+      
+      if (isAdminEmail || hasAdminRole) {
+        console.log(`🚀 Navigating admin user ${user.email} to dashboard`);
+        navigate('/admin/dashboard', { replace: true });
+      }
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +50,24 @@ const AdminLogin: React.FC = () => {
     try {
       setError('');
       setLoading(true);
+      
+      // Clear any invalid tokens before login
+      const keysToRemove = Object.keys(localStorage).filter(key => 
+        key.startsWith('supabase.auth.') || key.includes('supabase')
+      );
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
       const result = await signIn(email, password);
       
-      // Verificar se é admin
-      if (result.user?.email === 'admin@neuroialab.com' || result.user?.user_metadata?.role === 'admin') {
-        navigate('/admin/dashboard');
+      // Lista de emails admin
+      const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
+      const isAdminEmail = adminEmails.includes(result.user?.email || '');
+      const hasAdminRole = result.user?.user_metadata?.role === 'admin';
+      
+      // Verificar se é admin (por email ou role)
+      if (isAdminEmail || hasAdminRole) {
+        console.log(`✅ Admin access granted for: ${result.user?.email}`);
+        // Navigation will be handled by useEffect watching auth state
       } else {
         setError('Acesso negado. Esta área é restrita a administradores.');
         // Fazer logout se não for admin

@@ -39,7 +39,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 OPENAI_API_KEY=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
 
 # Payment Gateway - Asaas Configuration
-ASAAS_API_KEY=your-asaas-api-key
+ASAAS_API_KEY=$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojc3MDZhMDQyLTY5YWQtNDk5NC04OTU1LWZkNjJjYzg4ZTMyZTo6JGFhY2hfNmFjMGJlMzAtNDMxOC00NTY2LWExZGUtYWRlNGI0ZDI1Nzhl
 ASAAS_WEBHOOK_SECRET=your-asaas-webhook-secret
 
 # Security & CORS
@@ -86,9 +86,9 @@ CORS_ORIGIN=https://neuroai-lab.vercel.app
 # API Base URL - Substitua pelo domínio do Vercel
 VITE_API_BASE_URL=https://neuroai-lab.vercel.app/api
 
-# Asaas API (quando configurar pagamentos)
-ASAAS_API_KEY=sua-chave-real-do-asaas
-ASAAS_WEBHOOK_SECRET=seu-webhook-secret-do-asaas
+# Asaas API (já configurado)
+ASAAS_API_KEY=$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojc3MDZhMDQyLTY5YWQtNDk5NC04OTU1LWZkNjJjYzg4ZTMyZTo6JGFhY2hfNmFjMGJlMzAtNDMxOC00NTY2LWExZGUtYWRlNGI0ZDI1Nzhl
+ASAAS_WEBHOOK_SECRET=your-asaas-webhook-secret
 ```
 
 ### 2. No Painel do Vercel

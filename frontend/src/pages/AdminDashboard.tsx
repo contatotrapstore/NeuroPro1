@@ -5,24 +5,25 @@ import {
   Users, 
   DollarSign, 
   Activity, 
-  TrendingUp, 
-  Shield, 
-  Settings, 
   LogOut,
   Eye,
-  Ban,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  BarChart3
+  Settings,
+  BarChart3,
+  Bot,
+  TrendingUp,
+  X,
+  Check,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { NeuroLabIconMedium } from '../components/icons/NeuroLabLogo';
 import { adminService } from '../services/admin.service';
-import type { AdminStats, AdminUser, AdminSubscription } from '../services/admin.service';
+import type { AdminStats, AdminUser } from '../services/admin.service';
+import AssistantManager from '../components/admin/AssistantManager';
+import { AssistantIcon } from '../components/ui/AssistantIcon';
 
 interface AdminStatsDisplay extends AdminStats {
   conversionRate?: number;
-  churnRate?: number;
 }
 
 type UserData = AdminUser & {
@@ -30,17 +31,10 @@ type UserData = AdminUser & {
   lastLogin?: string;
 };
 
-type SubscriptionData = AdminSubscription & {
-  user_email?: string;
-  assistant_name?: string;
-  type?: string;
-  revenue?: number;
-};
-
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'subscriptions' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants'>('overview');
   const [stats, setStats] = useState<AdminStatsDisplay>({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -48,22 +42,39 @@ export default function AdminDashboard() {
     recentConversations: 0,
     monthlyRevenue: 0,
     totalActiveRevenue: 0,
-    conversionRate: 0,
-    churnRate: 0
+    conversionRate: 0
   });
   const [users, setUsers] = useState<UserData[]>([]);
-  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [userAssistants, setUserAssistants] = useState<Array<{
+    id: string;
+    name: string;
+    icon: string;
+    hasAccess: boolean;
+  }>>([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
+    // Só verificar se user não é null/undefined
+    if (user === undefined) return; // Ainda carregando
+    
+    // Lista de emails admin
+    const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
+    const isAdminEmail = adminEmails.includes(user?.email || '');
+    const hasAdminRole = user?.user_metadata?.role === 'admin';
+    
     // Verificar se é admin
-    if (!user || (user.email !== 'admin@neuroialab.com' && user.user_metadata?.role !== 'admin')) {
-      navigate('/admin');
+    if (!user || (!isAdminEmail && !hasAdminRole)) {
+      console.log(`❌ AdminDashboard: Access denied for ${user?.email} - redirecting to /admin`);
+      navigate('/admin', { replace: true });
       return;
     }
 
+    console.log(`✅ AdminDashboard: Access granted for ${user?.email}`);
     loadDashboardData();
-  }, [user, navigate]);
+  }, [user]); // Removido 'navigate' da dependência
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -73,8 +84,7 @@ export default function AdminDashboard() {
       if (statsResult.success && statsResult.data) {
         setStats({
           ...statsResult.data,
-          conversionRate: Math.round((statsResult.data.activeSubscriptions / statsResult.data.totalUsers) * 100 * 10) / 10,
-          churnRate: 4.2 // Calculado separadamente se necessário
+          conversionRate: Math.round((statsResult.data.activeSubscriptions / statsResult.data.totalUsers) * 100 * 10) / 10
         });
       }
 
@@ -90,19 +100,6 @@ export default function AdminDashboard() {
         setUsers(usersWithStatus);
       }
 
-      // Carregar assinaturas reais
-      const subscriptionsResult = await adminService.getSubscriptions(1, 20);
-      if (subscriptionsResult.success && subscriptionsResult.data) {
-        const subscriptionsWithDetails = subscriptionsResult.data.map(sub => ({
-          ...sub,
-          user_email: `user_${sub.user_id.substring(0, 8)}@email.com`, // Simular email por privacidade
-          assistant_name: sub.assistants?.name || 'Assistente',
-          type: sub.subscription_type,
-          revenue: sub.amount || 0,
-          expires_at: sub.expires_at || 'N/A'
-        }));
-        setSubscriptions(subscriptionsWithDetails);
-      }
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
       // Em caso de erro, manter valores zerados
@@ -113,8 +110,7 @@ export default function AdminDashboard() {
         recentConversations: 0,
         monthlyRevenue: 0,
         totalActiveRevenue: 0,
-        conversionRate: 0,
-        churnRate: 0
+        conversionRate: 0
       });
     } finally {
       setLoading(false);
@@ -124,6 +120,77 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     await signOut();
     navigate('/admin');
+  };
+
+  const handleManageAssistants = async (user: UserData) => {
+    setSelectedUser(user);
+    setModalLoading(true);
+    setShowModal(true);
+    
+    try {
+      const result = await adminService.getUserAvailableAssistants(user.id);
+      if (result.success && result.data) {
+        setUserAssistants(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading user assistants:', error);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const toggleAssistantAccess = async (assistantId: string, hasAccess: boolean) => {
+    if (!selectedUser) return;
+
+    try {
+      const action = hasAccess ? 'remove' : 'add';
+      const result = await adminService.manageUserAssistants(
+        selectedUser.id, 
+        [assistantId], 
+        action
+      );
+
+      if (result.success) {
+        // Atualizar a lista de assistentes no modal
+        setUserAssistants(prev => prev.map(assistant => 
+          assistant.id === assistantId 
+            ? { ...assistant, hasAccess: !hasAccess }
+            : assistant
+        ));
+
+        // Atualizar a contagem de assinaturas na lista de usuários
+        setUsers(prev => prev.map(user => 
+          user.id === selectedUser.id 
+            ? { 
+                ...user, 
+                active_subscriptions: hasAccess 
+                  ? user.active_subscriptions - 1 
+                  : user.active_subscriptions + 1,
+                subscriptions: hasAccess 
+                  ? user.active_subscriptions - 1 
+                  : user.active_subscriptions + 1
+              }
+            : user
+        ));
+
+        // Atualizar o selectedUser também
+        setSelectedUser(prev => prev ? {
+          ...prev,
+          active_subscriptions: hasAccess 
+            ? prev.active_subscriptions - 1 
+            : prev.active_subscriptions + 1
+        } : null);
+      }
+    } catch (error) {
+      console.error('Error toggling assistant access:', error);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedUser(null);
+    setUserAssistants([]);
+    // Não recarregar automaticamente - apenas limpar o estado do modal
   };
 
   const StatCard = ({ icon: Icon, title, value, change, color = 'blue' }: {
@@ -200,8 +267,7 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', name: 'Visão Geral', icon: BarChart3 },
               { id: 'users', name: 'Usuários', icon: Users },
-              { id: 'subscriptions', name: 'Assinaturas', icon: Activity },
-              { id: 'settings', name: 'Configurações', icon: Settings }
+              { id: 'assistants', name: 'Assistentes', icon: Bot }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -228,14 +294,12 @@ export default function AdminDashboard() {
                 icon={Users}
                 title="Total de Usuários"
                 value={stats.totalUsers}
-                change="+12 este mês"
                 color="blue"
               />
               <StatCard
                 icon={Activity}
                 title="Assinaturas Ativas"
                 value={stats.activeSubscriptions}
-                change="+8 esta semana"
                 color="green"
               />
               <StatCard
@@ -252,40 +316,6 @@ export default function AdminDashboard() {
               />
             </div>
 
-            {/* Additional Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <StatCard
-                icon={TrendingUp}
-                title="Taxa de Conversão"
-                value={`${stats.conversionRate || 0}%`}
-                color="yellow"
-              />
-              <StatCard
-                icon={XCircle}
-                title="Conversas Recentes"
-                value={stats.recentConversations || 0}
-                color="green"
-              />
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="flex items-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                  <Users className="text-blue-600" size={20} />
-                  <span className="font-medium text-blue-700">Gerenciar Usuários</span>
-                </button>
-                <button className="flex items-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
-                  <Activity className="text-green-600" size={20} />
-                  <span className="font-medium text-green-700">Ver Assinaturas</span>
-                </button>
-                <button className="flex items-center space-x-3 p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors">
-                  <Settings className="text-yellow-600" size={20} />
-                  <span className="font-medium text-yellow-700">Configurações</span>
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
@@ -302,6 +332,7 @@ export default function AdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assinaturas</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IAs Disponíveis</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Login</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                   </tr>
@@ -326,17 +357,37 @@ export default function AdminDashboard() {
                         {user.active_subscriptions + user.active_packages}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          {user.availableAssistants && user.availableAssistants.length > 0 ? (
+                            user.availableAssistants.slice(0, 3).map((assistant) => (
+                              <AssistantIcon 
+                                key={assistant.id} 
+                                iconType={assistant.icon} 
+                                className="w-5 h-5" 
+                                title={assistant.name}
+                              />
+                            ))
+                          ) : (
+                            <span className="text-gray-400">Nenhuma</span>
+                          )}
+                          {user.availableAssistants && user.availableAssistants.length > 3 && (
+                            <span className="text-xs text-gray-400">+{user.availableAssistants.length - 3}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.lastLogin && user.lastLogin !== 'Nunca' 
                           ? new Date(user.lastLogin).toLocaleDateString('pt-BR')
                           : 'Nunca'
                         }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900">
-                          <Eye size={16} />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          <Ban size={16} />
+                        <button 
+                          onClick={() => handleManageAssistants(user)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Gerenciar IAs"
+                        >
+                          <Settings size={16} />
                         </button>
                       </td>
                     </tr>
@@ -347,103 +398,100 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Subscriptions Tab */}
-        {activeTab === 'subscriptions' && (
-          <div className="bg-white rounded-xl shadow-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Gerenciar Assinaturas</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assistente</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expira</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receita</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {subscriptions.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sub.user_email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sub.assistant_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sub.type === 'monthly' ? 'Mensal' : sub.type === 'semester' ? 'Semestral' : sub.type || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          sub.status === 'active' ? 'bg-green-100 text-green-800' : 
-                          sub.status === 'expired' ? 'bg-red-100 text-red-800' : 
-                          sub.status === 'cancelled' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {sub.status === 'active' ? 'Ativo' : 
-                         sub.status === 'expired' ? 'Expirado' : 
-                         sub.status === 'cancelled' ? 'Cancelado' : 'Inativo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sub.expires_at && sub.expires_at !== 'N/A' 
-                          ? new Date(sub.expires_at).toLocaleDateString('pt-BR')
-                          : 'N/A'
-                        }
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        R$ {(sub.revenue || sub.amount || 0).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
+        {/* Assistants Tab */}
+        {activeTab === 'assistants' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Configurações do Sistema</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Preços dos Assistentes</h4>
-                    <p className="text-sm text-gray-600">Gerenciar preços mensais e semestrais</p>
-                  </div>
-                  <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
-                    Configurar
-                  </button>
+            <AssistantManager />
+          </div>
+        )}
+
+        {/* Modal for managing user assistants */}
+        {showModal && selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Gerenciar IAs - {selectedUser.name || selectedUser.email}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Adicione ou remova assistentes para este usuário
+                  </p>
                 </div>
-                
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Backup do Sistema</h4>
-                    <p className="text-sm text-gray-600">Fazer backup dos dados</p>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="px-6 py-4 max-h-96 overflow-y-auto">
+                {modalLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                    <span className="ml-2 text-gray-600">Carregando...</span>
                   </div>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                    Executar
-                  </button>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Logs do Sistema</h4>
-                    <p className="text-sm text-gray-600">Visualizar logs de atividade</p>
+                ) : (
+                  <div className="space-y-3">
+                    {userAssistants.map((assistant) => (
+                      <div
+                        key={assistant.id}
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <AssistantIcon 
+                            iconType={assistant.icon} 
+                            className="w-8 h-8" 
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assistant.name}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            assistant.hasAccess 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {assistant.hasAccess ? 'Com acesso' : 'Sem acesso'}
+                          </span>
+                          <button
+                            onClick={() => toggleAssistantAccess(assistant.id, assistant.hasAccess)}
+                            className={`p-2 rounded-full transition-colors ${
+                              assistant.hasAccess
+                                ? 'text-red-600 hover:bg-red-100'
+                                : 'text-green-600 hover:bg-green-100'
+                            }`}
+                            title={assistant.hasAccess ? 'Remover acesso' : 'Dar acesso'}
+                          >
+                            {assistant.hasAccess ? <Minus size={16} /> : <Plus size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
-                    Ver Logs
-                  </button>
-                </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Fechar
+                </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

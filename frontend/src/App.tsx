@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import ModernLayout from './components/layout/ModernLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import AdminProtectedRoute from './components/layout/AdminProtectedRoute';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { Login, Register, ForgotPassword } from './pages/Auth';
 import ChatPage from './pages/ChatPage';
@@ -114,9 +115,9 @@ const App: React.FC = () => {
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminDashboard />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
