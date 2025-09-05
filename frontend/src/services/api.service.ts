@@ -20,7 +20,7 @@ export class ApiService {
        window.location.hostname !== '127.0.0.1' && 
        window.location.hostname !== '');
     
-    // Em produção, usar URL absoluta do backend
+    // Em produção, usar URL direta do backend (sem /api)
     if (isProduction) {
       this.baseURL = 'https://neuro-pro-backend-phi.vercel.app';
     } else {
