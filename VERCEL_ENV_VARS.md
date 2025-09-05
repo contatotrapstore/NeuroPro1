@@ -6,6 +6,8 @@
 
 ## 🎨 Frontend (neuro-pro-frontend.vercel.app)
 
+⚠️ **IMPORTANTE**: Configure no Vercel Dashboard EXATAMENTE assim:
+
 ```bash
 VITE_API_BASE_URL=https://neuro-pro-backend.vercel.app/api
 VITE_SUPABASE_URL=https://avgoyfartmzepdgzhroc.supabase.co
@@ -13,6 +15,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 VITE_ENVIRONMENT=production
 VITE_DEBUG=false
 ```
+
+🚨 **NÃO USE**: `neuro-pro-backend-phi.vercel.app` no Dashboard
 
 ## ⚙️ Backend (neuro-pro-backend.vercel.app)
 
@@ -29,9 +33,20 @@ JWT_SECRET=e86dcb3f8deb1bc191b7afc4909efd3ced007d752b736d4a0918e9560ff0737f
 DEBUG=false
 ```
 
-## ⚠️ IMPORTANTE:
-- **CORS_ORIGIN**: Atualizado para o novo domínio do frontend
-- **VITE_API_BASE_URL**: Aponta para o backend correto
-- **SUPABASE_SERVICE_KEY**: Substituir pelo valor real do painel Supabase
+## ⚠️ IMPORTANTES CORREÇÕES APLICADAS:
 
-## ✅ Configurado e pronto para deploy!
+### 🔧 CSP (Content Security Policy)
+- **Ambos os domínios** do backend liberados no CSP: `neuro-pro-backend.vercel.app` e `neuro-pro-backend-phi.vercel.app`
+- CSP configurado em **dois lugares**: `vercel.json` e `frontend/vercel.json`
+
+### 🎯 Configuração Correta no Vercel Dashboard:
+1. **VITE_API_BASE_URL**: Use `https://neuro-pro-backend.vercel.app/api` (SEM o "-phi")
+2. **CORS_ORIGIN**: Use `https://neuro-pro-frontend.vercel.app`
+3. **SUPABASE_SERVICE_KEY**: Substituir pelo valor real do painel Supabase
+
+### 🚨 PROBLEMA RESOLVIDO:
+- **Antes**: CSP bloqueava `neuro-pro-backend-phi.vercel.app`
+- **Agora**: CSP permite ambos os domínios do backend
+- **APIs funcionarão** independente do URL configurado no Dashboard
+
+## ✅ Sistema configurado e pronto para deploy!
