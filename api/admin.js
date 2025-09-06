@@ -127,7 +127,7 @@ module.exports = async function handler(req, res) {
       
       // Get total users
       const { count: totalUsers, error: usersError } = await supabase
-        .from('user_profiles')
+        .from('users')
         .select('id', { count: 'exact', head: true });
 
       // Get active subscriptions
@@ -178,10 +178,13 @@ module.exports = async function handler(req, res) {
       const offset = (page - 1) * limit;
 
       const { data: users, error: usersError } = await supabase
-        .from('user_profiles')
+        .from('users')
         .select(`
-          *,
-          user_subscriptions!inner(count)
+          id,
+          email,
+          created_at,
+          last_sign_in_at,
+          user_subscriptions(count)
         `)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
@@ -196,7 +199,7 @@ module.exports = async function handler(req, res) {
 
       // Get total count
       const { count: totalUsers, error: countError } = await supabase
-        .from('user_profiles')
+        .from('users')
         .select('id', { count: 'exact', head: true });
 
       return res.json({
@@ -221,7 +224,7 @@ module.exports = async function handler(req, res) {
         .from('user_subscriptions')
         .select(`
           *,
-          user_profiles!inner(email, full_name),
+          users!inner(email),
           assistants!inner(name, icon)
         `)
         .range(offset, offset + limit - 1)
