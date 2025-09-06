@@ -8,6 +8,7 @@ module.exports = async function handler(req, res) {
   // CORS Headers
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
+    'https://neuro-pro-frontend.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000'
   ];
@@ -42,6 +43,7 @@ module.exports = async function handler(req, res) {
       });
     }
     
+    // Use service key if available, otherwise use anon key
     const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
 
     // Extract user token for authentication
@@ -82,7 +84,7 @@ module.exports = async function handler(req, res) {
     const ADMIN_EMAILS = [
       'admin@neuroialab.com',
       'gouveiarx@gmail.com',
-      'pstales@gmail.com' // Corrigido para coincidir com frontend
+      'pstales@gmail.com'
     ];
     
     // Check admin role
@@ -123,11 +125,15 @@ module.exports = async function handler(req, res) {
 
     // Handle different admin endpoints
     if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'stats') {
-      // GET /admin/stats - Get system statistics
+      // GET /admin/stats - Get system statistics using only public tables
       
-      // Get total users from auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      const totalUsers = authUsers?.users?.length || 0;
+      // Get unique users from subscriptions
+      const { data: uniqueUsers, error: uniqueUsersError } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .not('user_id', 'is', null);
+      
+      const totalUsers = uniqueUsers ? [...new Set(uniqueUsers.map(u => u.user_id))].length : 0;
 
       // Get active subscriptions
       const { count: activeSubscriptions, error: subsError } = await supabase
@@ -141,27 +147,42 @@ module.exports = async function handler(req, res) {
         .from('conversations')
         .select('id', { count: 'exact', head: true });
 
-      // Calculate monthly revenue (simplified)
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+      // Calculate monthly revenue
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 7);
+      
       const { data: monthlySubscriptions, error: revenueError } = await supabase
         .from('user_subscriptions')
-        .select('plan, created_at')
-        .gte('created_at', currentMonth + '-01T00:00:00.000Z')
-        .lt('created_at', (parseInt(currentMonth.slice(0, 4)) + (currentMonth.slice(5, 7) === '12' ? 1 : 0)) + '-' + 
-              String(parseInt(currentMonth.slice(5, 7)) === 12 ? 1 : parseInt(currentMonth.slice(5, 7)) + 1).padStart(2, '0') + 
-              '-01T00:00:00.000Z');
+        .select('subscription_type, assistant_id')
+        .gte('created_at', `${currentMonth}-01T00:00:00.000Z`)
+        .lt('created_at', `${nextMonth}-01T00:00:00.000Z`)
+        .eq('status', 'active');
+
+      // Get assistant prices for revenue calculation
+      const { data: assistants, error: assistantsError } = await supabase
+        .from('assistants')
+        .select('id, monthly_price, semester_price');
 
       let monthlyRevenue = 0;
-      if (monthlySubscriptions && !revenueError) {
+      if (monthlySubscriptions && assistants && !revenueError && !assistantsError) {
+        const assistantPrices = {};
+        assistants.forEach(a => {
+          assistantPrices[a.id] = {
+            monthly: a.monthly_price || 39.90,
+            semester: a.semester_price || 199.00
+          };
+        });
+
         monthlyRevenue = monthlySubscriptions.reduce((sum, sub) => {
-          return sum + (sub.plan === 'monthly' ? 39.9 : 199);
+          const prices = assistantPrices[sub.assistant_id] || { monthly: 39.90, semester: 199.00 };
+          return sum + (sub.subscription_type === 'monthly' ? prices.monthly : prices.semester);
         }, 0);
       }
 
       return res.json({
         success: true,
         data: {
-          totalUsers: totalUsers || 0,
+          totalUsers: totalUsers,
           activeSubscriptions: activeSubscriptions || 0,
           monthlyRevenue: monthlyRevenue,
           totalConversations: totalConversations || 0
@@ -171,49 +192,67 @@ module.exports = async function handler(req, res) {
     }
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'users') {
-      // GET /admin/users - List users with pagination
+      // GET /admin/users - List users from subscription data
       const page = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
-      
-      // Get all users from auth.users
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
-        page: page,
-        perPage: limit
-      });
+      const offset = (page - 1) * limit;
 
-      if (authError) {
+      // Get all unique users from subscriptions with aggregated data
+      const { data: allSubscriptions, error: subsError } = await supabase
+        .from('user_subscriptions')
+        .select('user_id, created_at, status, expires_at')
+        .order('created_at', { ascending: false });
+
+      if (subsError) {
+        console.error('Error fetching subscriptions for users:', subsError);
         return res.status(500).json({
           success: false,
           message: 'Erro ao buscar usuários',
-          error: authError.message
+          error: subsError.message
         });
       }
 
-      // Get subscription counts for each user
-      const users = authData?.users || [];
-      const usersWithSubscriptions = await Promise.all(
-        users.map(async (user) => {
-          const { count } = await supabase
-            .from('user_subscriptions')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id);
+      // Aggregate user data from subscriptions
+      const userMap = new Map();
+      
+      if (allSubscriptions) {
+        allSubscriptions.forEach(sub => {
+          if (!sub.user_id) return;
           
-          return {
-            id: user.id,
-            email: user.email,
-            created_at: user.created_at,
-            last_sign_in_at: user.last_sign_in_at,
-            subscriptionCount: count || 0
-          };
-        })
-      );
+          if (!userMap.has(sub.user_id)) {
+            userMap.set(sub.user_id, {
+              id: sub.user_id,
+              email: `user_${sub.user_id.slice(0, 8)}@neuroialab.com`, // Placeholder email
+              created_at: sub.created_at,
+              last_sign_in_at: sub.created_at,
+              subscriptionCount: 0,
+              activeSubscriptions: 0
+            });
+          }
+          
+          const user = userMap.get(sub.user_id);
+          user.subscriptionCount++;
+          
+          if (sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
+            user.activeSubscriptions++;
+          }
+          
+          // Update last activity
+          if (new Date(sub.created_at) > new Date(user.last_sign_in_at)) {
+            user.last_sign_in_at = sub.created_at;
+          }
+        });
+      }
 
-      const totalUsers = authData?.total || 0;
+      // Convert map to array and paginate
+      const allUsers = Array.from(userMap.values());
+      const paginatedUsers = allUsers.slice(offset, offset + limit);
+      const totalUsers = allUsers.length;
 
       return res.json({
         success: true,
         data: {
-          users: usersWithSubscriptions,
+          users: paginatedUsers,
           totalUsers: totalUsers,
           currentPage: page,
           totalPages: Math.ceil(totalUsers / limit)
@@ -223,45 +262,43 @@ module.exports = async function handler(req, res) {
     }
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'subscriptions') {
-      // GET /admin/subscriptions - List subscriptions
+      // GET /admin/subscriptions - List subscriptions with assistant info
       const page = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
 
+      // Get subscriptions with assistant data
       const { data: subscriptions, error: subsError } = await supabase
         .from('user_subscriptions')
         .select(`
           *,
-          assistants!inner(name, icon)
+          assistants (
+            id,
+            name,
+            icon,
+            description
+          )
         `)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
-      
-      // If we got subscriptions, enrich them with user data
-      let enrichedSubscriptions = [];
-      if (subscriptions && !subsError) {
-        enrichedSubscriptions = await Promise.all(
-          subscriptions.map(async (sub) => {
-            // Get user data from auth.users
-            const { data: userData } = await supabase.auth.admin.getUserById(sub.user_id);
-            return {
-              ...sub,
-              user: {
-                email: userData?.user?.email || 'Unknown',
-                full_name: userData?.user?.user_metadata?.full_name || ''
-              }
-            };
-          })
-        );
-      }
 
       if (subsError) {
+        console.error('Error fetching subscriptions:', subsError);
         return res.status(500).json({
           success: false,
           message: 'Erro ao buscar assinaturas',
           error: subsError.message
         });
       }
+
+      // Format subscriptions with user placeholder data
+      const formattedSubscriptions = (subscriptions || []).map(sub => ({
+        ...sub,
+        user: {
+          email: `user_${sub.user_id.slice(0, 8)}@neuroialab.com`,
+          full_name: `Usuário ${sub.user_id.slice(0, 8)}`
+        }
+      }));
 
       // Get total count
       const { count: totalSubscriptions, error: countError } = await supabase
@@ -271,7 +308,7 @@ module.exports = async function handler(req, res) {
       return res.json({
         success: true,
         data: {
-          subscriptions: enrichedSubscriptions,
+          subscriptions: formattedSubscriptions,
           totalSubscriptions: totalSubscriptions || 0,
           currentPage: page,
           totalPages: Math.ceil((totalSubscriptions || 0) / limit)
@@ -307,6 +344,60 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'assistants') {
+      // GET /admin/assistants - List all assistants with stats
+      const { data: assistants, error: assistantsError } = await supabase
+        .from('assistants')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (assistantsError) {
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar assistentes',
+          error: assistantsError.message
+        });
+      }
+
+      // Get stats for each assistant
+      const assistantsWithStats = await Promise.all(
+        (assistants || []).map(async (assistant) => {
+          // Count active subscriptions for this assistant
+          const { count: activeCount } = await supabase
+            .from('user_subscriptions')
+            .select('id', { count: 'exact', head: true })
+            .eq('assistant_id', assistant.id)
+            .eq('status', 'active')
+            .gte('expires_at', new Date().toISOString());
+
+          // Count recent conversations
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          
+          const { count: conversationCount } = await supabase
+            .from('conversations')
+            .select('id', { count: 'exact', head: true })
+            .eq('assistant_id', assistant.id)
+            .gte('created_at', thirtyDaysAgo.toISOString());
+
+          return {
+            ...assistant,
+            stats: {
+              activeSubscriptions: activeCount || 0,
+              recentConversations: conversationCount || 0,
+              monthlyRevenue: (activeCount || 0) * (assistant.monthly_price || 39.90)
+            }
+          };
+        })
+      );
+
+      return res.json({
+        success: true,
+        data: assistantsWithStats,
+        message: 'Assistentes recuperados com sucesso'
+      });
+    }
+
     else if (req.method === 'PUT' && pathParts.length === 3 && pathParts[1] === 'assistants') {
       // PUT /admin/assistants/:id - Update assistant
       const assistantId = pathParts[2];
@@ -331,6 +422,148 @@ module.exports = async function handler(req, res) {
         success: true,
         data: assistant,
         message: 'Assistente atualizado com sucesso'
+      });
+    }
+
+    else if (req.method === 'POST' && pathParts.length === 2 && pathParts[1] === 'seed') {
+      // POST /admin/seed - Seed database with test data (development only)
+      if (process.env.NODE_ENV === 'production' && !url.searchParams.get('force')) {
+        return res.status(403).json({
+          success: false,
+          error: 'Seed endpoint is disabled in production. Add ?force=true to override.'
+        });
+      }
+
+      console.log('🌱 Starting database seed...');
+
+      // Check if we already have data
+      const { count: existingCount } = await supabase
+        .from('user_subscriptions')
+        .select('id', { count: 'exact', head: true });
+
+      if (existingCount && existingCount > 10) {
+        return res.json({
+          success: true,
+          message: 'Database already has sufficient data',
+          data: { existingCount }
+        });
+      }
+
+      // Get all assistants
+      const { data: assistants, error: assistantsError } = await supabase
+        .from('assistants')
+        .select('id, name');
+
+      if (assistantsError || !assistants || assistants.length === 0) {
+        return res.status(500).json({
+          success: false,
+          error: 'No assistants found in database'
+        });
+      }
+
+      // Create test subscriptions
+      const testUserIds = [
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        'b2c3d4e5-f6a7-8901-bcde-f23456789012',
+        'c3d4e5f6-a7b8-9012-cdef-345678901234',
+        'd4e5f6a7-b8c9-0123-defa-456789012345',
+        'e5f6a7b8-c9d0-1234-efab-567890123456'
+      ];
+
+      const subscriptionTypes = ['monthly', 'semester'];
+      const statuses = ['active', 'active', 'active', 'cancelled', 'expired'];
+      
+      const subscriptions = [];
+      const now = new Date();
+
+      testUserIds.forEach((userId, userIndex) => {
+        // Each user gets 1-3 subscriptions
+        const numSubscriptions = Math.floor(Math.random() * 3) + 1;
+        
+        for (let i = 0; i < numSubscriptions; i++) {
+          const assistant = assistants[Math.floor(Math.random() * assistants.length)];
+          const type = subscriptionTypes[Math.floor(Math.random() * 2)];
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+          
+          // Calculate dates
+          const createdAt = new Date(now);
+          createdAt.setDate(createdAt.getDate() - Math.floor(Math.random() * 90)); // Random date in last 90 days
+          
+          const expiresAt = new Date(createdAt);
+          if (type === 'monthly') {
+            expiresAt.setMonth(expiresAt.getMonth() + 1);
+          } else {
+            expiresAt.setMonth(expiresAt.getMonth() + 6);
+          }
+          
+          // Adjust expiry for cancelled/expired
+          if (status === 'expired') {
+            expiresAt.setDate(expiresAt.getDate() - Math.floor(Math.random() * 30));
+          }
+
+          subscriptions.push({
+            user_id: userId,
+            assistant_id: assistant.id,
+            subscription_type: type,
+            status: status,
+            created_at: createdAt.toISOString(),
+            expires_at: expiresAt.toISOString(),
+            updated_at: createdAt.toISOString()
+          });
+        }
+      });
+
+      // Insert subscriptions
+      const { data: insertedSubs, error: insertError } = await supabase
+        .from('user_subscriptions')
+        .insert(subscriptions)
+        .select();
+
+      if (insertError) {
+        console.error('Error inserting test subscriptions:', insertError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to insert test data',
+          details: insertError.message
+        });
+      }
+
+      // Create some test conversations
+      const conversations = [];
+      testUserIds.forEach(userId => {
+        const numConversations = Math.floor(Math.random() * 5) + 1;
+        
+        for (let i = 0; i < numConversations; i++) {
+          const assistant = assistants[Math.floor(Math.random() * assistants.length)];
+          const createdAt = new Date(now);
+          createdAt.setDate(createdAt.getDate() - Math.floor(Math.random() * 30));
+          
+          conversations.push({
+            user_id: userId,
+            assistant_id: assistant.id,
+            title: `Conversa teste ${i + 1} - ${assistant.name}`,
+            created_at: createdAt.toISOString(),
+            updated_at: createdAt.toISOString()
+          });
+        }
+      });
+
+      const { data: insertedConvs, error: convError } = await supabase
+        .from('conversations')
+        .insert(conversations)
+        .select();
+
+      if (convError) {
+        console.error('Error inserting test conversations:', convError);
+      }
+
+      return res.json({
+        success: true,
+        message: 'Test data created successfully',
+        data: {
+          subscriptions: insertedSubs?.length || 0,
+          conversations: insertedConvs?.length || 0
+        }
       });
     }
 
