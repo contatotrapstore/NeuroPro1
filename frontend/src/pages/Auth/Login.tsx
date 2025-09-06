@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Eye, EyeOff } from 'lucide-react';
-import { NeuroLabIconLarge } from '../../components/icons/NeuroLabLogo';
+import Logo from '../../assets/Logo.png';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -83,7 +83,7 @@ const Login: React.FC = () => {
       <div className="relative sm:mx-auto sm:w-full sm:max-w-md z-10">
         <div className="text-center animate-fade-in">
           <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-neuro-primary to-neuro-primary-dark rounded-3xl mb-6 shadow-2xl shadow-neuro-primary/30 animate-glow-pulse">
-            <NeuroLabIconLarge color="white" size={48} />
+            <img src={Logo} alt="NeuroIA Lab" className="w-12 h-12 object-contain" />
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-neuro-primary via-neuro-primary-dark to-neuro-primary bg-clip-text text-transparent mb-3">
             NeuroIA Lab
