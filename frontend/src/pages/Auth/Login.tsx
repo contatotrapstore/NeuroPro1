@@ -82,12 +82,9 @@ const Login: React.FC = () => {
       
       <div className="relative sm:mx-auto sm:w-full sm:max-w-md z-10">
         <div className="text-center animate-fade-in">
-          <div className="mb-6">
-            <img src={Logo} alt="NeuroIA Lab" className="w-20 h-20 object-contain mx-auto" />
+          <div className="mb-8">
+            <img src={Logo} alt="NeuroIA Lab" className="w-32 h-32 object-contain mx-auto" />
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-neuro-primary via-neuro-primary-dark to-neuro-primary bg-clip-text text-transparent mb-3">
-            NeuroIA Lab
-          </h1>
           <p className="text-lg text-neuro-gray-600 font-medium">
             Acesse sua conta para continuar
           </p>
