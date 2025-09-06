@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
 
       if (error) {
       console.error('❌ Database error:', error);
-      console.log('⚠️ Database error occurred, returning all 14 default assistants');
+      console.log('⚠️ Database error occurred, returning all 19 default assistants');
       
       const defaultAssistants = [
         {
@@ -228,6 +228,14 @@ module.exports = async function handler(req, res) {
           description: 'Couple Therapy Assistant',
           icon: 'heart-duo',
           specialization: 'Couple Therapy',
+          status: 'active'
+        },
+        {
+          id: 'asst_9vDTodTAQIJV1mu2xPzXpBs8',
+          name: 'Simulador de Paciente de Psicanálise',
+          description: 'Psychoanalysis Patient Simulator with Clinical Feedback',
+          icon: 'psychology-brain',
+          specialization: 'Psychoanalytic Training',
           status: 'active'
         }
       ];
@@ -242,7 +250,7 @@ module.exports = async function handler(req, res) {
 
     // If no assistants found, return default set
     if (!assistants || assistants.length === 0) {
-      console.log('⚠️ No assistants in database, returning all 18 defaults');
+      console.log('⚠️ No assistants in database, returning all 19 defaults');
       
       const defaultAssistants = [
         {
@@ -387,6 +395,14 @@ module.exports = async function handler(req, res) {
           description: 'Couple Therapy Assistant',
           icon: 'heart-duo',
           specialization: 'Couple Therapy',
+          status: 'active'
+        },
+        {
+          id: 'asst_9vDTodTAQIJV1mu2xPzXpBs8',
+          name: 'Simulador de Paciente de Psicanálise',
+          description: 'Psychoanalysis Patient Simulator with Clinical Feedback',
+          icon: 'psychology-brain',
+          specialization: 'Psychoanalytic Training',
           status: 'active'
         }
       ];

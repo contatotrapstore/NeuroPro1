@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NeuroIA Lab is a SaaS web platform specializing in psychology that provides access to 14 AI assistants specialized in different areas of psychological practice through a professional chat interface. The platform operates on a subscription model with individual and customizable package options.
+NeuroIA Lab is a SaaS web platform specializing in psychology that provides access to 19 AI assistants specialized in different areas of psychological practice through a professional chat interface. The platform operates on a subscription model with individual and customizable package options.
 
 ## Core Business Model
 
@@ -15,7 +15,7 @@ NeuroIA Lab is a SaaS web platform specializing in psychology that provides acce
   - **6 Assistants**: R$ 179.90/month or R$ 899.00/semester (~25% discount)
 - **Access Model**: Users see only assistants they've subscribed to individually or included in active packages
 
-### 14 Psychology AI Assistants
+### 19 Psychology AI Assistants
 Each assistant has a unique OpenAI API ID (asst_*) and specializes in:
 1. **PsicoPlano** (asst_8kNKRg68rR8zguhYzdlMEvQc) - Therapeutic Route Formulator
 2. **NeuroCase** (asst_Ohn9w46OmgwLJhxw08jSbM2f) - Clinical Case Reviewer
@@ -31,6 +31,11 @@ Each assistant has a unique OpenAI API ID (asst_*) and specializes in:
 12. **PsicoBase** (asst_nqL5L0hIfOMe2wNQn9wambGr) - Evidence-Based Clinical Strategies
 13. **MindHome** (asst_62QzPGQdr9KJMqqJIRVI787r) - Therapeutic Home Activities Elaborator
 14. **ClinPrice** (asst_NoCnwSoviZBasOxgbac9USkg) - Clinical Session Cost Evaluator
+15. **Harmonia Sistêmica** (harmonia-sistemica) - Family and Systemic Therapy Assistant
+16. **NeuroABA** (neuroaba) - Applied Behavior Analysis Assistant
+17. **PsicopedIA** (psicopedia) - Psychopedagogy and Learning Assistant
+18. **TheraCasal** (theracasal) - Couple Therapy Assistant
+19. **Simulador de Paciente de Psicanálise** (asst_9vDTodTAQIJV1mu2xPzXpBs8) - Psychoanalysis Patient Simulator with Clinical Feedback
 
 ## Technology Stack
 

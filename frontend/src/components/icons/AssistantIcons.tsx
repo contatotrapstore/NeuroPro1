@@ -204,6 +204,25 @@ export const FamilyTreeIcon: React.FC<IconProps> = ({ className = '', color = 'c
   </svg>
 );
 
+// Simulador de Paciente de Psicanálise - Cérebro com ondas/conexões psicoanalíticas
+export const PsychologyBrainIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    {/* Contorno do cérebro */}
+    <path d="M6 8C6 5.79086 7.79086 4 10 4C11.1046 4 12.1045 4.44772 12.8284 5.17157C13.4142 4.58579 14.2043 4.2 15 4.2C16.7673 4.2 18.2 5.6327 18.2 7.4C18.2 7.8 18.1 8.2 18 8.5C19.2 9.2 20 10.5 20 12C20 13.8 19 15.4 17.5 16.2C17.8 16.8 18 17.5 18 18.2C18 19.7 16.7 21 15.2 21H8.8C7.3 21 6 19.7 6 18.2V8Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    
+    {/* Ondas cerebrais */}
+    <path d="M8 10C8.5 9.5 9.5 9.5 10 10C10.5 10.5 11.5 10.5 12 10" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M8 13C8.5 12.5 9.5 12.5 10 13C10.5 13.5 11.5 13.5 12 13C12.5 12.5 13.5 12.5 14 13" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M8 16C8.5 15.5 9.5 15.5 10 16C10.5 16.5 11.5 16.5 12 16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    
+    {/* Pontos de conexão neural */}
+    <circle cx="9.5" cy="9" r="0.8" fill={color}/>
+    <circle cx="11.5" cy="11.5" r="0.8" fill={color}/>
+    <circle cx="13.5" cy="14.5" r="0.8" fill={color}/>
+    <circle cx="15" cy="9.5" r="0.8" fill={color}/>
+  </svg>
+);
+
 // Mapeamento de ícones por ID
 export const iconMap = {
   'map-route': MapRouteIcon,
@@ -224,4 +243,5 @@ export const iconMap = {
   'puzzle': PuzzleIcon,
   'rings': RingsIcon,
   'family-tree': FamilyTreeIcon,
+  'psychology-brain': PsychologyBrainIcon,
 } as const;
