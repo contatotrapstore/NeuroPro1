@@ -125,10 +125,9 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'stats') {
       // GET /admin/stats - Get system statistics
       
-      // Get total users
-      const { count: totalUsers, error: usersError } = await supabase
-        .from('users')
-        .select('id', { count: 'exact', head: true });
+      // Get total users from auth.users
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      const totalUsers = authUsers?.users?.length || 0;
 
       // Get active subscriptions
       const { count: activeSubscriptions, error: subsError } = await supabase
@@ -175,40 +174,49 @@ module.exports = async function handler(req, res) {
       // GET /admin/users - List users with pagination
       const page = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
-      const offset = (page - 1) * limit;
+      
+      // Get all users from auth.users
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
+        page: page,
+        perPage: limit
+      });
 
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select(`
-          id,
-          email,
-          created_at,
-          last_sign_in_at,
-          user_subscriptions(count)
-        `)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      if (usersError) {
+      if (authError) {
         return res.status(500).json({
           success: false,
           message: 'Erro ao buscar usuários',
-          error: usersError.message
+          error: authError.message
         });
       }
 
-      // Get total count
-      const { count: totalUsers, error: countError } = await supabase
-        .from('users')
-        .select('id', { count: 'exact', head: true });
+      // Get subscription counts for each user
+      const users = authData?.users || [];
+      const usersWithSubscriptions = await Promise.all(
+        users.map(async (user) => {
+          const { count } = await supabase
+            .from('user_subscriptions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+          
+          return {
+            id: user.id,
+            email: user.email,
+            created_at: user.created_at,
+            last_sign_in_at: user.last_sign_in_at,
+            subscriptionCount: count || 0
+          };
+        })
+      );
+
+      const totalUsers = authData?.total || 0;
 
       return res.json({
         success: true,
         data: {
-          users: users || [],
-          totalUsers: totalUsers || 0,
+          users: usersWithSubscriptions,
+          totalUsers: totalUsers,
           currentPage: page,
-          totalPages: Math.ceil((totalUsers || 0) / limit)
+          totalPages: Math.ceil(totalUsers / limit)
         },
         message: 'Usuários recuperados com sucesso'
       });
@@ -224,11 +232,28 @@ module.exports = async function handler(req, res) {
         .from('user_subscriptions')
         .select(`
           *,
-          users!inner(email),
           assistants!inner(name, icon)
         `)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
+      
+      // If we got subscriptions, enrich them with user data
+      let enrichedSubscriptions = [];
+      if (subscriptions && !subsError) {
+        enrichedSubscriptions = await Promise.all(
+          subscriptions.map(async (sub) => {
+            // Get user data from auth.users
+            const { data: userData } = await supabase.auth.admin.getUserById(sub.user_id);
+            return {
+              ...sub,
+              user: {
+                email: userData?.user?.email || 'Unknown',
+                full_name: userData?.user?.user_metadata?.full_name || ''
+              }
+            };
+          })
+        );
+      }
 
       if (subsError) {
         return res.status(500).json({
@@ -246,7 +271,7 @@ module.exports = async function handler(req, res) {
       return res.json({
         success: true,
         data: {
-          subscriptions: subscriptions || [],
+          subscriptions: enrichedSubscriptions,
           totalSubscriptions: totalSubscriptions || 0,
           currentPage: page,
           totalPages: Math.ceil((totalSubscriptions || 0) / limit)
