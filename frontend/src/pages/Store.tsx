@@ -355,9 +355,6 @@ export default function Store() {
               </h1>
               
               <div className="relative">
-                <h2 className="text-2xl md:text-3xl font-light text-gray-700 mb-2">
-                  Assistentes Especializados em
-                </h2>
                 <motion.div
                   className="text-3xl md:text-4xl font-bold text-neuro-primary"
                   animate={{
@@ -375,7 +372,7 @@ export default function Store() {
                     WebkitTextFillColor: "transparent"
                   }}
                 >
-                  Psicologia Clínica
+                  Assistentes Especializados
                 </motion.div>
               </div>
             </motion.div>
@@ -390,7 +387,7 @@ export default function Store() {
               <div className="text-xl text-gray-600 leading-relaxed mb-6">
                 Descubra uma nova era na prática psicológica com nossos{" "}
                 <span className="font-bold text-neuro-primary relative inline-block">
-                  14 assistentes especializados
+                  19 assistentes especializados
                   <motion.div
                     className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-neuro-primary to-green-500"
                     initial={{ scaleX: 0 }}
@@ -398,12 +395,12 @@ export default function Store() {
                     transition={{ delay: 1.5, duration: 0.8 }}
                   />
                 </span>
-                {" "}desenvolvidos especificamente para diferentes áreas da psicologia.
+                {" "}desenvolvidos especificamente para diferentes áreas.
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 {[
-                  { number: "14", label: "Assistentes", icon: "brain" },
+                  { number: "19", label: "Assistentes", icon: "brain" },
                   { number: "100%", label: "Especializado", icon: "target" },
                   { number: "24/7", label: "Disponível", icon: "clock" },
                   { number: "∞", label: "Conversas", icon: "messageCircle" }
