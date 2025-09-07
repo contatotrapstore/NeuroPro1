@@ -293,10 +293,10 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
             {/* Left Column - Basic Info */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="xl:col-span-2 space-y-6">
               
               {/* Basic Information */}
               <Card>
@@ -352,91 +352,24 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                     )}
                   </div>
 
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Descrição Completa
+                      Área *
                     </label>
-                    <textarea
-                      value={formData.full_description || ''}
-                      onChange={(e) => handleInputChange('full_description', e.target.value)}
-                      placeholder="Descrição detalhada para o painel admin"
-                      rows={4}
+                    <select
+                      value={formData.area || 'Psicologia'}
+                      onChange={(e) => handleInputChange('area', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Área *
-                      </label>
-                      <select
-                        value={formData.area || 'Psicologia'}
-                        onChange={(e) => handleInputChange('area', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
-                      >
-                        <option value="Psicologia">Psicologia</option>
-                        <option value="Psicopedagogia">Psicopedagogia</option>
-                        <option value="Fonoaudiologia">Fonoaudiologia</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Especialização
-                      </label>
-                      <Input
-                        value={formData.specialization || ''}
-                        onChange={(e) => handleInputChange('specialization', e.target.value)}
-                        placeholder="Área específica"
-                      />
-                    </div>
+                    >
+                      <option value="Psicologia">Psicologia</option>
+                      <option value="Psicopedagogia">Psicopedagogia</option>
+                      <option value="Fonoaudiologia">Fonoaudiologia</option>
+                    </select>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Features */}
-              <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">Características</h3>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <Input
-                        value={featureInput}
-                        onChange={(e) => setFeatureInput(e.target.value)}
-                        placeholder="Digite uma característica"
-                        onKeyPress={(e) => e.key === 'Enter' && addFeature()}
-                      />
-                      <Button
-                        type="button"
-                        onClick={addFeature}
-                        leftIcon={<Icon name="plus" className="w-4 h-4" />}
-                      >
-                        Adicionar
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {formData.features?.map((feature, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center gap-2 px-3 py-1 bg-neuro-primary/10 text-neuro-primary rounded-full text-sm"
-                        >
-                          {feature}
-                          <button
-                            onClick={() => removeFeature(feature)}
-                            className="hover:text-red-600"
-                          >
-                            <Icon name="x" className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Technical Settings */}
               <Card>

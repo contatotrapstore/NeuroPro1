@@ -1,7 +1,8 @@
 // Admin Configuration - Apenas os admins reais do projeto
 export const ADMIN_EMAILS = [
   'gouveiarx@gmail.com', 
-  'psitales@gmail.com'
+  'psitales@gmail.com',
+  'psitales.sales@gmail.com'
 ] as const;
 
 export const isAdminUser = (email?: string, userMetadata?: any): boolean => {

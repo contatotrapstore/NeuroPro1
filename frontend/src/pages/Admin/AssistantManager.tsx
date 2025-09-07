@@ -192,20 +192,6 @@ export function AssistantManager() {
     }
   };
 
-  const handleDuplicate = (assistant: Assistant) => {
-    const duplicatedAssistant = {
-      ...assistant,
-      id: '', // Will be generated
-      name: `${assistant.name} (Cópia)`,
-      is_active: false, // Start inactive
-      created_at: new Date().toISOString(),
-      subscription_count: 0,
-      total_conversations: 0
-    };
-    
-    setEditingAssistant(duplicatedAssistant);
-    setShowEditor(true);
-  };
 
   // Filter assistants
   const filteredAssistants = assistants.filter(assistant => {
@@ -361,7 +347,7 @@ export function AssistantManager() {
       </Card>
 
       {/* Assistants Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {(() => {
           console.log('🎨 Renderizando assistentes:', sortedAssistants.length, 'filtrados de', assistants.length);
           return null;
@@ -491,14 +477,6 @@ export function AssistantManager() {
                         Editar
                       </Button>
                       
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDuplicate(assistant)}
-                        leftIcon={<Icon name="copy" className="w-3 h-3" />}
-                      >
-                        Duplicar
-                      </Button>
                     </div>
 
                     <div className="flex items-center space-x-2">

@@ -204,7 +204,7 @@ module.exports = async function handler(req, res) {
       // GET /admin/stats - Get system statistics excluding admin accounts
       
       // Admin emails that should be excluded from stats
-      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com'];
+      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
       
       // Get admin user IDs to exclude from stats
       const { data: adminUsers, error: adminUsersError } = await supabase.auth.admin.listUsers();
@@ -358,7 +358,7 @@ module.exports = async function handler(req, res) {
       }
 
       // Admin emails that should be marked
-      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com'];
+      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
 
       // Create user map with real user data
       const userMap = new Map();
