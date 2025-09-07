@@ -801,6 +801,168 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    else if (req.method === 'GET' && pathParts.length === 4 && pathParts[1] === 'users' && pathParts[3] === 'available-assistants') {
+      // GET /admin/users/:id/available-assistants - List all assistants with user access info
+      const userId = pathParts[2];
+
+      console.log('📋 Getting available assistants for user:', userId);
+
+      try {
+        // Get all assistants
+        const { data: assistants, error: assistantsError } = await supabase
+          .from('assistants')
+          .select('id, name, icon, icon_url, is_active')
+          .eq('is_active', true)
+          .order('name');
+
+        if (assistantsError) {
+          console.error('Error fetching assistants:', assistantsError);
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar assistentes'
+          });
+        }
+
+        // Get user's current subscriptions
+        const { data: userSubscriptions, error: subscriptionsError } = await supabase
+          .from('user_subscriptions')
+          .select('assistant_id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .gte('expires_at', new Date().toISOString());
+
+        if (subscriptionsError) {
+          console.error('Error fetching user subscriptions:', subscriptionsError);
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar assinaturas do usuário'
+          });
+        }
+
+        const userAssistantIds = userSubscriptions?.map(sub => sub.assistant_id) || [];
+
+        // Combine data
+        const availableAssistants = assistants?.map(assistant => ({
+          id: assistant.id,
+          name: assistant.name,
+          icon: assistant.icon_url || assistant.icon,
+          hasAccess: userAssistantIds.includes(assistant.id)
+        })) || [];
+
+        console.log('✅ Available assistants loaded:', availableAssistants.length);
+
+        return res.json({
+          success: true,
+          data: availableAssistants,
+          message: 'Assistentes disponíveis carregados com sucesso'
+        });
+
+      } catch (error) {
+        console.error('Error getting available assistants:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro interno do servidor'
+        });
+      }
+    }
+
+    else if (req.method === 'POST' && pathParts.length === 4 && pathParts[1] === 'users' && pathParts[3] === 'assistants') {
+      // POST /admin/users/:id/assistants - Manage user assistant access
+      const userId = pathParts[2];
+      const { assistantIds, action } = req.body;
+
+      console.log('🔄 Managing user assistants:', { userId, assistantIds, action });
+
+      if (!assistantIds || !Array.isArray(assistantIds) || assistantIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'assistantIds é obrigatório e deve ser um array não vazio'
+        });
+      }
+
+      if (!['add', 'remove'].includes(action)) {
+        return res.status(400).json({
+          success: false,
+          error: 'action deve ser "add" ou "remove"'
+        });
+      }
+
+      try {
+        if (action === 'add') {
+          // Add subscriptions
+          const subscriptionsToAdd = assistantIds.map(assistantId => ({
+            user_id: userId,
+            assistant_id: assistantId,
+            subscription_type: 'monthly',
+            status: 'active',
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }));
+
+          const { error: insertError } = await supabase
+            .from('user_subscriptions')
+            .insert(subscriptionsToAdd);
+
+          if (insertError) {
+            console.error('Error adding subscriptions:', insertError);
+            return res.status(500).json({
+              success: false,
+              error: 'Erro ao adicionar assinaturas'
+            });
+          }
+
+          console.log('✅ Added assistants to user:', assistantIds);
+        } else {
+          // Remove subscriptions
+          const { error: deleteError } = await supabase
+            .from('user_subscriptions')
+            .delete()
+            .eq('user_id', userId)
+            .in('assistant_id', assistantIds);
+
+          if (deleteError) {
+            console.error('Error removing subscriptions:', deleteError);
+            return res.status(500).json({
+              success: false,
+              error: 'Erro ao remover assinaturas'
+            });
+          }
+
+          console.log('✅ Removed assistants from user:', assistantIds);
+        }
+
+        // Log audit trail
+        await supabase
+          .from('admin_audit_log')
+          .insert({
+            admin_id: user.id,
+            action: action === 'add' ? 'create' : 'delete',
+            entity_type: 'subscription',
+            entity_id: userId,
+            changes: {
+              assistants: assistantIds,
+              action: action
+            },
+            ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+            user_agent: req.headers['user-agent']
+          });
+
+        return res.json({
+          success: true,
+          data: { assistantIds, action },
+          message: `Assistentes ${action === 'add' ? 'adicionados' : 'removidos'} com sucesso`
+        });
+
+      } catch (error) {
+        console.error('Error managing user assistants:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro interno do servidor'
+        });
+      }
+    }
+
     else if (req.method === 'POST' && pathParts.length === 2 && pathParts[1] === 'seed') {
       // POST /admin/seed - Seed database with test data (development only)
       if (process.env.NODE_ENV === 'production' && !url.searchParams.get('force')) {

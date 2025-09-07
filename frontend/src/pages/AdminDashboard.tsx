@@ -21,6 +21,7 @@ import { adminService } from '../services/admin.service';
 import type { AdminStats, AdminUser } from '../services/admin.service';
 import { AssistantManager } from './Admin/AssistantManager';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface AdminStatsDisplay extends AdminStats {
   conversionRate?: number;
@@ -55,6 +56,7 @@ export default function AdminDashboard() {
     hasAccess: boolean;
   }>>([]);
   const [modalLoading, setModalLoading] = useState(false);
+  const [toggleLoading, setToggleLoading] = useState<string | null>(null);
 
   useEffect(() => {
     // Só verificar se user não é null/undefined
@@ -142,8 +144,12 @@ export default function AdminDashboard() {
   const toggleAssistantAccess = async (assistantId: string, hasAccess: boolean) => {
     if (!selectedUser) return;
 
+    const assistantName = userAssistants.find(a => a.id === assistantId)?.name || 'Assistente';
+    const action = hasAccess ? 'remove' : 'add';
+    
+    setToggleLoading(assistantId);
+    
     try {
-      const action = hasAccess ? 'remove' : 'add';
       const result = await adminService.manageUserAssistants(
         selectedUser.id, 
         [assistantId], 
@@ -180,9 +186,33 @@ export default function AdminDashboard() {
             ? prev.active_subscriptions - 1 
             : prev.active_subscriptions + 1
         } : null);
+
+        // Toast de sucesso
+        toast.success(
+          hasAccess 
+            ? `Acesso ao ${assistantName} removido com sucesso`
+            : `Acesso ao ${assistantName} concedido com sucesso`,
+          {
+            duration: 3000,
+            position: 'top-right'
+          }
+        );
+      } else {
+        throw new Error(result.error || 'Erro ao alterar acesso do assistente');
       }
     } catch (error) {
       console.error('Error toggling assistant access:', error);
+      
+      // Toast de erro
+      toast.error(
+        `Erro ao ${hasAccess ? 'remover' : 'conceder'} acesso ao ${assistantName}. Tente novamente.`,
+        {
+          duration: 4000,
+          position: 'top-right'
+        }
+      );
+    } finally {
+      setToggleLoading(null);
     }
   };
 
@@ -470,8 +500,16 @@ export default function AdminDashboard() {
               <div className="px-6 py-4 max-h-96 overflow-y-auto">
                 {modalLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                    <span className="ml-2 text-gray-600">Carregando...</span>
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Carregando assistentes disponíveis...</p>
+                    </div>
+                  </div>
+                ) : userAssistants.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Bot className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum assistente disponível</h3>
+                    <p className="text-gray-600">Não há assistentes ativos no sistema no momento.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -501,14 +539,21 @@ export default function AdminDashboard() {
                           </span>
                           <button
                             onClick={() => toggleAssistantAccess(assistant.id, assistant.hasAccess)}
-                            className={`p-2 rounded-full transition-colors ${
+                            disabled={toggleLoading === assistant.id}
+                            className={`p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               assistant.hasAccess
-                                ? 'text-red-600 hover:bg-red-100'
-                                : 'text-green-600 hover:bg-green-100'
+                                ? 'text-red-600 hover:bg-red-100 disabled:hover:bg-transparent'
+                                : 'text-green-600 hover:bg-green-100 disabled:hover:bg-transparent'
                             }`}
                             title={assistant.hasAccess ? 'Remover acesso' : 'Dar acesso'}
                           >
-                            {assistant.hasAccess ? <Minus size={16} /> : <Plus size={16} />}
+                            {toggleLoading === assistant.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : assistant.hasAccess ? (
+                              <Minus size={16} />
+                            ) : (
+                              <Plus size={16} />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -531,6 +576,34 @@ export default function AdminDashboard() {
         )}
 
       </div>
+      
+      {/* Toast notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#ffffff',
+            color: '#374151',
+            border: '1px solid #e5e7eb',
+            borderRadius: '0.5rem',
+            fontSize: '14px',
+            fontWeight: '500'
+          },
+          success: {
+            iconTheme: {
+              primary: '#16a34a',
+              secondary: '#ffffff'
+            }
+          },
+          error: {
+            iconTheme: {
+              primary: '#dc2626',
+              secondary: '#ffffff'
+            }
+          }
+        }}
+      />
     </div>
   );
 }

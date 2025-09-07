@@ -30,6 +30,28 @@ export interface AssistantUpdateData extends Partial<AssistantCreateData> {
   id: string;
 }
 
+export interface AdminStats {
+  totalUsers: number;
+  activeSubscriptions: number;
+  activePackages: number;
+  recentConversations: number;
+  monthlyRevenue: number;
+  totalActiveRevenue: number;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  email_confirmed_at?: string;
+  user_metadata?: {
+    name?: string;
+    profession?: string;
+  };
+  active_subscriptions: number;
+}
+
 export class AdminService {
   private static instance: AdminService;
   private apiService: ApiService;
@@ -116,7 +138,7 @@ export class AdminService {
     return this.apiService.get(`/admin/users/${userId}/available-assistants`);
   }
 
-  async manageUserAssistants(userId: string, assistantIds: string[], action: 'grant' | 'revoke') {
+  async manageUserAssistants(userId: string, assistantIds: string[], action: 'add' | 'remove') {
     return this.apiService.post(`/admin/users/${userId}/assistants`, {
       assistantIds,
       action
