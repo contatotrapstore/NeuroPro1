@@ -21,6 +21,7 @@ interface Assistant {
   monthly_price: number;
   semester_price: number;
   is_active: boolean;
+  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
 }
 
 interface Subscription {
@@ -174,6 +175,38 @@ export default function Dashboard() {
     !subscriptions.some(sub => sub.assistant_id === assistant.id && sub.is_active)
   );
 
+  // Group subscribed assistants by area
+  const groupedSubscribedAssistants = subscribedAssistants.reduce((groups, assistant) => {
+    const area = assistant.area || 'Psicologia';
+    if (!groups[area]) {
+      groups[area] = [];
+    }
+    groups[area].push(assistant);
+    return groups;
+  }, {} as Record<string, Assistant[]>);
+
+  // Area display configuration
+  const areaConfig = {
+    'Psicologia': {
+      name: 'Psicologia',
+      color: '#2D5A1F',
+      bgColor: '#2D5A1F',
+      icon: 'brain'
+    },
+    'Psicopedagogia': {
+      name: 'Psicopedagogia', 
+      color: '#1E40AF',
+      bgColor: '#1E40AF',
+      icon: 'book'
+    },
+    'Fonoaudiologia': {
+      name: 'Fonoaudiologia',
+      color: '#7C3AED', 
+      bgColor: '#7C3AED',
+      icon: 'mic'
+    }
+  };
+
   const handleSubscribe = (assistantId: string) => {
     window.location.href = `/store?assistant=${assistantId}`;
   };
@@ -249,7 +282,7 @@ export default function Dashboard() {
 
       {/* Assistentes Assinados */}
       {subscribedAssistants.length > 0 && (
-        <section className="animate-slide-up">
+        <section className="animate-slide-up space-y-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center">
@@ -275,16 +308,39 @@ export default function Dashboard() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {subscribedAssistants.map((assistant) => (
-              <AssistantCard
-                key={assistant.id}
-                assistant={assistant}
-                isSubscribed={true}
-                showChatLink={true}
-              />
-            ))}
-          </div>
+          {/* Group assistants by area */}
+          {Object.entries(groupedSubscribedAssistants).map(([area, areaAssistants]) => {
+            const config = areaConfig[area as keyof typeof areaConfig];
+            return (
+              <div key={area} className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="w-6 h-6 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: config.bgColor }}
+                  >
+                    <Icon name={config.icon as any} className="w-3 h-3 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {config.name}
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    ({areaAssistants.length} assistente{areaAssistants.length !== 1 ? 's' : ''})
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {areaAssistants.map((assistant) => (
+                    <AssistantCard
+                      key={assistant.id}
+                      assistant={assistant}
+                      isSubscribed={true}
+                      showChatLink={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </section>
       )}
 

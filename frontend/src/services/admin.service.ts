@@ -1,330 +1,187 @@
 import { ApiService } from './api.service';
 
-export interface AdminStats {
-  totalUsers: number;
-  activeSubscriptions: number;
-  activePackages: number;
-  recentConversations: number;
+export interface AssistantStats {
+  subscriptionCount: number;
+  conversationCount: number;
   monthlyRevenue: number;
-  totalActiveRevenue: number;
+  recentActivity: number;
+  lastUsed?: string;
 }
 
-export interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  created_at: string;
-  last_sign_in_at?: string;
-  email_confirmed_at?: string;
-  active_subscriptions: number;
-  active_packages: number;
-  subscriptions: any[];
-  packages: any[];
-  availableAssistants?: Array<{
-    id: string;
-    name: string;
-    icon: string;
-  }>;
-}
-
-export interface AdminSubscription {
-  id: string;
-  user_id: string;
-  assistant_id: string;
-  status: string;
-  amount: number;
-  subscription_type: string;
-  created_at: string;
-  expires_at?: string;
-  assistants?: {
-    name: string;
-    description: string;
-    icon: string;
-  };
-  user_packages?: {
-    package_type: string;
-    total_amount: number;
-  };
-}
-
-export interface AdminAssistant {
+export interface AssistantCreateData {
   id: string;
   name: string;
   description: string;
+  full_description?: string;
   icon: string;
+  icon_type?: 'svg' | 'image' | 'emoji';
+  color_theme: string;
+  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
   monthly_price: number;
   semester_price: number;
   is_active: boolean;
-  openai_id: string;
-  stats?: {
-    activeSubscriptions: number;
-    monthlyRevenue: number;
-    recentConversations: number;
-  };
+  openai_assistant_id?: string;
+  specialization?: string;
+  features?: string[];
+  order_index?: number;
 }
 
-export interface AdminAnalytics {
-  mrr: number;
-  newUsers: number;
-  conversionRate: number;
-  totalActiveSubscriptions: number;
-  mostPopularAssistants: Array<{
-    assistant_id: string;
-    count: number;
-    name: string;
-  }>;
-  monthlyEvolution: Array<{
-    month: string;
-    revenue: number;
-    date: string;
-  }>;
-  period: {
-    startDate: string;
-    endDate: string;
-    type: string;
-  };
+export interface AssistantUpdateData extends Partial<AssistantCreateData> {
+  id: string;
 }
 
 export class AdminService {
+  private static instance: AdminService;
   private apiService: ApiService;
 
-  constructor() {
+  private constructor() {
     this.apiService = ApiService.getInstance();
   }
 
-  // Obter estatísticas do dashboard admin
-  async getStats(): Promise<{ success: boolean; data?: AdminStats; error?: string }> {
-    try {
-      return await this.apiService.get('/admin/stats');
-    } catch (error: any) {
-      console.error('Error fetching admin stats:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao buscar estatísticas'
-      };
+  public static getInstance(): AdminService {
+    if (!AdminService.instance) {
+      AdminService.instance = new AdminService();
     }
+    return AdminService.instance;
   }
 
-  // Listar usuários
-  async getUsers(page = 1, limit = 20): Promise<{ success: boolean; data?: AdminUser[]; error?: string }> {
-    try {
-      return await this.apiService.get(`/admin/users?page=${page}&limit=${limit}`);
-    } catch (error: any) {
-      console.error('Error fetching admin users:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao buscar usuários'
-      };
-    }
+  // Assistant Management
+  async getAssistants() {
+    return this.apiService.get('/admin/assistants');
   }
 
-  // Listar assinaturas
-  async getSubscriptions(page = 1, limit = 20, status?: string): Promise<{ 
-    success: boolean; 
-    data?: AdminSubscription[]; 
-    error?: string;
-    pagination?: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    }
-  }> {
-    try {
-      let url = `/admin/subscriptions?page=${page}&limit=${limit}`;
-      if (status) {
-        url += `&status=${status}`;
-      }
-      return await this.apiService.get(url);
-    } catch (error: any) {
-      console.error('Error fetching admin subscriptions:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao buscar assinaturas'
-      };
-    }
+  async getAssistant(id: string) {
+    return this.apiService.get(`/admin/assistants/${id}`);
   }
 
-  // Atualizar status de assinatura
-  async updateSubscription(subscriptionId: string, status: string): Promise<{ 
-    success: boolean; 
-    data?: any; 
-    error?: string 
-  }> {
-    try {
-      return await this.apiService.put(`/admin/subscriptions/${subscriptionId}`, { status });
-    } catch (error: any) {
-      console.error('Error updating subscription:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao atualizar assinatura'
-      };
-    }
+  async createAssistant(data: AssistantCreateData) {
+    return this.apiService.post('/admin/assistants', data);
   }
 
-  // Listar assistentes com estatísticas
-  async getAssistants(): Promise<{ success: boolean; data?: AdminAssistant[]; error?: string }> {
-    try {
-      return await this.apiService.get('/admin/assistants');
-    } catch (error: any) {
-      console.error('Error fetching admin assistants:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao buscar assistentes'
-      };
-    }
+  async updateAssistant(id: string, data: AssistantUpdateData) {
+    return this.apiService.put(`/admin/assistants/${id}`, data);
   }
 
-  // Atualizar assistente
-  async updateAssistant(assistantId: string, updateData: {
-    name?: string;
-    description?: string;
-    monthly_price?: number;
-    semester_price?: number;
-    is_active?: boolean;
-  }): Promise<{ success: boolean; data?: any; error?: string }> {
-    try {
-      return await this.apiService.put(`/admin/assistants/${assistantId}`, updateData);
-    } catch (error: any) {
-      console.error('Error updating assistant:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao atualizar assistente'
-      };
-    }
+  async deleteAssistant(id: string) {
+    return this.apiService.delete(`/admin/assistants/${id}`);
   }
 
-  // Atualizar múltiplos assistentes (ação em lote)
-  async bulkUpdateAssistants(assistants: Array<{ id: string; is_active: boolean }>, action: string): Promise<{ 
-    success: boolean; 
-    data?: any; 
-    error?: string 
-  }> {
-    try {
-      return await this.apiService.put('/admin/assistants/bulk', { assistants, action });
-    } catch (error: any) {
-      console.error('Error bulk updating assistants:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao atualizar assistentes em lote'
-      };
-    }
+  async getAssistantStats(id: string): Promise<{ success: boolean; data?: AssistantStats; error?: string }> {
+    return this.apiService.get(`/admin/assistants/${id}/stats`);
   }
 
-  // Obter analytics avançados com filtros
-  async getAnalytics(params?: {
-    startDate?: string;
-    endDate?: string;
-    period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  }): Promise<{ success: boolean; data?: AdminAnalytics; error?: string }> {
+  async uploadAssistantIcon(assistantId: string, file: File): Promise<{ success: boolean; data?: any; error?: string }> {
+    const formData = new FormData();
+    formData.append('icon', file);
+
     try {
-      let url = '/admin/analytics';
-      if (params) {
-        const queryParams = new URLSearchParams();
-        if (params.startDate) queryParams.append('startDate', params.startDate);
-        if (params.endDate) queryParams.append('endDate', params.endDate);
-        if (params.period) queryParams.append('period', params.period);
-        
-        if (queryParams.toString()) {
-          url += `?${queryParams.toString()}`;
-        }
-      }
+      const token = localStorage.getItem('supabase.auth.token');
       
-      return await this.apiService.get(url);
-    } catch (error: any) {
-      console.error('Error fetching analytics:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao buscar analytics'
-      };
-    }
-  }
-
-  // Exportar dados
-  async exportData(type: 'users' | 'subscriptions' | 'revenue', format: 'csv' | 'json' = 'csv'): Promise<{ 
-    success: boolean; 
-    data?: any; 
-    error?: string 
-  }> {
-    try {
-      const url = `/admin/export?type=${type}&format=${format}`;
-      return await this.apiService.get(url);
-    } catch (error: any) {
-      console.error('Error exporting data:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao exportar dados'
-      };
-    }
-  }
-
-  // Baixar arquivo de exportação
-  async downloadExport(type: 'users' | 'subscriptions' | 'revenue'): Promise<void> {
-    try {
-      const apiService = this.apiService as any;
-      const response = await fetch(`${apiService.baseURL}/admin/export?type=${type}&format=csv`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${await apiService.getAuthToken()}`
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/upload/assistant-icon/${assistantId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
         }
-      });
+      );
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error('Error downloading export:', error);
-      throw error;
-    }
-  }
-
-  // Obter assistentes disponíveis para um usuário
-  async getUserAvailableAssistants(userId: string): Promise<{ 
-    success: boolean; 
-    data?: Array<{
-      id: string;
-      name: string;
-      icon: string;
-      hasAccess: boolean;
-    }>; 
-    error?: string 
-  }> {
-    try {
-      return await this.apiService.get(`/admin/users/${userId}/assistants`);
-    } catch (error: any) {
-      console.error('Error fetching user assistants:', error);
+      console.error('Upload error:', error);
       return {
         success: false,
-        error: error.message || 'Erro ao buscar assistentes do usuário'
+        error: 'Erro ao fazer upload do ícone'
       };
     }
   }
 
-  // Gerenciar IAs de um usuário
-  async manageUserAssistants(userId: string, assistantIds: string[], action: 'add' | 'remove'): Promise<{ 
-    success: boolean; 
-    data?: any; 
-    error?: string 
-  }> {
-    try {
-      return await this.apiService.put(`/admin/users/${userId}/assistants`, { assistantIds, action });
-    } catch (error: any) {
-      console.error('Error managing user assistants:', error);
-      return {
-        success: false,
-        error: error.message || 'Erro ao gerenciar assistentes do usuário'
-      };
+  // Cache management for real-time sync
+  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+  private getCacheKey(endpoint: string, params?: any): string {
+    return params ? `${endpoint}:${JSON.stringify(params)}` : endpoint;
+  }
+
+  async getCachedData<T>(
+    endpoint: string, 
+    fetcher: () => Promise<{ success: boolean; data?: T; error?: string }>,
+    ttl: number = 60000 // 1 minute default
+  ): Promise<{ success: boolean; data?: T; error?: string }> {
+    const cacheKey = this.getCacheKey(endpoint);
+    const cached = this.cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+      return { success: true, data: cached.data };
     }
+
+    const result = await fetcher();
+    
+    if (result.success && result.data) {
+      this.cache.set(cacheKey, {
+        data: result.data,
+        timestamp: Date.now(),
+        ttl
+      });
+    }
+
+    return result;
+  }
+
+  invalidateCache(pattern?: string) {
+    if (pattern) {
+      // Remove entries matching pattern
+      for (const key of this.cache.keys()) {
+        if (key.includes(pattern)) {
+          this.cache.delete(key);
+        }
+      }
+    } else {
+      // Clear entire cache
+      this.cache.clear();
+    }
+  }
+
+  // Real-time synchronization
+  private eventListeners = new Map<string, Set<Function>>();
+
+  addEventListener(event: string, callback: Function) {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, new Set());
+    }
+    this.eventListeners.get(event)!.add(callback);
+  }
+
+  removeEventListener(event: string, callback: Function) {
+    this.eventListeners.get(event)?.delete(callback);
+  }
+
+  emit(event: string, data?: any) {
+    this.eventListeners.get(event)?.forEach(callback => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error('Event callback error:', error);
+      }
+    });
+  }
+
+  // Trigger cache invalidation and emit events after modifications
+  private async afterModification(type: 'create' | 'update' | 'delete', entity: 'assistant', id: string, data?: any) {
+    // Invalidate related caches
+    this.invalidateCache('assistants');
+    this.invalidateCache(`assistant/${id}`);
+    
+    // Emit real-time event
+    this.emit(`${entity}:${type}`, { id, data });
+    this.emit(`${entity}:changed`, { type, id, data });
+    
+    // Global change event for UI refresh
+    this.emit('data:changed', { entity, type, id, data });
   }
 }
 
-// Singleton instance
-export const adminService = new AdminService();
+export const adminService = AdminService.getInstance();

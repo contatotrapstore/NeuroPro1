@@ -71,7 +71,7 @@ module.exports = async function handler(req, res) {
       // Query database for assistants
       const { data: assistants, error } = await supabase
         .from('assistants')
-        .select('*')
+        .select('id, name, description, icon, color_theme, monthly_price, semester_price, is_active, area, created_at, updated_at')
         .eq('is_active', true)
         .order('name');
 
@@ -91,6 +91,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicoPlano',
           description: 'Therapeutic Route Formulator',
           icon: 'map-route',
+          area: 'Psicologia',
           specialization: 'Therapeutic Planning',
           status: 'active'
         },
@@ -99,6 +100,7 @@ module.exports = async function handler(req, res) {
           name: 'NeuroCase', 
           description: 'Clinical Case Reviewer',
           icon: 'clipboard-check',
+          area: 'Psicologia',
           specialization: 'Case Analysis',
           status: 'active'
         },
@@ -107,6 +109,7 @@ module.exports = async function handler(req, res) {
           name: 'Guia Ético',
           description: 'Professional Ethics Guide',
           icon: 'balance-scale',
+          area: 'Psicologia',
           specialization: 'Professional Ethics',
           status: 'active'
         },
@@ -115,6 +118,7 @@ module.exports = async function handler(req, res) {
           name: 'SessãoMap',
           description: 'Session Structure Formulator',
           icon: 'calendar-clock',
+          area: 'Psicologia',
           specialization: 'Session Planning',
           status: 'active'
         },
@@ -123,6 +127,7 @@ module.exports = async function handler(req, res) {
           name: 'Simulador de Paciente',
           description: 'Session Trainer (AI Patient)',
           icon: 'conversation',
+          area: 'Psicologia',
           specialization: 'Training Simulation',
           status: 'active'
         },
@@ -131,6 +136,7 @@ module.exports = async function handler(req, res) {
           name: 'CognitiMap',
           description: 'Cognitive Restructuring Builder',
           icon: 'brain-gear',
+          area: 'Psicologia',
           specialization: 'Cognitive Therapy',
           status: 'active'
         },
@@ -139,6 +145,7 @@ module.exports = async function handler(req, res) {
           name: 'MindRoute',
           description: 'Psychological Approaches Guide',
           icon: 'compass',
+          area: 'Psicologia',
           specialization: 'Treatment Approaches',
           status: 'active'
         },
@@ -147,6 +154,7 @@ module.exports = async function handler(req, res) {
           name: 'TheraTrack',
           description: 'Therapeutic Evolution Evaluator',
           icon: 'trending-up',
+          area: 'Psicologia',
           specialization: 'Progress Tracking',
           status: 'active'
         },
@@ -155,6 +163,7 @@ module.exports = async function handler(req, res) {
           name: 'NeuroLaudo',
           description: 'Psychological Report Elaborator',
           icon: 'document-seal',
+          area: 'Psicologia',
           specialization: 'Clinical Reports',
           status: 'active'
         },
@@ -163,6 +172,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicoTest',
           description: 'Psychological Tests Consultant',
           icon: 'test-clipboard',
+          area: 'Psicologia',
           specialization: 'Psychological Assessment',
           status: 'active'
         },
@@ -171,6 +181,7 @@ module.exports = async function handler(req, res) {
           name: 'TheraFocus',
           description: 'Specific Disorder Interventions Organizer',
           icon: 'target',
+          area: 'Psicologia',
           specialization: 'Disorder Interventions',
           status: 'active'
         },
@@ -179,6 +190,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicoBase',
           description: 'Evidence-Based Clinical Strategies',
           icon: 'book-search',
+          area: 'Psicologia',
           specialization: 'Evidence-Based Practice',
           status: 'active'
         },
@@ -187,6 +199,7 @@ module.exports = async function handler(req, res) {
           name: 'MindHome',
           description: 'Therapeutic Home Activities Elaborator',
           icon: 'home-heart',
+          area: 'Psicologia',
           specialization: 'Home Activities',
           status: 'active'
         },
@@ -195,6 +208,7 @@ module.exports = async function handler(req, res) {
           name: 'ClinPrice',
           description: 'Clinical Session Cost Evaluator',
           icon: 'calculator-dollar',
+          area: 'Psicologia',
           specialization: 'Cost Analysis',
           status: 'active'
         },
@@ -203,6 +217,7 @@ module.exports = async function handler(req, res) {
           name: 'Harmonia Sistêmica',
           description: 'Family and Systemic Therapy Assistant',
           icon: 'family-tree',
+          area: 'Psicologia',
           specialization: 'Family Therapy',
           status: 'active'
         },
@@ -211,6 +226,7 @@ module.exports = async function handler(req, res) {
           name: 'NeuroABA',
           description: 'Applied Behavior Analysis Assistant',
           icon: 'brain-circuit',
+          area: 'Psicologia',
           specialization: 'Behavioral Analysis',
           status: 'active'
         },
@@ -219,6 +235,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicopedIA',
           description: 'Psychopedagogy and Learning Assistant',
           icon: 'graduation-cap',
+          area: 'Psicopedagogia',
           specialization: 'Educational Psychology',
           status: 'active'
         },
@@ -227,6 +244,7 @@ module.exports = async function handler(req, res) {
           name: 'TheraCasal',
           description: 'Couple Therapy Assistant',
           icon: 'heart-duo',
+          area: 'Psicologia',
           specialization: 'Couple Therapy',
           status: 'active'
         },
@@ -235,6 +253,7 @@ module.exports = async function handler(req, res) {
           name: 'Simulador de Paciente de Psicanálise',
           description: 'Psychoanalysis Patient Simulator with Clinical Feedback',
           icon: 'psychology-brain',
+          area: 'Psicologia',
           specialization: 'Psychoanalytic Training',
           status: 'active'
         }
@@ -258,6 +277,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicoPlano',
           description: 'Therapeutic Route Formulator',
           icon: 'map-route',
+          area: 'Psicologia',
           specialization: 'Therapeutic Planning',
           status: 'active'
         },
@@ -266,6 +286,7 @@ module.exports = async function handler(req, res) {
           name: 'NeuroCase', 
           description: 'Clinical Case Reviewer',
           icon: 'clipboard-check',
+          area: 'Psicologia',
           specialization: 'Case Analysis',
           status: 'active'
         },
@@ -274,6 +295,7 @@ module.exports = async function handler(req, res) {
           name: 'Guia Ético',
           description: 'Professional Ethics Guide',
           icon: 'balance-scale',
+          area: 'Psicologia',
           specialization: 'Professional Ethics',
           status: 'active'
         },
@@ -282,6 +304,7 @@ module.exports = async function handler(req, res) {
           name: 'SessãoMap',
           description: 'Session Structure Formulator',
           icon: 'calendar-clock',
+          area: 'Psicologia',
           specialization: 'Session Planning',
           status: 'active'
         },
@@ -290,6 +313,7 @@ module.exports = async function handler(req, res) {
           name: 'Simulador de Paciente',
           description: 'Session Trainer (AI Patient)',
           icon: 'conversation',
+          area: 'Psicologia',
           specialization: 'Training Simulation',
           status: 'active'
         },
@@ -298,6 +322,7 @@ module.exports = async function handler(req, res) {
           name: 'CognitiMap',
           description: 'Cognitive Restructuring Builder',
           icon: 'brain-gear',
+          area: 'Psicologia',
           specialization: 'Cognitive Therapy',
           status: 'active'
         },
@@ -306,6 +331,7 @@ module.exports = async function handler(req, res) {
           name: 'MindRoute',
           description: 'Psychological Approaches Guide',
           icon: 'compass',
+          area: 'Psicologia',
           specialization: 'Treatment Approaches',
           status: 'active'
         },
@@ -314,6 +340,7 @@ module.exports = async function handler(req, res) {
           name: 'TheraTrack',
           description: 'Therapeutic Evolution Evaluator',
           icon: 'trending-up',
+          area: 'Psicologia',
           specialization: 'Progress Tracking',
           status: 'active'
         },
@@ -322,6 +349,7 @@ module.exports = async function handler(req, res) {
           name: 'NeuroLaudo',
           description: 'Psychological Report Elaborator',
           icon: 'document-seal',
+          area: 'Psicologia',
           specialization: 'Clinical Reports',
           status: 'active'
         },
@@ -330,6 +358,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicoTest',
           description: 'Psychological Tests Consultant',
           icon: 'test-clipboard',
+          area: 'Psicologia',
           specialization: 'Psychological Assessment',
           status: 'active'
         },
@@ -338,6 +367,7 @@ module.exports = async function handler(req, res) {
           name: 'TheraFocus',
           description: 'Specific Disorder Interventions Organizer',
           icon: 'target',
+          area: 'Psicologia',
           specialization: 'Disorder Interventions',
           status: 'active'
         },
@@ -346,6 +376,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicoBase',
           description: 'Evidence-Based Clinical Strategies',
           icon: 'book-search',
+          area: 'Psicologia',
           specialization: 'Evidence-Based Practice',
           status: 'active'
         },
@@ -354,6 +385,7 @@ module.exports = async function handler(req, res) {
           name: 'MindHome',
           description: 'Therapeutic Home Activities Elaborator',
           icon: 'home-heart',
+          area: 'Psicologia',
           specialization: 'Home Activities',
           status: 'active'
         },
@@ -362,6 +394,7 @@ module.exports = async function handler(req, res) {
           name: 'ClinPrice',
           description: 'Clinical Session Cost Evaluator',
           icon: 'calculator-dollar',
+          area: 'Psicologia',
           specialization: 'Cost Analysis',
           status: 'active'
         },
@@ -370,6 +403,7 @@ module.exports = async function handler(req, res) {
           name: 'Harmonia Sistêmica',
           description: 'Family and Systemic Therapy Assistant',
           icon: 'family-tree',
+          area: 'Psicologia',
           specialization: 'Family Therapy',
           status: 'active'
         },
@@ -378,6 +412,7 @@ module.exports = async function handler(req, res) {
           name: 'NeuroABA',
           description: 'Applied Behavior Analysis Assistant',
           icon: 'brain-circuit',
+          area: 'Psicologia',
           specialization: 'Behavioral Analysis',
           status: 'active'
         },
@@ -386,6 +421,7 @@ module.exports = async function handler(req, res) {
           name: 'PsicopedIA',
           description: 'Psychopedagogy and Learning Assistant',
           icon: 'graduation-cap',
+          area: 'Psicopedagogia',
           specialization: 'Educational Psychology',
           status: 'active'
         },
@@ -394,6 +430,7 @@ module.exports = async function handler(req, res) {
           name: 'TheraCasal',
           description: 'Couple Therapy Assistant',
           icon: 'heart-duo',
+          area: 'Psicologia',
           specialization: 'Couple Therapy',
           status: 'active'
         },
@@ -402,6 +439,7 @@ module.exports = async function handler(req, res) {
           name: 'Simulador de Paciente de Psicanálise',
           description: 'Psychoanalysis Patient Simulator with Clinical Feedback',
           icon: 'psychology-brain',
+          area: 'Psicologia',
           specialization: 'Psychoanalytic Training',
           status: 'active'
         }
@@ -472,7 +510,7 @@ module.exports = async function handler(req, res) {
           assistant_id,
           assistants (
             id, name, description, icon, color_theme, 
-            monthly_price, semester_price, is_active
+            monthly_price, semester_price, is_active, area
           )
         `)
         .eq('user_id', userId)

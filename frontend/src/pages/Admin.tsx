@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api.service';
 import { PageLoader } from '../components/ui/LoadingSpinner';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
+import { AssistantManager } from './Admin/AssistantManager';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -48,7 +49,7 @@ interface Subscription {
 
 export default function Admin() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'assistants' | 'subscriptions'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'assistants' | 'assistant-manager' | 'subscriptions'>('dashboard');
   const [users, setUsers] = useState<User[]>([]);
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -163,6 +164,7 @@ export default function Admin() {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'users', label: 'Usuários', icon: '👥' },
     { id: 'assistants', label: 'Assistentes', icon: '🤖' },
+    { id: 'assistant-manager', label: 'Gerenciar IAs', icon: '⚙️' },
     { id: 'subscriptions', label: 'Assinaturas', icon: '💳' }
   ];
 
@@ -382,6 +384,9 @@ export default function Admin() {
               )}
             </div>
           )}
+
+          {/* Assistant Manager Tab */}
+          {activeTab === 'assistant-manager' && <AssistantManager />}
 
           {/* Subscriptions Tab */}
           {activeTab === 'subscriptions' && (

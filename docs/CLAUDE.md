@@ -205,7 +205,7 @@ npm run lint && npm run test
 - **Access Control**: Admin routes protected with middleware requiring admin role
 
 ### ✅ Professional UI Components
-- **SVG Icon System**: Complete professional icon library for all 14 assistants with fixed rendering
+- **SVG Icon System**: Complete professional icon library for all 19 assistants with fixed rendering
 - **Payment Icons**: Official Brazilian PIX icon, boleto, credit cards with professional design
 - **AssistantIcon Component**: Dynamic icon rendering with color themes and professional fallback handling
 - **Responsive Design**: Mobile-first approach with professional typography and animations
@@ -221,12 +221,12 @@ npm run lint && npm run test
 - **Chat Messages**: Resolved message loading and sending errors by proper database access
 
 ### ✅ Icon Display System (September 2025)
-- **AssistantIcon Component**: Custom icon system for displaying professional SVG icons for all 14 assistants
-- **Icon Mapping**: Icons are mapped from string identifiers (e.g., "map-route", "brain-gear") to SVG components
+- **AssistantIcon Component**: Custom icon system for displaying professional SVG icons for all 19 assistants
+- **Icon Mapping**: Icons are mapped from string identifiers (e.g., "map-route", "brain-gear", "psychology-brain") to SVG components
 - **Usage**: Always use `<AssistantIcon iconType={assistant.icon} />` instead of `{assistant.icon}`
 - **Files**: Component located at `frontend/src/components/ui/AssistantIcon.tsx`
 - **Icons Library**: Custom SVG icons defined in `frontend/src/components/icons/AssistantIcons.tsx`
-- **Fixed Pages**: PackageSelector, Checkout, and Admin pages now display proper SVG icons
+- **Fixed Pages**: PackageSelector, Checkout, Admin pages, and Store page now display proper SVG icons
 
 ### ✅ Chat System Overhaul (September 2025)
 - **Real-time Message Updates**: Fixed AI responses appearing without page refresh by using response data directly
@@ -237,6 +237,24 @@ npm run lint && npm run test
 - **Complete Conversation Deletion**: Full implementation with API calls, local state updates, and visual feedback
 - **Message Synchronization**: Validation checks ensure messages belong to current conversation
 - **Performance Optimization**: Reduced unnecessary API calls and improved error handling
+
+### ✅ Latest Updates (September 6, 2025)
+- **19th AI Assistant**: Added "Simulador de Paciente de Psicanálise" (asst_9vDTodTAQIJV1mu2xPzXpBs8) with specialized psychoanalysis training capabilities
+- **User Access Management**: Granted access to the new psychoanalysis simulator for psitales@gmail.com and gouveiarx@gmail.com via Supabase migration
+- **Store Page Updates**: Updated assistant count from 14 to 19, removed "em Psicologia Clínica" text, simplified description to "diferentes áreas"
+- **Login Page Optimization**: Replaced SVG icon with actual NeuroIA Lab logo, removed decorative background, increased logo size from w-20 to w-32
+- **Admin Panel Fixes**: Resolved "user_profiles table not found" errors by migrating to Supabase Auth API methods
+- **Project Cleanup**: Comprehensive cleanup removing 18+ obsolete files, consolidating backend structure, organizing documentation in /docs folder
+- **UI Consistency**: Removed duplicate text "NeuroIA Lab" from login screen, leaving only the logo for cleaner presentation
+
+### ✅ Current Production Status (September 6, 2025)
+- **Platform Status**: ✅ Fully operational on Vercel with real-time chat functionality
+- **Admin Panel**: ✅ Working correctly with proper user and subscription data display
+- **AI Assistants**: ✅ All 19 assistants functional with proper icon rendering and chat integration
+- **Payment System**: ✅ Asaas integration working for subscriptions and packages
+- **User Authentication**: ✅ Supabase Auth fully integrated with session management
+- **Database**: ✅ All tables properly configured with Row Level Security (RLS)
+- **API Endpoints**: ✅ All backend services operational on Vercel serverless functions
 
 ## Environment Configuration
 
@@ -290,13 +308,42 @@ npm run lint && npm run test
 - **Backend**: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `OPENAI_API_KEY`, `PORT`
 - **Database**: Row Level Security (RLS) enabled in Supabase
 
+## Project Structure (Updated September 6, 2025)
+
+After comprehensive cleanup and reorganization:
+
+```
+/
+├── docs/                    # Centralized documentation
+│   └── CLAUDE.md           # Main project documentation
+├── api/                    # Backend serverless functions (Vercel)
+│   ├── admin.js           # Admin panel endpoints
+│   ├── assistants.js      # AI assistants management
+│   ├── auth.js            # Authentication endpoints
+│   ├── chat.js            # Chat functionality
+│   └── subscriptions.js   # Subscription management
+├── frontend/               # React application
+│   ├── src/
+│   │   ├── components/    # UI components and icons
+│   │   ├── pages/         # Application pages
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── contexts/      # React Contexts
+│   │   └── types/         # TypeScript definitions
+├── database/               # Supabase migrations
+│   └── migrations/        # SQL migration files
+├── .trae/                  # Legacy documentation (archived)
+└── [config files]         # Essential project configuration
+```
+
 ## Documentation References
 
-Complete technical documentation is available in `.trae/documents/`:
+Complete technical documentation is now centralized in the `/docs` folder. Legacy documentation is available in `.trae/documents/` for reference:
 - Product Requirements Document (PRD)
 - Technical Architecture specification
 - AI Assistants detailed specifications  
 - Implementation plan with task breakdown
 - Development guide with code examples
 
-The system is designed as a comprehensive SaaS platform for psychology professionals, with a focus on specialized AI assistants and flexible subscription models.
+## System Overview
+
+The NeuroIA Lab platform is now a mature, fully operational SaaS solution with 19 specialized AI assistants, comprehensive admin tools, real-time chat functionality, and integrated payment processing. All components are deployed on Vercel with Supabase backend integration, serving psychology professionals with subscription-based access to AI-powered clinical tools.

@@ -398,10 +398,71 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    else if (req.method === 'POST' && pathParts.length === 2 && pathParts[1] === 'assistants') {
+      // POST /admin/assistants - Create new assistant
+      const newAssistant = req.body;
+      
+      // Add audit trail data
+      newAssistant.created_by = user.id;
+      newAssistant.updated_by = user.id;
+      
+      // Set defaults if not provided
+      if (!newAssistant.monthly_price) newAssistant.monthly_price = 39.90;
+      if (!newAssistant.semester_price) newAssistant.semester_price = 199.00;
+      if (!newAssistant.area) newAssistant.area = 'Psicologia';
+      if (!newAssistant.is_active) newAssistant.is_active = true;
+      if (!newAssistant.icon_type) newAssistant.icon_type = 'svg';
+      if (!newAssistant.features) newAssistant.features = [];
+
+      const { data: assistant, error } = await supabase
+        .from('assistants')
+        .insert(newAssistant)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating assistant:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao criar assistente',
+          error: error.message
+        });
+      }
+
+      // Log action in audit trail
+      await supabase
+        .from('admin_audit_log')
+        .insert({
+          admin_id: user.id,
+          action: 'create',
+          entity_type: 'assistant',
+          entity_id: assistant.id,
+          new_data: assistant,
+          ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+          user_agent: req.headers['user-agent']
+        });
+
+      return res.status(201).json({
+        success: true,
+        data: assistant,
+        message: 'Assistente criado com sucesso'
+      });
+    }
+
     else if (req.method === 'PUT' && pathParts.length === 3 && pathParts[1] === 'assistants') {
       // PUT /admin/assistants/:id - Update assistant
       const assistantId = pathParts[2];
       const updateData = req.body;
+
+      // Get current data for audit log
+      const { data: oldAssistant } = await supabase
+        .from('assistants')
+        .select('*')
+        .eq('id', assistantId)
+        .single();
+
+      // Add audit trail
+      updateData.updated_by = user.id;
 
       const { data: assistant, error } = await supabase
         .from('assistants')
@@ -411,6 +472,7 @@ module.exports = async function handler(req, res) {
         .single();
 
       if (error) {
+        console.error('Error updating assistant:', error);
         return res.status(500).json({
           success: false,
           message: 'Erro ao atualizar assistente',
@@ -418,10 +480,169 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Log action in audit trail
+      if (oldAssistant) {
+        const changes = {};
+        Object.keys(updateData).forEach(key => {
+          if (oldAssistant[key] !== updateData[key]) {
+            changes[key] = {
+              old: oldAssistant[key],
+              new: updateData[key]
+            };
+          }
+        });
+
+        await supabase
+          .from('admin_audit_log')
+          .insert({
+            admin_id: user.id,
+            action: 'update',
+            entity_type: 'assistant',
+            entity_id: assistantId,
+            old_data: oldAssistant,
+            new_data: assistant,
+            changes: changes,
+            ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+            user_agent: req.headers['user-agent']
+          });
+      }
+
       return res.json({
         success: true,
         data: assistant,
         message: 'Assistente atualizado com sucesso'
+      });
+    }
+
+    else if (req.method === 'DELETE' && pathParts.length === 3 && pathParts[1] === 'assistants') {
+      // DELETE /admin/assistants/:id - Delete assistant (soft delete)
+      const assistantId = pathParts[2];
+
+      // Get current data for audit log
+      const { data: assistantToDelete } = await supabase
+        .from('assistants')
+        .select('*')
+        .eq('id', assistantId)
+        .single();
+
+      if (!assistantToDelete) {
+        return res.status(404).json({
+          success: false,
+          message: 'Assistente não encontrado'
+        });
+      }
+
+      // Check if assistant has active subscriptions
+      const { count: activeSubscriptions } = await supabase
+        .from('user_subscriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('assistant_id', assistantId)
+        .eq('status', 'active');
+
+      if (activeSubscriptions > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Não é possível excluir assistente com ${activeSubscriptions} assinatura(s) ativa(s). Desative primeiro.`
+        });
+      }
+
+      // Soft delete - just deactivate
+      const { data: assistant, error } = await supabase
+        .from('assistants')
+        .update({ 
+          is_active: false, 
+          updated_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', assistantId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error deleting assistant:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao excluir assistente',
+          error: error.message
+        });
+      }
+
+      // Log action in audit trail
+      await supabase
+        .from('admin_audit_log')
+        .insert({
+          admin_id: user.id,
+          action: 'delete',
+          entity_type: 'assistant',
+          entity_id: assistantId,
+          old_data: assistantToDelete,
+          new_data: assistant,
+          ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+          user_agent: req.headers['user-agent']
+        });
+
+      return res.json({
+        success: true,
+        data: assistant,
+        message: 'Assistente excluído com sucesso'
+      });
+    }
+
+    else if (req.method === 'GET' && pathParts.length === 4 && pathParts[1] === 'assistants' && pathParts[3] === 'stats') {
+      // GET /admin/assistants/:id/stats - Get assistant statistics
+      const assistantId = pathParts[2];
+
+      const [
+        { count: subscriptionCount },
+        { count: conversationCount },
+        { data: recentActivity }
+      ] = await Promise.all([
+        // Active subscriptions count
+        supabase
+          .from('user_subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('assistant_id', assistantId)
+          .eq('status', 'active'),
+        
+        // Total conversations count
+        supabase
+          .from('conversations')
+          .select('id', { count: 'exact', head: true })
+          .eq('assistant_id', assistantId),
+        
+        // Recent activity (last 30 days)
+        supabase
+          .from('conversations')
+          .select('created_at')
+          .eq('assistant_id', assistantId)
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(10)
+      ]);
+
+      // Calculate monthly revenue
+      const monthlyRevenue = subscriptionCount * 39.90;
+
+      // Update assistant stats
+      await supabase
+        .from('assistants')
+        .update({
+          subscription_count: subscriptionCount,
+          total_conversations: conversationCount,
+          last_used_at: recentActivity?.[0]?.created_at
+        })
+        .eq('id', assistantId);
+
+      return res.json({
+        success: true,
+        data: {
+          subscriptionCount,
+          conversationCount,
+          monthlyRevenue,
+          recentActivity: recentActivity?.length || 0,
+          lastUsed: recentActivity?.[0]?.created_at
+        },
+        message: 'Estatísticas recuperadas com sucesso'
       });
     }
 

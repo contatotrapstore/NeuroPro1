@@ -22,14 +22,26 @@ export interface Assistant {
   id: string;
   name: string;
   description: string;
+  full_description?: string;
   icon: string;
+  icon_url?: string;
+  icon_type?: 'svg' | 'image' | 'emoji';
   color_theme: string;
+  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
   monthly_price: number;
   semester_price: number;
   is_active: boolean;
+  openai_assistant_id?: string;
+  specialization?: string;
+  features?: string[];
+  order_index?: number;
+  subscription_count?: number;
+  total_conversations?: number;
+  last_used_at?: string;
+  created_by?: string;
+  updated_by?: string;
   created_at?: string;
   updated_at?: string;
-  openai_assistant_id?: string;
 }
 
 // Frontend-specific types  

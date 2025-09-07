@@ -22,6 +22,7 @@ interface Assistant {
   color_theme: string;
   monthly_price: number;
   semester_price: number;
+  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
 }
 
 export default function Store() {
@@ -31,7 +32,7 @@ export default function Store() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedPackageType, setSelectedPackageType] = useState<'package_3' | 'package_6'>('package_3');
   const [showPackageSelector, setShowPackageSelector] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,10 +141,9 @@ export default function Store() {
     const matchesSearch = assistant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          assistant.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = selectedCategory === 'all' || 
-                           assistant.name.toLowerCase().includes(selectedCategory.toLowerCase());
+    const matchesArea = selectedArea === 'all' || assistant.area === selectedArea;
     
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesArea;
   });
 
   if (loading) {
@@ -487,16 +487,14 @@ export default function Store() {
                     </div>
                     <div className="md:w-64 relative">
                       <select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        value={selectedArea}
+                        onChange={(e) => setSelectedArea(e.target.value)}
                         className="w-full px-4 py-3 glass-card border border-neuro-border/20 focus:border-neuro-primary/40 rounded-xl bg-transparent text-neuro-gray-700 focus:outline-none transition-all appearance-none cursor-pointer"
                       >
-                        <option value="all">Todas as especialidades</option>
-                        <option value="psico">Psico (Estratégias)</option>
-                        <option value="neuro">Neuro (Avaliação)</option>
-                        <option value="thera">Thera (Terapêutica)</option>
-                        <option value="mind">Mind (Mente)</option>
-                        <option value="clin">Clin (Clínica)</option>
+                        <option value="all">Todas as áreas</option>
+                        <option value="Psicologia">Psicologia</option>
+                        <option value="Psicopedagogia">Psicopedagogia</option>
+                        <option value="Fonoaudiologia">Fonoaudiologia</option>
                       </select>
                       <Icon name="chevronDown" className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neuro-gray-400 pointer-events-none" />
                     </div>
@@ -544,7 +542,7 @@ export default function Store() {
                   label: "Limpar Filtros",
                   onClick: () => {
                     setSearchTerm('');
-                    setSelectedCategory('all');
+                    setSelectedArea('all');
                   }
                 }}
               />

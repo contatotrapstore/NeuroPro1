@@ -21,6 +21,7 @@
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
+    "react-colorful": "^5.6.1",
     "react-confetti": "^6.4.0",
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",

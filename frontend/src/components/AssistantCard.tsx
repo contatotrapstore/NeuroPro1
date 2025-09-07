@@ -10,11 +10,26 @@ interface Assistant {
   id: string;
   name: string;
   description: string;
+  full_description?: string;
   icon: string;
+  icon_url?: string;
+  icon_type?: 'svg' | 'image' | 'emoji';
   color_theme: string;
+  area?: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
   monthly_price: number;
   semester_price: number;
   is_active: boolean;
+  openai_assistant_id?: string;
+  specialization?: string;
+  features?: string[];
+  order_index?: number;
+  subscription_count?: number;
+  total_conversations?: number;
+  last_used_at?: string;
+  created_by?: string;
+  updated_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface AssistantCardProps {
@@ -33,6 +48,36 @@ export function AssistantCard({
   
   // Get pricing information from centralized config
   const pricingInfo = getAssistantPricingInfo();
+
+  // Area configuration for visual styling
+  const areaConfig = {
+    'Psicologia': {
+      name: 'Psicologia',
+      color: '#2D5A1F',
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-800',
+      borderColor: 'border-green-200',
+      icon: 'brain'
+    },
+    'Psicopedagogia': {
+      name: 'Psicopedagogia',
+      color: '#1E40AF',
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
+      borderColor: 'border-blue-200', 
+      icon: 'book'
+    },
+    'Fonoaudiologia': {
+      name: 'Fonoaudiologia',
+      color: '#7C3AED',
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-800',
+      borderColor: 'border-purple-200',
+      icon: 'mic'
+    }
+  };
+
+  const currentAreaConfig = assistant.area ? areaConfig[assistant.area] : areaConfig['Psicologia'];
 
   return (
     <Card 
@@ -56,17 +101,40 @@ export function AssistantCard({
                 className="w-12 h-12 rounded-xl flex items-center justify-center mr-4 shadow-lg"
                 style={{ backgroundColor: assistant.color_theme }}
               >
-                <AssistantIcon 
-                  iconType={assistant.icon} 
-                  color="white" 
-                  size={24} 
-                />
+                {assistant.icon_url && assistant.icon_type === 'image' ? (
+                  <img 
+                    src={assistant.icon_url} 
+                    alt={assistant.name}
+                    className="w-8 h-8 object-contain"
+                  />
+                ) : (
+                  <AssistantIcon 
+                    iconType={assistant.icon} 
+                    color="white" 
+                    size={24} 
+                  />
+                )}
               </div>
-              <h3 className="font-bold text-2xl text-gray-900 leading-tight font-display group-hover:text-gray-700 transition-colors">
-                {assistant.name}
-              </h3>
+              <div className="flex-1">
+                <h3 className="font-bold text-2xl text-gray-900 leading-tight font-display group-hover:text-gray-700 transition-colors mb-2">
+                  {assistant.name}
+                </h3>
+                {/* Area Badge */}
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border",
+                  currentAreaConfig.bgColor,
+                  currentAreaConfig.textColor,
+                  currentAreaConfig.borderColor
+                )}>
+                  <Icon 
+                    name={currentAreaConfig.icon as any} 
+                    className="w-3 h-3" 
+                  />
+                  <span>{currentAreaConfig.name}</span>
+                </div>
+              </div>
             </div>
-            <p className="text-base text-gray-600 leading-relaxed">
+            <p className="text-base text-gray-600 leading-relaxed mt-4">
               {assistant.description}
             </p>
           </div>
