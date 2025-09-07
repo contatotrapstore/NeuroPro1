@@ -126,11 +126,18 @@ module.exports = async function handler(req, res) {
     // Debug logs para troubleshooting
     console.log('🔍 Admin Access Check:', {
       userEmail: user.email,
+      userEmailLower: user.email?.toLowerCase(),
       hasAdminRole: hasAdminRole,
       userMetadata: user.user_metadata,
       isInAdminList: isInAdminList,
       adminEmails: ADMIN_EMAILS,
-      finalIsAdmin: isAdmin
+      emailMatch: ADMIN_EMAILS.map(email => ({
+        adminEmail: email,
+        userEmail: user.email?.toLowerCase(),
+        matches: email === user.email?.toLowerCase()
+      })),
+      finalIsAdmin: isAdmin,
+      serviceKeyConfigured: !!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SERVICE_ROLE_KEY_HERE'
     });
     
     if (!isAdmin) {
@@ -155,7 +162,45 @@ module.exports = async function handler(req, res) {
     console.log('Admin path parts:', pathParts);
 
     // Handle different admin endpoints
-    if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'stats') {
+    
+    if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'debug') {
+      // GET /admin/debug - Debug endpoint for troubleshooting
+      console.log('🔧 Debug endpoint called by:', user.email);
+      
+      return res.json({
+        success: true,
+        data: {
+          userInfo: {
+            email: user.email,
+            emailLower: user.email?.toLowerCase(),
+            hasAdminRole: user.user_metadata?.role === 'admin',
+            userMetadata: user.user_metadata,
+            userId: user.id
+          },
+          adminConfig: {
+            adminEmails: ADMIN_EMAILS,
+            isInAdminList: ADMIN_EMAILS.includes(user.email?.toLowerCase()),
+            emailMatches: ADMIN_EMAILS.map(email => ({
+              adminEmail: email,
+              matches: email === user.email?.toLowerCase()
+            }))
+          },
+          systemConfig: {
+            serviceKeyConfigured: !!supabaseServiceKey && supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE',
+            serviceKeyLength: supabaseServiceKey?.length || 0,
+            hasSupabaseUrl: !!supabaseUrl,
+            nodeEnv: process.env.NODE_ENV
+          },
+          finalAccess: {
+            isAdmin: isAdmin,
+            accessGranted: true // Se chegou aqui, tem acesso
+          }
+        },
+        message: 'Informações de debug coletadas'
+      });
+    }
+
+    else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'stats') {
       // GET /admin/stats - Get system statistics using only public tables
       
       // Get unique users from subscriptions

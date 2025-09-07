@@ -55,15 +55,58 @@ export default function Admin() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [configStatus, setConfigStatus] = useState<{
+    serviceKeyConfigured: boolean;
+    isAdmin: boolean;
+    debugInfo?: any;
+  } | null>(null);
 
-  // Verificar se é admin (básico - em produção implementar RLS adequado)
-  const isAdmin = user?.email === 'admin@neuroia.lab' || user?.user_metadata?.role === 'admin';
+  // Lista de emails admin autorizados (mesma do backend)
+  const ADMIN_EMAILS = [
+    'admin@neuroialab.com',
+    'admin@neuroia.lab',
+    'gouveiarx@gmail.com',
+    'psitales@gmail.com'
+  ];
+
+  // Verificar se é admin
+  const hasAdminRole = user?.user_metadata?.role === 'admin';
+  const isInAdminList = user?.email ? ADMIN_EMAILS.includes(user.email.toLowerCase()) : false;
+  const isAdmin = hasAdminRole || isInAdminList;
+
+  useEffect(() => {
+    checkAdminConfig();
+  }, [user]);
 
   useEffect(() => {
     if (activeTab === 'users') loadUsers();
     if (activeTab === 'assistants') loadAssistants();
     if (activeTab === 'subscriptions') loadSubscriptions();
   }, [activeTab]);
+
+  const checkAdminConfig = async () => {
+    if (!user || !isAdmin) return;
+
+    try {
+      const result = await apiService.get('/admin/debug');
+      
+      if (result.success) {
+        setConfigStatus({
+          serviceKeyConfigured: result.data.systemConfig.serviceKeyConfigured,
+          isAdmin: result.data.finalAccess.isAdmin,
+          debugInfo: result.data
+        });
+      }
+    } catch (error) {
+      console.log('Debug endpoint não disponível:', error);
+      // Se o debug falhar, assume configuração ok
+      setConfigStatus({
+        serviceKeyConfigured: true,
+        isAdmin: isAdmin,
+        debugInfo: null
+      });
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -138,11 +181,26 @@ export default function Admin() {
         setAssistants(updatedAssistants);
         toast.success(`Assistente ${!isActive ? 'ativado' : 'desativado'} com sucesso!`);
       } else {
-        toast.error(result.error || 'Erro ao atualizar assistente');
+        console.error('API Error:', result);
+        
+        // Handle specific errors
+        if (result.error?.includes('Service Role Key')) {
+          toast.error('Erro de configuração: Service Role Key não configurada');
+          setError('⚠️ Service Role Key não configurada. Verifique o arquivo .env e as variáveis do Vercel.');
+        } else if (result.error?.includes('Acesso negado')) {
+          toast.error('Acesso negado: Privilégios de administrador necessários');
+        } else {
+          toast.error(result.error || 'Erro ao atualizar assistente');
+        }
       }
     } catch (error: any) {
       console.error('Erro ao atualizar assistente:', error);
-      toast.error('Erro ao atualizar assistente');
+      
+      if (error.message?.includes('Failed to fetch')) {
+        toast.error('Erro de rede: Verifique sua conexão');
+      } else {
+        toast.error('Erro inesperado ao atualizar assistente');
+      }
     }
   };
 
@@ -272,13 +330,52 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Service Role Key Warning */}
+              {configStatus && !configStatus.serviceKeyConfigured && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <div className="text-red-600 text-lg mr-2">🚨</div>
+                    <div>
+                      <h3 className="font-semibold text-red-800">Service Role Key Não Configurada</h3>
+                      <p className="text-red-700 text-sm">
+                        O painel admin não consegue fazer alterações sem a Service Role Key. 
+                        <br />
+                        <strong>Siga o guia:</strong> SETUP_ADMIN_COMPLETO.md
+                      </p>
+                      <div className="mt-2">
+                        <button 
+                          onClick={() => window.open('https://supabase.com/dashboard/project/avgoyfartmzepdgzhroc/settings/api', '_blank')}
+                          className="text-red-600 underline text-sm hover:text-red-800"
+                        >
+                          Acessar Configurações do Supabase →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start">
                   <div className="text-yellow-600 text-lg mr-2">⚠️</div>
                   <div>
-                    <h3 className="font-semibold text-yellow-800">Painel em Desenvolvimento</h3>
+                    <h3 className="font-semibold text-yellow-800">Status da Configuração</h3>
                     <p className="text-yellow-700 text-sm">
-                      Este painel administrativo está em desenvolvimento. Algumas funcionalidades ainda não estão totalmente implementadas.
+                      {configStatus ? (
+                        <>
+                          <strong>Admin:</strong> {configStatus.isAdmin ? '✅ Ativo' : '❌ Inativo'} • 
+                          <strong> Service Key:</strong> {configStatus.serviceKeyConfigured ? '✅ Configurada' : '❌ Não configurada'}
+                          <br />
+                          <strong>Email:</strong> {user?.email} 
+                          {configStatus.debugInfo && (
+                            <span className="text-xs block mt-1">
+                              Debug disponível no console do navegador (F12)
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        'Verificando configuração...'
+                      )}
                     </p>
                   </div>
                 </div>

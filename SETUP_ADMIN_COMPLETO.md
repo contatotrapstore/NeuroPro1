@@ -92,10 +92,21 @@ Se precisar criar o usuário `admin@neuroia.lab`:
 
 1. **Acesse o admin:**
    - https://neuroai-lab.vercel.app/login
-   - Faça login com um dos emails admin
+   - Faça login com `gouveiarx@gmail.com`
    - Navegue para `/admin`
 
-2. **Teste as funcionalidades:**
+2. **Se não funcionar, teste o endpoint de debug:**
+   - Acesse: https://neuroai-lab.vercel.app/api/admin/debug
+   - Isso mostrará informações detalhadas sobre sua conta
+   - Verifique se `isAdmin: true` aparece na resposta
+
+3. **Verifique se sua conta existe:**
+   - Se receber erro 401, a conta precisa ser criada primeiro
+   - Vá para https://neuroai-lab.vercel.app/signup
+   - Crie conta com `gouveiarx@gmail.com`
+   - Confirme o email se necessário
+
+4. **Teste as funcionalidades:**
    - ✅ Dashboard com estatísticas
    - ✅ Lista de usuários
    - ✅ Lista de assistentes
@@ -137,10 +148,16 @@ Se precisar criar o usuário `admin@neuroia.lab`:
 - Confirme se não há espaços extras na chave
 - No Vercel, verifique se a variável foi salva corretamente
 
-### **"Acesso negado"**
-- Confirme se está logado com um dos emails admin
-- Verifique se o email está na lista de admins no código
-- Se necessário, adicione role "admin" no user metadata
+### **"Acesso negado" ou "Nada muda ao logar"**
+- **Primeira verificação:** Service Role Key configurada?
+- **Segunda verificação:** Conta `gouveiarx@gmail.com` existe no sistema?
+  - Se não existe, crie em: https://neuroai-lab.vercel.app/signup
+  - Confirme o email se solicitado
+- **Terceira verificação:** Teste o debug endpoint
+  - https://neuroai-lab.vercel.app/api/admin/debug
+  - Deve mostrar `"isAdmin": true` se tudo estiver correto
+- **Quarta verificação:** Limpe cache e cookies do navegador
+- **Quinta verificação:** Tente em aba anônima/privada
 
 ### **Dashboard mostra "0 usuários, 0 assistentes"**
 - Service Role Key não está funcionando
