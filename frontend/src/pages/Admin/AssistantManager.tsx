@@ -64,18 +64,30 @@ export function AssistantManager() {
 
   const loadAssistants = async () => {
     try {
+      console.log('📥 Carregando assistentes do admin...');
       setLoading(true);
       setError(null);
       
       const result = await apiService.get('/admin/assistants');
+      console.log('📥 Resultado da API:', result);
       
       if (result.success) {
+        console.log('✅ Assistentes carregados:', result.data?.length || 0);
         setAssistants(result.data || []);
       } else {
-        setError(result.error || 'Erro ao carregar assistentes');
+        console.error('❌ Erro da API:', result.error);
+        
+        // Handle specific errors
+        if (result.error?.includes('Service Role Key')) {
+          setError('⚠️ Service Role Key não configurada. Configure no arquivo .env e no Vercel para acessar o admin.');
+        } else if (result.error?.includes('Acesso negado')) {
+          setError('❌ Acesso negado. Verifique se você tem privilégios de administrador.');
+        } else {
+          setError(result.error || 'Erro ao carregar assistentes');
+        }
       }
     } catch (error: any) {
-      console.error('Erro ao carregar assistentes:', error);
+      console.error('❌ Erro ao carregar assistentes:', error);
       setError('Erro ao carregar assistentes');
     } finally {
       setLoading(false);
@@ -105,9 +117,13 @@ export function AssistantManager() {
 
   const handleToggleStatus = async (assistant: Assistant) => {
     try {
+      console.log('🔄 Alterando status do assistente:', assistant.name, 'de', assistant.is_active, 'para', !assistant.is_active);
+      
       const result = await apiService.put(`/admin/assistants/${assistant.id}`, {
         is_active: !assistant.is_active
       });
+
+      console.log('🔄 Resultado toggle:', result);
 
       if (result.success) {
         setAssistants(prev => prev.map(a => 
@@ -121,15 +137,22 @@ export function AssistantManager() {
             : 'Assistente ativado com sucesso!'
         );
       } else {
-        toast.error(result.error || 'Erro ao atualizar assistente');
+        console.error('❌ Erro no toggle:', result.error);
+        
+        if (result.error?.includes('Service Role Key')) {
+          toast.error('Service Role Key não configurada - verifique configurações');
+        } else {
+          toast.error(result.error || 'Erro ao atualizar assistente');
+        }
       }
     } catch (error) {
-      console.error('Erro ao atualizar assistente:', error);
+      console.error('❌ Erro ao atualizar assistente:', error);
       toast.error('Erro ao atualizar assistente');
     }
   };
 
   const handleEdit = (assistant: Assistant) => {
+    console.log('🔧 Editando assistente:', assistant.name, assistant.id);
     setEditingAssistant(assistant);
     setShowEditor(true);
   };
@@ -338,6 +361,10 @@ export function AssistantManager() {
 
       {/* Assistants Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {(() => {
+          console.log('🎨 Renderizando assistentes:', sortedAssistants.length, 'filtrados de', assistants.length);
+          return null;
+        })()}
         {sortedAssistants.map((assistant, index) => {
           const stats = assistantStats[assistant.id];
           

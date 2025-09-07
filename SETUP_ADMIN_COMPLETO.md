@@ -95,18 +95,29 @@ Se precisar criar o usuário `admin@neuroia.lab`:
    - Faça login com `gouveiarx@gmail.com`
    - Navegue para `/admin`
 
-2. **Se não funcionar, teste o endpoint de debug:**
+2. **Abra o Console do Navegador para Debug:**
+   - Pressione F12 (ou Ctrl+Shift+I)
+   - Vá na aba "Console"
+   - Procure por mensagens começando com 📥, 🔧, ✅, ❌
+
+3. **Se não funcionar, teste o endpoint de debug:**
    - Acesse: https://neuroai-lab.vercel.app/api/admin/debug
    - Isso mostrará informações detalhadas sobre sua conta
    - Verifique se `isAdmin: true` aparece na resposta
 
-3. **Verifique se sua conta existe:**
+4. **Verifique se sua conta existe:**
    - Se receber erro 401, a conta precisa ser criada primeiro
    - Vá para https://neuroai-lab.vercel.app/signup
    - Crie conta com `gouveiarx@gmail.com`
    - Confirme o email se necessário
 
-4. **Teste as funcionalidades:**
+5. **Debug específico da edição:**
+   - Vá em "Gerenciar IAs"
+   - No console, procure por: "📥 Carregando assistentes do admin..."
+   - Se não aparecer essa mensagem, o componente não está carregando
+   - Se aparecer erro "Service Role Key", configure conforme passos 1-3
+
+6. **Teste as funcionalidades:**
    - ✅ Dashboard com estatísticas
    - ✅ Lista de usuários
    - ✅ Lista de assistentes
