@@ -24,24 +24,8 @@
       "dest": "/packages.js"
     },
     {
-      "src": "/test",
-      "dest": "/test.js"
-    },
-    {
-      "src": "/test-openai",
-      "dest": "/test-openai.js"
-    },
-    {
       "src": "/chat/(.*)",
       "dest": "/chat.js"
-    },
-    {
-      "src": "/chat-v3/(.*)",
-      "dest": "/chat-v3.js"
-    },
-    {
-      "src": "/chat-emergency/(.*)",
-      "dest": "/chat-emergency.js"
     },
     {
       "src": "/auth/(.*)",
@@ -50,6 +34,10 @@
     {
       "src": "/admin/(.*)",
       "dest": "/admin.js"
+    },
+    {
+      "src": "/upload/(.*)",
+      "dest": "/upload.js"
     }
   ]
 }
