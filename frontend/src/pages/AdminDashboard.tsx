@@ -93,7 +93,12 @@ export default function AdminDashboard() {
       // Carregar usuários reais
       const usersResult = await adminService.getUsers(1, 20);
       if (usersResult.success && usersResult.data) {
-        const usersWithStatus = usersResult.data.map(user => ({
+        // Verificar se data é array, se não, extrair do objeto
+        const userData = Array.isArray(usersResult.data) 
+          ? usersResult.data 
+          : (usersResult.data.users || []);
+          
+        const usersWithStatus = userData.map(user => ({
           ...user,
           status: user.email_confirmed_at ? 'active' : 'inactive' as 'active' | 'inactive',
           subscriptions: user.active_subscriptions,

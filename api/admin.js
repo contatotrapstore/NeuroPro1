@@ -370,11 +370,12 @@ module.exports = async function handler(req, res) {
 
       return res.json({
         success: true,
-        data: {
-          users: paginatedUsers,
+        data: paginatedUsers,
+        pagination: {
           totalUsers: totalUsers,
           currentPage: page,
-          totalPages: Math.ceil(totalUsers / limit)
+          totalPages: Math.ceil(totalUsers / limit),
+          limit: limit
         },
         message: 'Usuários recuperados com sucesso'
       });
