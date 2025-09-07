@@ -430,8 +430,29 @@ export default function Admin() {
           {activeTab === 'assistants' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Gerenciar Assistentes</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Lista de Assistentes</h2>
                 <div className="text-sm text-gray-600">{stats.activeAssistants}/{stats.totalAssistants} ativos</div>
+              </div>
+
+              {/* Info box directing to management tab */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="text-blue-600 text-lg mr-2">ℹ️</div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Para Editar Assistentes</h3>
+                    <p className="text-blue-700 text-sm">
+                      Para <strong>criar, editar ou excluir</strong> assistentes, clique na aba{' '}
+                      <button 
+                        onClick={() => setActiveTab('assistant-manager')}
+                        className="font-bold underline hover:text-blue-900"
+                      >
+                        "Gerenciar IAs"
+                      </button> acima.
+                      <br />
+                      Esta aba mostra apenas uma visão geral para ativar/desativar.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {loading ? (

@@ -99,6 +99,30 @@ export class AdminService {
     }
   }
 
+  // Statistics and Analytics
+  async getStats() {
+    return this.apiService.get('/admin/stats');
+  }
+
+  async getUsers(page = 1, limit = 20) {
+    return this.apiService.get(`/admin/users?page=${page}&limit=${limit}`);
+  }
+
+  async getSubscriptions(page = 1, limit = 20) {
+    return this.apiService.get(`/admin/subscriptions?page=${page}&limit=${limit}`);
+  }
+
+  async getUserAvailableAssistants(userId: string) {
+    return this.apiService.get(`/admin/users/${userId}/available-assistants`);
+  }
+
+  async manageUserAssistants(userId: string, assistantIds: string[], action: 'grant' | 'revoke') {
+    return this.apiService.post(`/admin/users/${userId}/assistants`, {
+      assistantIds,
+      action
+    });
+  }
+
   // Cache management for real-time sync
   private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
 

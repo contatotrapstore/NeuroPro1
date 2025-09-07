@@ -59,6 +59,7 @@ export function AssistantManager() {
   const apiService = ApiService.getInstance();
 
   useEffect(() => {
+    console.log('🚀 AssistantManager montado! Carregando dados...');
     loadAssistants();
   }, []);
 

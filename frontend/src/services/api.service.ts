@@ -424,6 +424,11 @@ export class ApiService {
     return this.get('/auth/access');
   }
 
+  // Admin methods
+  async getStats(): Promise<ApiResponse<any>> {
+    return this.get('/admin/stats');
+  }
+
   // Graceful error handling for dashboard data
   async getDashboardData() {
     try {
