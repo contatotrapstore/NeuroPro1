@@ -47,6 +47,7 @@ export default function AdminDashboard() {
   });
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userAssistants, setUserAssistants] = useState<Array<{
@@ -59,12 +60,12 @@ export default function AdminDashboard() {
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    // AdminProtectedRoute já verificou se é admin, então só carregar dados
-    if (user) {
+    // AdminProtectedRoute já verificou se é admin, então só carregar dados uma vez
+    if (user?.id && !dataLoaded) {
       console.log(`✅ AdminDashboard: Loading data for ${user?.email}`);
       loadDashboardData();
     }
-  }, [user]);
+  }, [user?.id, dataLoaded]); // Evitar recarregamentos múltiplos
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -109,6 +110,7 @@ export default function AdminDashboard() {
       });
     } finally {
       setLoading(false);
+      setDataLoaded(true);
     }
   };
 

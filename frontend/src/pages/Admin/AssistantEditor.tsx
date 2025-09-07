@@ -388,31 +388,17 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Ordem de Exibição
-                      </label>
-                      <Input
-                        type="number"
-                        value={formData.order_index || 0}
-                        onChange={(e) => handleInputChange('order_index', parseInt(e.target.value) || 0)}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="flex items-center space-x-2 pt-6">
-                      <input
-                        type="checkbox"
-                        id="is_active"
-                        checked={formData.is_active}
-                        onChange={(e) => handleInputChange('is_active', e.target.checked)}
-                        className="rounded border-gray-300 text-neuro-primary focus:ring-neuro-primary"
-                      />
-                      <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                        Assistente Ativo
-                      </label>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_active"
+                      checked={formData.is_active}
+                      onChange={(e) => handleInputChange('is_active', e.target.checked)}
+                      className="rounded border-gray-300 text-neuro-primary focus:ring-neuro-primary"
+                    />
+                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+                      Assistente Ativo
+                    </label>
                   </div>
                 </CardContent>
               </Card>

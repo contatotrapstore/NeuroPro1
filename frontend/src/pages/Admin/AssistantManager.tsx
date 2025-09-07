@@ -347,7 +347,7 @@ export function AssistantManager() {
       </Card>
 
       {/* Assistants Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {(() => {
           console.log('🎨 Renderizando assistentes:', sortedAssistants.length, 'filtrados de', assistants.length);
           return null;
@@ -371,7 +371,7 @@ export function AssistantManager() {
                 )}
                 hover="lift"
               >
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   {/* Header with icon and status */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
@@ -466,25 +466,24 @@ export function AssistantManager() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(assistant)}
-                        leftIcon={<Icon name="edit" className="w-3 h-3" />}
-                      >
-                        Editar
-                      </Button>
-                      
-                    </div>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(assistant)}
+                      leftIcon={<Icon name="edit" className="w-3 h-3" />}
+                      className="w-full"
+                    >
+                      Editar
+                    </Button>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant={assistant.is_active ? "outline" : "default"}
                         onClick={() => handleToggleStatus(assistant)}
                         className={cn(
+                          "flex-1",
                           assistant.is_active 
                             ? "text-red-600 border-red-200 hover:bg-red-50" 
                             : "bg-green-600 hover:bg-green-700 text-white"
@@ -500,7 +499,7 @@ export function AssistantManager() {
                         className="text-red-600 border-red-200 hover:bg-red-50"
                         leftIcon={<Icon name="trash" className="w-3 h-3" />}
                       >
-                        Excluir
+                        <Icon name="trash" className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
