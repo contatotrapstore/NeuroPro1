@@ -109,7 +109,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       return;
     }
 
-    if (!formData.id) {
+    if (!formData.id && isEditing) {
       toast.error('Salve o assistente primeiro antes de fazer upload do ícone.');
       return;
     }
@@ -188,9 +188,10 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       newErrors.semester_price = 'Preço semestral deve ser maior que 0';
     }
 
-    if (!isEditing && !formData.id?.trim()) {
-      newErrors.id = 'ID é obrigatório para novo assistente';
-    }
+    // ID não é mais obrigatório para novos assistentes - será gerado automaticamente
+    // if (!isEditing && !formData.id?.trim()) {
+    //   newErrors.id = 'ID é obrigatório para novo assistente';
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -229,11 +230,36 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         );
         onClose(true);
       } else {
-        toast.error(result.error || 'Erro ao salvar assistente');
+        console.error('API Error:', result);
+        const errorMessage = result.error || 'Erro ao salvar assistente';
+        
+        // Handle specific errors
+        if (result.error?.includes('Service Role Key')) {
+          toast.error('Erro de configuração: Service Role Key não configurada');
+        } else if (result.error?.includes('Acesso negado')) {
+          toast.error('Acesso negado: Você precisa ter privilégios de administrador');
+        } else if (result.error?.includes('não encontrado')) {
+          toast.error('Assistente não encontrado');
+        } else {
+          toast.error(errorMessage);
+        }
+
+        // Show debug info in development
+        if (import.meta.env.DEV && result.debug) {
+          console.warn('Debug info:', result.debug);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Erro ao salvar assistente');
+      
+      // Handle network errors
+      if (error.message?.includes('Failed to fetch')) {
+        toast.error('Erro de rede: Verifique sua conexão');
+      } else if (error.message?.includes('NetworkError')) {
+        toast.error('Erro de rede: Não foi possível conectar ao servidor');
+      } else {
+        toast.error('Erro inesperado ao salvar assistente');
+      }
     } finally {
       setSaving(false);
     }
@@ -281,14 +307,17 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                   {!isEditing && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        ID do Assistente *
+                        ID do Assistente (opcional)
                       </label>
                       <Input
                         value={formData.id || ''}
                         onChange={(e) => handleInputChange('id', e.target.value)}
-                        placeholder="ex: novo-assistente-123"
+                        placeholder="Deixe em branco para gerar automaticamente"
                         error={errors.id}
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Se não fornecido, será gerado automaticamente baseado no nome
+                      </p>
                     </div>
                   )}
 
@@ -501,13 +530,13 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                         onChange={handleIconUpload}
                         className="hidden"
                         id="icon-upload"
-                        disabled={!formData.id}
+                        disabled={!formData.id && isEditing}
                       />
                       <label
                         htmlFor="icon-upload"
                         className={cn(
                           "flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                          !formData.id 
+                          (!formData.id && isEditing)
                             ? "border-gray-200 text-gray-400 cursor-not-allowed" 
                             : "border-gray-300 hover:border-neuro-primary hover:bg-neuro-primary/5"
                         )}
@@ -523,7 +552,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       </label>
                       <p className="text-xs text-gray-500">
                         PNG, JPG ou SVG (max 5MB)
-                        {!formData.id && " - Salve primeiro"}
+                        {(!formData.id && isEditing) && " - Salve primeiro"}
                       </p>
                     </div>
                   </div>

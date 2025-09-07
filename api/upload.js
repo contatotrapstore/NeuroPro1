@@ -37,14 +37,36 @@ module.exports = async function handler(req, res) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
     
+    console.log('🔑 Upload Supabase Configuration Check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      serviceKeyValid: supabaseServiceKey && supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE',
+      hasAnonKey: !!supabaseAnonKey
+    });
+    
     if (!supabaseUrl || !supabaseAnonKey) {
       return res.status(500).json({
         success: false,
         error: 'Configuração do servidor incompleta'
       });
     }
+
+    // Check if Service Role Key is properly configured
+    if (!supabaseServiceKey || supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
+      console.error('❌ Upload: Service Role Key not configured properly');
+      return res.status(500).json({
+        success: false,
+        error: 'Service Role Key não configurada. Configure a chave no arquivo .env',
+        debug: {
+          serviceKeySet: !!supabaseServiceKey,
+          isPlaceholder: supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE'
+        }
+      });
+    }
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+    // Use service key for admin operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ Upload Supabase admin client initialized with Service Role Key');
 
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
@@ -83,8 +105,9 @@ module.exports = async function handler(req, res) {
     // Check admin role
     const ADMIN_EMAILS = [
       'admin@neuroialab.com',
+      'admin@neuroia.lab', // Email usado no frontend
       'gouveiarx@gmail.com',
-      'psitales@gmail.com'
+      'psitales@gmail.com' // Correção do email
     ];
     
     const hasAdminRole = user.user_metadata?.role === 'admin';

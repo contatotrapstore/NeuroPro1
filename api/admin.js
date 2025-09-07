@@ -36,15 +36,45 @@ module.exports = async function handler(req, res) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
     
+    console.log('🔑 Supabase Configuration Check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      serviceKeyLength: supabaseServiceKey?.length || 0,
+      serviceKeyValid: supabaseServiceKey && supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE',
+      hasAnonKey: !!supabaseAnonKey
+    });
+    
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ Supabase configuration incomplete:', {
+        supabaseUrl: !!supabaseUrl,
+        supabaseAnonKey: !!supabaseAnonKey
+      });
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'Configuração do servidor incompleta',
+        debug: {
+          hasUrl: !!supabaseUrl,
+          hasAnonKey: !!supabaseAnonKey
+        }
+      });
+    }
+
+    // Check if Service Role Key is properly configured
+    if (!supabaseServiceKey || supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
+      console.error('❌ Service Role Key not configured properly');
+      return res.status(500).json({
+        success: false,
+        error: 'Service Role Key não configurada. Configure a chave no arquivo .env',
+        debug: {
+          serviceKeySet: !!supabaseServiceKey,
+          isPlaceholder: supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE'
+        }
       });
     }
     
-    // Use service key if available, otherwise use anon key
-    const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+    // Use service key for admin operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ Supabase admin client initialized with Service Role Key');
 
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
@@ -402,18 +432,61 @@ module.exports = async function handler(req, res) {
     else if (req.method === 'POST' && pathParts.length === 2 && pathParts[1] === 'assistants') {
       // POST /admin/assistants - Create new assistant
       const newAssistant = req.body;
+
+      console.log('🆕 Creating new assistant:', {
+        name: newAssistant.name,
+        area: newAssistant.area,
+        hasId: !!newAssistant.id
+      });
+      
+      // Validate required fields
+      if (!newAssistant.name || !newAssistant.description) {
+        return res.status(400).json({
+          success: false,
+          error: 'Nome e descrição são obrigatórios'
+        });
+      }
+
+      // Generate ID if not provided (for new assistants)
+      if (!newAssistant.id) {
+        // Generate a safe ID from the name
+        const safeId = newAssistant.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove accents
+          .replace(/[^a-z0-9]/g, '-') // Replace non-alphanumeric with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single
+          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+          .substring(0, 50); // Limit length
+        
+        newAssistant.id = `${safeId}-${Date.now()}`;
+      }
       
       // Add audit trail data
       newAssistant.created_by = user.id;
       newAssistant.updated_by = user.id;
+      newAssistant.created_at = new Date().toISOString();
+      newAssistant.updated_at = new Date().toISOString();
       
       // Set defaults if not provided
-      if (!newAssistant.monthly_price) newAssistant.monthly_price = 39.90;
-      if (!newAssistant.semester_price) newAssistant.semester_price = 199.00;
-      if (!newAssistant.area) newAssistant.area = 'Psicologia';
-      if (!newAssistant.is_active) newAssistant.is_active = true;
-      if (!newAssistant.icon_type) newAssistant.icon_type = 'svg';
-      if (!newAssistant.features) newAssistant.features = [];
+      newAssistant.monthly_price = newAssistant.monthly_price || 39.90;
+      newAssistant.semester_price = newAssistant.semester_price || 199.00;
+      newAssistant.area = newAssistant.area || 'Psicologia';
+      newAssistant.is_active = newAssistant.is_active !== undefined ? newAssistant.is_active : true;
+      newAssistant.icon_type = newAssistant.icon_type || 'svg';
+      newAssistant.icon = newAssistant.icon || 'brain';
+      newAssistant.color_theme = newAssistant.color_theme || '#2D5A1F';
+      newAssistant.features = newAssistant.features || [];
+      newAssistant.order_index = newAssistant.order_index || 0;
+      newAssistant.openai_assistant_id = newAssistant.openai_assistant_id || newAssistant.id;
+
+      console.log('📝 Assistant data prepared:', {
+        id: newAssistant.id,
+        name: newAssistant.name,
+        area: newAssistant.area,
+        monthly_price: newAssistant.monthly_price,
+        is_active: newAssistant.is_active
+      });
 
       const { data: assistant, error } = await supabase
         .from('assistants')
@@ -455,19 +528,55 @@ module.exports = async function handler(req, res) {
       const assistantId = pathParts[2];
       const updateData = req.body;
 
+      console.log('📝 Updating assistant:', {
+        id: assistantId,
+        fields: Object.keys(updateData),
+        name: updateData.name
+      });
+
       // Get current data for audit log
-      const { data: oldAssistant } = await supabase
+      const { data: oldAssistant, error: fetchError } = await supabase
         .from('assistants')
         .select('*')
         .eq('id', assistantId)
         .single();
 
+      if (fetchError || !oldAssistant) {
+        console.error('Assistant not found for update:', fetchError);
+        return res.status(404).json({
+          success: false,
+          error: 'Assistente não encontrado'
+        });
+      }
+
+      // Clean and prepare update data
+      const cleanUpdateData = { ...updateData };
+      delete cleanUpdateData.id; // Don't update ID
+      
       // Add audit trail
-      updateData.updated_by = user.id;
+      cleanUpdateData.updated_by = user.id;
+      cleanUpdateData.updated_at = new Date().toISOString();
+
+      // Ensure numeric fields are properly typed
+      if (cleanUpdateData.monthly_price) {
+        cleanUpdateData.monthly_price = parseFloat(cleanUpdateData.monthly_price);
+      }
+      if (cleanUpdateData.semester_price) {
+        cleanUpdateData.semester_price = parseFloat(cleanUpdateData.semester_price);
+      }
+      if (cleanUpdateData.order_index) {
+        cleanUpdateData.order_index = parseInt(cleanUpdateData.order_index);
+      }
+
+      console.log('🔄 Clean update data:', {
+        fieldsToUpdate: Object.keys(cleanUpdateData),
+        monthly_price: cleanUpdateData.monthly_price,
+        is_active: cleanUpdateData.is_active
+      });
 
       const { data: assistant, error } = await supabase
         .from('assistants')
-        .update(updateData)
+        .update(cleanUpdateData)
         .eq('id', assistantId)
         .select()
         .single();
