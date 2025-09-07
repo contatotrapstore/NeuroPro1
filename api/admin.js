@@ -255,13 +255,45 @@ module.exports = async function handler(req, res) {
         }, 0);
       }
 
+      // Get recent conversations (last 30 days)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const { count: recentConversations, error: recentConvsError } = await supabase
+        .from('conversations')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+      // Calculate total active revenue (all active subscriptions)
+      const { data: activeSubscriptionsData, error: activeRevError } = await supabase
+        .from('user_subscriptions')
+        .select('subscription_type, assistant_id')
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString());
+
+      let totalActiveRevenue = 0;
+      if (activeSubscriptionsData && assistants && !activeRevError && !assistantsError) {
+        const assistantPrices = {};
+        assistants.forEach(a => {
+          assistantPrices[a.id] = {
+            monthly: a.monthly_price || 39.90,
+            semester: a.semester_price || 199.00
+          };
+        });
+
+        totalActiveRevenue = activeSubscriptionsData.reduce((sum, sub) => {
+          const prices = assistantPrices[sub.assistant_id] || { monthly: 39.90, semester: 199.00 };
+          return sum + (sub.subscription_type === 'monthly' ? prices.monthly : prices.semester);
+        }, 0);
+      }
+
       return res.json({
         success: true,
         data: {
           totalUsers: totalUsers,
           activeSubscriptions: activeSubscriptions || 0,
+          activePackages: 0, // Packages não implementados ainda
+          recentConversations: recentConversations || 0,
           monthlyRevenue: monthlyRevenue,
-          totalConversations: totalConversations || 0
+          totalActiveRevenue: totalActiveRevenue
         },
         message: 'Estatísticas recuperadas com sucesso'
       });
@@ -288,34 +320,45 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Aggregate user data from subscriptions
-      const userMap = new Map();
+      // Get actual user data from auth.users
+      const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
       
+      if (authUsersError) {
+        console.error('Error fetching auth users:', authUsersError);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar usuários de autenticação',
+          error: authUsersError.message
+        });
+      }
+
+      // Create user map with real user data
+      const userMap = new Map();
+      const realUsers = authUsers?.users || [];
+      
+      // Initialize with real user data
+      realUsers.forEach(authUser => {
+        userMap.set(authUser.id, {
+          id: authUser.id,
+          email: authUser.email,
+          name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || null,
+          created_at: authUser.created_at,
+          last_sign_in_at: authUser.last_sign_in_at,
+          email_confirmed_at: authUser.email_confirmed_at,
+          user_metadata: authUser.user_metadata,
+          active_subscriptions: 0
+        });
+      });
+      
+      // Add subscription counts
       if (allSubscriptions) {
         allSubscriptions.forEach(sub => {
-          if (!sub.user_id) return;
-          
-          if (!userMap.has(sub.user_id)) {
-            userMap.set(sub.user_id, {
-              id: sub.user_id,
-              email: `user_${sub.user_id.slice(0, 8)}@neuroialab.com`, // Placeholder email
-              created_at: sub.created_at,
-              last_sign_in_at: sub.created_at,
-              subscriptionCount: 0,
-              activeSubscriptions: 0
-            });
-          }
+          if (!sub.user_id || !userMap.has(sub.user_id)) return;
           
           const user = userMap.get(sub.user_id);
-          user.subscriptionCount++;
           
           if (sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
-            user.activeSubscriptions++;
-          }
-          
-          // Update last activity
-          if (new Date(sub.created_at) > new Date(user.last_sign_in_at)) {
-            user.last_sign_in_at = sub.created_at;
+            user.active_subscriptions++;
           }
         });
       }

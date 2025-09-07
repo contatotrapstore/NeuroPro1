@@ -35,7 +35,7 @@ type UserData = AdminUser & {
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants' | 'manage-assistants'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants'>('overview');
   const [stats, setStats] = useState<AdminStatsDisplay>({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -297,8 +297,7 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', name: 'Visão Geral', icon: BarChart3 },
               { id: 'users', name: 'Usuários', icon: Users },
-              { id: 'assistants', name: 'Assistentes', icon: Bot },
-              { id: 'manage-assistants', name: 'Gerenciar IAs', icon: Settings }
+              { id: 'assistants', name: 'Assistentes', icon: Bot }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -433,43 +432,6 @@ export default function AdminDashboard() {
         {/* Assistants Tab */}
         {activeTab === 'assistants' && (
           <div className="space-y-6">
-            {/* Info box directing to management tab */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="text-blue-600 text-lg mr-2">ℹ️</div>
-                <div>
-                  <h3 className="font-semibold text-blue-800">Para Editar Assistentes</h3>
-                  <p className="text-blue-700 text-sm">
-                    Para <strong>criar, editar ou excluir</strong> assistentes, clique na aba{' '}
-                    <button 
-                      onClick={() => setActiveTab('manage-assistants')}
-                      className="font-bold underline hover:text-blue-900"
-                    >
-                      "Gerenciar IAs"
-                    </button> acima.
-                    <br />
-                    Esta aba mostra apenas estatísticas dos assistentes.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <AssistantManager />
-          </div>
-        )}
-
-        {activeTab === 'manage-assistants' && (
-          <div className="space-y-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="text-green-600 text-lg mr-2">⚙️</div>
-                <div>
-                  <h3 className="font-semibold text-green-800">Gerenciamento Completo</h3>
-                  <p className="text-green-700 text-sm">
-                    Aqui você pode <strong>criar, editar, excluir</strong> assistentes e fazer upload de ícones personalizados.
-                  </p>
-                </div>
-              </div>
-            </div>
             <AssistantManager />
           </div>
         )}
