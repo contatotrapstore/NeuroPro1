@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
 import { Eye, EyeOff, Shield } from 'lucide-react';
+import { isAdminUser } from '../config/admin';
 
 const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -27,12 +28,7 @@ const AdminLogin: React.FC = () => {
   // Watch for auth state changes and navigate when admin is authenticated
   useEffect(() => {
     if (user && !loading) {
-      // Lista de emails admin
-      const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
-      const isAdminEmail = adminEmails.includes(user.email || '');
-      const hasAdminRole = user.user_metadata?.role === 'admin';
-      
-      if (isAdminEmail || hasAdminRole) {
+      if (isAdminUser(user.email, user.user_metadata)) {
         console.log(`🚀 Navigating admin user ${user.email} to dashboard`);
         navigate('/admin/dashboard', { replace: true });
       }
@@ -59,13 +55,8 @@ const AdminLogin: React.FC = () => {
 
       const result = await signIn(email, password);
       
-      // Lista de emails admin
-      const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
-      const isAdminEmail = adminEmails.includes(result.user?.email || '');
-      const hasAdminRole = result.user?.user_metadata?.role === 'admin';
-      
-      // Verificar se é admin (por email ou role)
-      if (isAdminEmail || hasAdminRole) {
+      // Verificar se é admin usando função centralizada
+      if (isAdminUser(result.user?.email, result.user?.user_metadata)) {
         console.log(`✅ Admin access granted for: ${result.user?.email}`);
         // Navigation will be handled by useEffect watching auth state
       } else {

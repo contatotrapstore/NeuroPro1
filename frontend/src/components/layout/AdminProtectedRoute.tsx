@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { isAdminUser } from '../../config/admin';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -9,9 +10,6 @@ interface AdminProtectedRouteProps {
 const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-
-  // Lista de emails admin
-  const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -37,12 +35,11 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
     );
   }
 
-  // Check if user is admin (by email or metadata)
-  const isAdminEmail = adminEmails.includes(user.email || '');
-  const hasAdminRole = user.user_metadata?.role === 'admin';
+  // Check if user is admin using centralized function
+  const userIsAdmin = isAdminUser(user.email, user.user_metadata);
 
   // If user is not admin, redirect with error message
-  if (!isAdminEmail && !hasAdminRole) {
+  if (!userIsAdmin) {
     console.log(`❌ Admin access denied for: ${user.email} - not in admin list and no admin role`);
     console.log('🔍 User metadata:', user.user_metadata);
     return (
@@ -56,12 +53,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
 
   // Admin access granted - render the protected component
   console.log(`✅ Admin route access granted for: ${user.email}`);
-  console.log(`🔍 AdminProtectedRoute: Verification completed`, { 
-    isAdminEmail, 
-    hasAdminRole, 
-    userEmail: user.email,
-    userMetadata: user.user_metadata 
-  });
   
   return <>{children}</>;
 };

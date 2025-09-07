@@ -59,24 +59,12 @@ export default function AdminDashboard() {
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    // Só verificar se user não é null/undefined
-    if (user === undefined) return; // Ainda carregando
-    
-    // Lista de emails admin
-    const adminEmails = ['admin@neuroialab.com', 'gouveiarx@gmail.com', 'pstales@gmail.com'];
-    const isAdminEmail = adminEmails.includes(user?.email || '');
-    const hasAdminRole = user?.user_metadata?.role === 'admin';
-    
-    // Verificar se é admin
-    if (!user || (!isAdminEmail && !hasAdminRole)) {
-      console.log(`❌ AdminDashboard: Access denied for ${user?.email} - redirecting to /admin`);
-      navigate('/admin', { replace: true });
-      return;
+    // AdminProtectedRoute já verificou se é admin, então só carregar dados
+    if (user) {
+      console.log(`✅ AdminDashboard: Loading data for ${user?.email}`);
+      loadDashboardData();
     }
-
-    console.log(`✅ AdminDashboard: Access granted for ${user?.email}`);
-    loadDashboardData();
-  }, [user]); // Removido 'navigate' da dependência
+  }, [user]);
 
   const loadDashboardData = async () => {
     setLoading(true);
