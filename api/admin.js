@@ -201,38 +201,59 @@ module.exports = async function handler(req, res) {
     }
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'stats') {
-      // GET /admin/stats - Get system statistics using only public tables
+      // GET /admin/stats - Get system statistics excluding admin accounts
       
-      // Get unique users from subscriptions
-      const { data: uniqueUsers, error: uniqueUsersError } = await supabase
+      // Admin emails that should be excluded from stats
+      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com'];
+      
+      // Get admin user IDs to exclude from stats
+      const { data: adminUsers, error: adminUsersError } = await supabase.auth.admin.listUsers();
+      const adminUserIds = adminUsers?.users
+        ?.filter(user => adminEmails.includes(user.email || ''))
+        ?.map(user => user.id) || [];
+
+      // Get unique users from subscriptions (excluding admins)
+      const { data: allUserSubscriptions, error: uniqueUsersError } = await supabase
         .from('user_subscriptions')
         .select('user_id')
         .not('user_id', 'is', null);
       
-      const totalUsers = uniqueUsers ? [...new Set(uniqueUsers.map(u => u.user_id))].length : 0;
+      const nonAdminUsers = allUserSubscriptions?.filter(sub => 
+        !adminUserIds.includes(sub.user_id)
+      ) || [];
+      const totalUsers = [...new Set(nonAdminUsers.map(u => u.user_id))].length;
 
-      // Get active subscriptions
-      const { count: activeSubscriptions, error: subsError } = await supabase
+      // Get active subscriptions (excluding admin subscriptions)
+      const { data: allActiveSubscriptions, error: subsError } = await supabase
         .from('user_subscriptions')
-        .select('id', { count: 'exact', head: true })
+        .select('user_id')
         .eq('status', 'active')
         .gte('expires_at', new Date().toISOString());
+
+      const nonAdminActiveSubscriptions = allActiveSubscriptions?.filter(sub => 
+        !adminUserIds.includes(sub.user_id)
+      ) || [];
+      const activeSubscriptions = nonAdminActiveSubscriptions.length;
 
       // Get total conversations
       const { count: totalConversations, error: convsError } = await supabase
         .from('conversations')
         .select('id', { count: 'exact', head: true });
 
-      // Calculate monthly revenue
+      // Calculate monthly revenue (excluding admin subscriptions)
       const currentMonth = new Date().toISOString().slice(0, 7);
       const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 7);
       
-      const { data: monthlySubscriptions, error: revenueError } = await supabase
+      const { data: allMonthlySubscriptions, error: revenueError } = await supabase
         .from('user_subscriptions')
-        .select('subscription_type, assistant_id')
+        .select('subscription_type, assistant_id, user_id')
         .gte('created_at', `${currentMonth}-01T00:00:00.000Z`)
         .lt('created_at', `${nextMonth}-01T00:00:00.000Z`)
         .eq('status', 'active');
+
+      const monthlySubscriptions = allMonthlySubscriptions?.filter(sub => 
+        !adminUserIds.includes(sub.user_id)
+      ) || [];
 
       // Get assistant prices for revenue calculation
       const { data: assistants, error: assistantsError } = await supabase
@@ -262,12 +283,16 @@ module.exports = async function handler(req, res) {
         .select('id', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
 
-      // Calculate total active revenue (all active subscriptions)
-      const { data: activeSubscriptionsData, error: activeRevError } = await supabase
+      // Calculate total active revenue (all active subscriptions excluding admins)
+      const { data: allActiveSubscriptionsData, error: activeRevError } = await supabase
         .from('user_subscriptions')
-        .select('subscription_type, assistant_id')
+        .select('subscription_type, assistant_id, user_id')
         .eq('status', 'active')
         .gte('expires_at', new Date().toISOString());
+
+      const activeSubscriptionsData = allActiveSubscriptionsData?.filter(sub => 
+        !adminUserIds.includes(sub.user_id)
+      ) || [];
 
       let totalActiveRevenue = 0;
       if (activeSubscriptionsData && assistants && !activeRevError && !assistantsError) {
@@ -332,12 +357,16 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Admin emails that should be marked
+      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com'];
+
       // Create user map with real user data
       const userMap = new Map();
       const realUsers = authUsers?.users || [];
       
-      // Initialize with real user data
+      // Initialize with real user data (mark admins)
       realUsers.forEach(authUser => {
+        const isAdmin = adminEmails.includes(authUser.email || '');
         userMap.set(authUser.id, {
           id: authUser.id,
           email: authUser.email,
@@ -346,7 +375,8 @@ module.exports = async function handler(req, res) {
           last_sign_in_at: authUser.last_sign_in_at,
           email_confirmed_at: authUser.email_confirmed_at,
           user_metadata: authUser.user_metadata,
-          active_subscriptions: 0
+          active_subscriptions: 0,
+          is_admin: isAdmin
         });
       });
       

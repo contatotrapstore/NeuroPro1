@@ -1,6 +1,5 @@
-// Admin Configuration
+// Admin Configuration - Apenas os admins reais do projeto
 export const ADMIN_EMAILS = [
-  'admin@neuroialab.com',
   'gouveiarx@gmail.com', 
   'psitales@gmail.com'
 ] as const;

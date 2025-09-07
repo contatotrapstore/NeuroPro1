@@ -365,7 +365,14 @@ export default function AdminDashboard() {
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{user.name || 'Nome não informado'}</div>
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm font-medium text-gray-900">{user.name || 'Nome não informado'}</div>
+                            {user.is_admin && (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                Admin
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500">{user.email}</div>
                         </div>
                       </td>
@@ -405,13 +412,17 @@ export default function AdminDashboard() {
                         }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        <button 
-                          onClick={() => handleManageAssistants(user)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Gerenciar IAs"
-                        >
-                          <Settings size={16} />
-                        </button>
+                        {!user.is_admin ? (
+                          <button 
+                            onClick={() => handleManageAssistants(user)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Gerenciar IAs"
+                          >
+                            <Settings size={16} />
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 text-xs">Admin</span>
+                        )}
                       </td>
                     </tr>
                   ))}
