@@ -37,14 +37,14 @@ const PREDEFINED_ICONS = [
   { id: 'brain', name: 'Cérebro', category: 'medical' },
   { id: 'heart', name: 'Coração', category: 'medical' },
   { id: 'book', name: 'Livro', category: 'education' },
-  { id: 'graduation-cap', name: 'Capelo', category: 'education' },
+  { id: 'graduationCap', name: 'Capelo', category: 'education' },
   { id: 'mic', name: 'Microfone', category: 'communication' },
   { id: 'users', name: 'Usuários', category: 'social' },
   { id: 'target', name: 'Alvo', category: 'business' },
   { id: 'compass', name: 'Bússola', category: 'navigation' },
   { id: 'shield', name: 'Escudo', category: 'security' },
   { id: 'star', name: 'Estrela', category: 'misc' },
-  { id: 'lightbulb', name: 'Lâmpada', category: 'misc' },
+  { id: 'lightBulb', name: 'Lâmpada', category: 'misc' },
   { id: 'puzzle', name: 'Quebra-cabeça', category: 'misc' },
 ];
 

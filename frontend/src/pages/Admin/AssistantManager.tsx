@@ -454,14 +454,16 @@ export function AssistantManager() {
                   )}
 
                   {/* Pricing */}
-                  <div className="flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-xs text-gray-600">Mensal</p>
-                      <p className="font-bold">R$ {assistant.monthly_price.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Semestral</p>
-                      <p className="font-bold">R$ {assistant.semester_price.toFixed(2)}</p>
+                  <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-100">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Plano Mensal</p>
+                        <p className="text-xl font-bold text-green-600">R$ {assistant.monthly_price.toFixed(2)}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Plano Semestral</p>
+                        <p className="text-xl font-bold text-blue-600">R$ {assistant.semester_price.toFixed(2)}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -497,7 +499,7 @@ export function AssistantManager() {
                         variant="outline"
                         onClick={() => handleDelete(assistant)}
                         className="text-red-600 border-red-200 hover:bg-red-50"
-                        leftIcon={<Icon name="trash" className="w-3 h-3" />}
+                        title="Excluir assistente"
                       >
                         <Icon name="trash" className="w-3 h-3" />
                       </Button>

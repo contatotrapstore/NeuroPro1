@@ -106,6 +106,9 @@ import {
   Package,
   Gift,
   LogOut,
+  GraduationCap,
+  Lightbulb,
+  Puzzle,
 } from 'lucide-react';
 import { iconMap } from '../icons/AssistantIcons';
 
@@ -208,6 +211,21 @@ const uiIconMap = {
   target: Target,
   external: ExternalLink,
   refresh: RefreshCw,
+  
+  // Missing icons
+  trash: Trash2,
+  plus: Plus,
+  book: BookOpen,
+  graduationCap: GraduationCap,
+  lightBulb: Lightbulb,
+  puzzle: Puzzle,
+  compass: Compass,
+  shield: Shield,
+  users: Users,
+  mic: Mic,
+  alertCircle: AlertCircle,
+  barChart: BarChart3,
+  loader: RefreshCw,
 } as const;
 
 type AssistantIconKey = keyof typeof assistantIconMap;
