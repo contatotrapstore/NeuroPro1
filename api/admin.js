@@ -83,8 +83,9 @@ module.exports = async function handler(req, res) {
     // Lista de emails admin autorizados
     const ADMIN_EMAILS = [
       'admin@neuroialab.com',
+      'admin@neuroia.lab', // Email usado no frontend
       'gouveiarx@gmail.com',
-      'pstales@gmail.com'
+      'psitales@gmail.com' // Correção do email
     ];
     
     // Check admin role
