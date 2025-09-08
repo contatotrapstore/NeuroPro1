@@ -333,7 +333,7 @@ module.exports = async function handler(req, res) {
       // Get all unique users from subscriptions with aggregated data
       const { data: allSubscriptions, error: subsError } = await supabase
         .from('user_subscriptions')
-        .select('user_id, created_at, status, expires_at')
+        .select('user_id, created_at, status, expires_at, package_type, assistant_id')
         .order('created_at', { ascending: false });
 
       if (subsError) {
@@ -376,11 +376,12 @@ module.exports = async function handler(req, res) {
           email_confirmed_at: authUser.email_confirmed_at,
           user_metadata: authUser.user_metadata,
           active_subscriptions: 0,
+          active_packages: 0,
           is_admin: isAdmin
         });
       });
       
-      // Add subscription counts
+      // Add subscription and package counts
       if (allSubscriptions) {
         allSubscriptions.forEach(sub => {
           if (!sub.user_id || !userMap.has(sub.user_id)) return;
@@ -388,7 +389,13 @@ module.exports = async function handler(req, res) {
           const user = userMap.get(sub.user_id);
           
           if (sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
-            user.active_subscriptions++;
+            // Se tem package_type e é um pacote, conta como pacote
+            if (sub.package_type === 'package_3' || sub.package_type === 'package_6') {
+              user.active_packages++;
+            } else {
+              // Senão conta como assinatura individual (inclusive quando package_type é null, undefined ou 'individual')
+              user.active_subscriptions++;
+            }
           }
         });
       }

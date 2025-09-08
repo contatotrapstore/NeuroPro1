@@ -402,6 +402,70 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Pricing - Moved to main column for better space */}
+              <div className="rounded-2xl border shadow-neuro transition-all duration-300 glass-card p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                  <Icon name="dollarSign" className="w-5 h-5 text-green-600" />
+                  Configuração de Preços
+                </h3>
+                
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        💰 Preço Mensal (R$) *
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.monthly_price || ''}
+                        onChange={(e) => handleInputChange('monthly_price', parseFloat(e.target.value) || 0)}
+                        error={errors.monthly_price}
+                        className="w-full text-lg font-semibold rounded-xl border-2 focus:border-green-500 focus:ring-green-500/20"
+                        placeholder="39.90"
+                      />
+                      <p className="text-xs text-gray-500">Valor cobrado mensalmente por usuário</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        💎 Preço Semestral (R$) *
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.semester_price || ''}
+                        onChange={(e) => handleInputChange('semester_price', parseFloat(e.target.value) || 0)}
+                        error={errors.semester_price}
+                        className="w-full text-lg font-semibold rounded-xl border-2 focus:border-blue-500 focus:ring-blue-500/20"
+                        placeholder="199.00"
+                      />
+                      <p className="text-xs text-gray-500">Valor para pagamento semestral (6 meses)</p>
+                    </div>
+                  </div>
+
+                  {formData.monthly_price && formData.semester_price && (
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 mt-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon name="trendingDown" className="w-4 h-4 text-green-600" />
+                        <p className="text-sm font-semibold text-green-800">
+                          Economia Semestral
+                        </p>
+                      </div>
+                      <p className="text-lg font-bold text-green-700">
+                        {((1 - (formData.semester_price / (formData.monthly_price * 6))) * 100).toFixed(1)}% de desconto
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Cliente economiza R$ {((formData.monthly_price * 6) - formData.semester_price).toFixed(2)} 
+                        pagando semestralmente
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Right Column - Visual Settings */}
@@ -547,69 +611,6 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                 </CardContent>
               </Card>
 
-              {/* Pricing */}
-              <div className="rounded-2xl border shadow-neuro transition-all duration-300 glass-card p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                  <Icon name="dollarSign" className="w-5 h-5 text-green-600" />
-                  Configuração de Preços
-                </h3>
-                
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-6">
-                    <div className="space-y-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        💰 Preço Mensal (R$) *
-                      </label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.monthly_price || ''}
-                        onChange={(e) => handleInputChange('monthly_price', parseFloat(e.target.value) || 0)}
-                        error={errors.monthly_price}
-                        className="w-full text-lg font-semibold rounded-xl border-2 focus:border-green-500 focus:ring-green-500/20"
-                        placeholder="39.90"
-                      />
-                      <p className="text-xs text-gray-500">Valor cobrado mensalmente por usuário</p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        💎 Preço Semestral (R$) *
-                      </label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.semester_price || ''}
-                        onChange={(e) => handleInputChange('semester_price', parseFloat(e.target.value) || 0)}
-                        error={errors.semester_price}
-                        className="w-full text-lg font-semibold rounded-xl border-2 focus:border-blue-500 focus:ring-blue-500/20"
-                        placeholder="199.00"
-                      />
-                      <p className="text-xs text-gray-500">Valor para pagamento semestral (6 meses)</p>
-                    </div>
-                  </div>
-
-                  {formData.monthly_price && formData.semester_price && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 mt-6">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon name="trendingDown" className="w-4 h-4 text-green-600" />
-                        <p className="text-sm font-semibold text-green-800">
-                          Economia Semestral
-                        </p>
-                      </div>
-                      <p className="text-lg font-bold text-green-700">
-                        {((1 - (formData.semester_price / (formData.monthly_price * 6))) * 100).toFixed(1)}% de desconto
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        Cliente economiza R$ {((formData.monthly_price * 6) - formData.semester_price).toFixed(2)} 
-                        pagando semestralmente
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
