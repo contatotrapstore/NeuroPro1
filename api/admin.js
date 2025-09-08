@@ -724,9 +724,16 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Clean and prepare update data
-      const cleanUpdateData = { ...updateData };
-      delete cleanUpdateData.id; // Don't update ID
+      // Clean and prepare update data - remove only calculated/non-editable fields
+      const {
+        subscription_count,
+        total_conversations,
+        last_used_at,
+        id, // Don't allow ID changes
+        ...validFields
+      } = updateData;
+
+      const cleanUpdateData = { ...validFields };
       
       // Add audit trail
       cleanUpdateData.updated_by = user.id;

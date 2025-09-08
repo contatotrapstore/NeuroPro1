@@ -154,7 +154,16 @@ export function AssistantManager() {
 
   const handleEdit = (assistant: Assistant) => {
     console.log('🔧 Editando assistente:', assistant.name, assistant.id);
-    setEditingAssistant(assistant);
+    
+    // Clean assistant object to remove only calculated fields
+    const {
+      subscription_count,
+      total_conversations,
+      last_used_at,
+      ...cleanAssistant
+    } = assistant;
+    
+    setEditingAssistant(cleanAssistant);
     setShowEditor(true);
   };
 

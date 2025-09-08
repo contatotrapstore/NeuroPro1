@@ -206,8 +206,20 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
     try {
       setSaving(true);
 
+      // Filter out only calculated/non-editable fields
+      const {
+        subscription_count,
+        total_conversations,
+        last_used_at,
+        created_at,
+        updated_at,
+        created_by,
+        updated_by,
+        ...editableFields
+      } = formData;
+
       const saveData = {
-        ...formData,
+        ...editableFields,
         features: formData.features || [],
         monthly_price: Number(formData.monthly_price),
         semester_price: Number(formData.semester_price),
@@ -352,6 +364,18 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                     )}
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descrição Completa
+                    </label>
+                    <textarea
+                      value={formData.full_description || ''}
+                      onChange={(e) => handleInputChange('full_description', e.target.value)}
+                      placeholder="Descrição detalhada do assistente para o painel administrativo"
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -388,6 +412,33 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Especialização
+                    </label>
+                    <Input
+                      value={formData.specialization || ''}
+                      onChange={(e) => handleInputChange('specialization', e.target.value)}
+                      placeholder="Ex: Terapia cognitivo-comportamental, Avaliação neuropsicológica"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ordem de Exibição
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={formData.order_index || 0}
+                      onChange={(e) => handleInputChange('order_index', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Menor número aparece primeiro na lista
+                    </p>
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -400,6 +451,61 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       Assistente Ativo
                     </label>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Features */}
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-semibold">Características</h3>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Adicionar Característica
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={featureInput}
+                        onChange={(e) => setFeatureInput(e.target.value)}
+                        placeholder="Ex: Suporte 24/7, Relatórios detalhados"
+                        onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                      />
+                      <Button
+                        type="button"
+                        onClick={addFeature}
+                        variant="outline"
+                        className="shrink-0"
+                      >
+                        <Icon name="plus" className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {formData.features && formData.features.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Características Atuais
+                      </label>
+                      <div className="space-y-2">
+                        {formData.features.map((feature, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                          >
+                            <span className="text-sm">{feature}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeFeature(feature)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                            >
+                              <Icon name="x" className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
