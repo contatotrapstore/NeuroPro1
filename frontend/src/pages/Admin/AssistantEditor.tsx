@@ -403,8 +403,8 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                 </CardContent>
               </Card>
 
-              {/* Pricing - Moved to main column for better space */}
-              <div className="rounded-2xl border shadow-neuro transition-all duration-300 glass-card p-6">
+              {/* Pricing - In main column below Technical Settings */}
+              <div className="rounded-2xl border shadow-neuro transition-all duration-300 glass-card p-6 mt-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
                   <Icon name="dollarSign" className="w-5 h-5 text-green-600" />
                   Configuração de Preços
