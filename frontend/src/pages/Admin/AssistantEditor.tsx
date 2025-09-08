@@ -293,10 +293,10 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             
             {/* Left Column - Basic Info */}
-            <div className="xl:col-span-2 space-y-6">
+            <div className="lg:col-span-1 xl:col-span-2 space-y-6">
               
               {/* Basic Information */}
               <Card>
@@ -405,7 +405,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
             </div>
 
             {/* Right Column - Visual Settings */}
-            <div className="space-y-6">
+            <div className="lg:col-span-1 xl:col-span-1 space-y-6">
               
               {/* Icon and Color */}
               <Card>
@@ -553,36 +553,40 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                   <h3 className="text-lg font-semibold">Preços</h3>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preço Mensal (R$) *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.monthly_price || ''}
-                      onChange={(e) => handleInputChange('monthly_price', parseFloat(e.target.value) || 0)}
-                      error={errors.monthly_price}
-                    />
-                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Preço Mensal (R$) *
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.monthly_price || ''}
+                        onChange={(e) => handleInputChange('monthly_price', parseFloat(e.target.value) || 0)}
+                        error={errors.monthly_price}
+                        className="w-full"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preço Semestral (R$) *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.semester_price || ''}
-                      onChange={(e) => handleInputChange('semester_price', parseFloat(e.target.value) || 0)}
-                      error={errors.semester_price}
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Preço Semestral (R$) *
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.semester_price || ''}
+                        onChange={(e) => handleInputChange('semester_price', parseFloat(e.target.value) || 0)}
+                        error={errors.semester_price}
+                        className="w-full"
+                      />
+                    </div>
                   </div>
 
                   {formData.monthly_price && formData.semester_price && (
-                    <div className="p-3 bg-blue-50 rounded-lg">
+                    <div className="p-3 bg-blue-50 rounded-lg mt-4">
                       <p className="text-sm text-blue-800">
                         <strong>Economia semestral:</strong>{' '}
                         {((1 - (formData.semester_price / (formData.monthly_price * 6))) * 100).toFixed(1)}%

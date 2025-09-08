@@ -963,16 +963,54 @@ module.exports = async function handler(req, res) {
 
       try {
         if (action === 'add') {
-          // Add subscriptions
-          const subscriptionsToAdd = assistantIds.map(assistantId => ({
-            user_id: userId,
-            assistant_id: assistantId,
-            subscription_type: 'monthly',
-            status: 'active',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }));
+          // First, get assistant pricing information
+          const { data: assistants, error: assistantsError } = await supabase
+            .from('assistants')
+            .select('id, monthly_price, semester_price')
+            .in('id', assistantIds);
+
+          if (assistantsError) {
+            console.error('Error fetching assistants:', assistantsError);
+            return res.status(500).json({
+              success: false,
+              error: 'Erro ao buscar informações dos assistentes'
+            });
+          }
+
+          if (!assistants || assistants.length === 0) {
+            return res.status(400).json({
+              success: false,
+              error: 'Nenhum assistente encontrado com os IDs fornecidos'
+            });
+          }
+
+          // Create a map for quick price lookup
+          const assistantPriceMap = assistants.reduce((map, assistant) => {
+            map[assistant.id] = {
+              monthly_price: assistant.monthly_price || 39.90,
+              semester_price: assistant.semester_price || 199.00
+            };
+            return map;
+          }, {});
+
+          // Add subscriptions with proper amount field
+          const subscriptionsToAdd = assistantIds.map(assistantId => {
+            const priceInfo = assistantPriceMap[assistantId];
+            if (!priceInfo) {
+              throw new Error(`Assistente ${assistantId} não encontrado`);
+            }
+            
+            return {
+              user_id: userId,
+              assistant_id: assistantId,
+              subscription_type: 'monthly',
+              amount: priceInfo.monthly_price,
+              status: 'active',
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+          });
 
           const { error: insertError } = await supabase
             .from('user_subscriptions')
@@ -980,9 +1018,25 @@ module.exports = async function handler(req, res) {
 
           if (insertError) {
             console.error('Error adding subscriptions:', insertError);
-            return res.status(500).json({
+            console.error('Insert error details:', insertError.details);
+            console.error('Insert error code:', insertError.code);
+            
+            // Handle specific errors
+            let errorMessage = 'Erro ao adicionar assinaturas';
+            
+            if (insertError.code === '23505') { // Unique constraint violation
+              errorMessage = 'Usuário já possui assinatura para um ou mais assistentes selecionados';
+            } else if (insertError.code === '23503') { // Foreign key violation
+              errorMessage = 'Assistente ou usuário não encontrado no sistema';
+            } else if (insertError.code === '23514') { // Check constraint violation
+              errorMessage = 'Dados inválidos fornecidos para a assinatura';
+            }
+            
+            return res.status(400).json({
               success: false,
-              error: 'Erro ao adicionar assinaturas'
+              error: errorMessage,
+              details: insertError.message,
+              code: insertError.code
             });
           }
 
