@@ -115,7 +115,9 @@ module.exports = async function handler(req, res) {
       'admin@neuroialab.com',
       'admin@neuroia.lab', // Email usado no frontend
       'gouveiarx@gmail.com',
-      'psitales@gmail.com' // Correção do email
+      'psitales@gmail.com', // Email principal
+      'psitales.sales@gmail.com', // Email secundário
+      'psitales1@gmail.com' // Possível variação
     ];
     
     // Check admin role
@@ -127,6 +129,7 @@ module.exports = async function handler(req, res) {
     console.log('🔍 Admin Access Check:', {
       userEmail: user.email,
       userEmailLower: user.email?.toLowerCase(),
+      userEmailOriginal: user.email,
       hasAdminRole: hasAdminRole,
       userMetadata: user.user_metadata,
       isInAdminList: isInAdminList,
@@ -139,6 +142,17 @@ module.exports = async function handler(req, res) {
       finalIsAdmin: isAdmin,
       serviceKeyConfigured: !!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SERVICE_ROLE_KEY_HERE'
     });
+    
+    // Log específico para psitales
+    if (user.email?.toLowerCase().includes('psitales')) {
+      console.log('🎯 PSITALES DEBUG:', {
+        exactEmail: `"${user.email}"`,
+        emailLength: user.email?.length,
+        adminEmailsIncludePsitales: ADMIN_EMAILS.filter(e => e.includes('psitales')),
+        directMatch: ADMIN_EMAILS.includes(user.email?.toLowerCase()),
+        userAuth: user.auth_metadata || user.app_metadata || user.user_metadata
+      });
+    }
     
     if (!isAdmin) {
       console.log('❌ Admin access denied for:', user.email);
