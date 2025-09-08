@@ -292,7 +292,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="p-6 pb-8 overflow-y-auto max-h-[calc(90vh-180px)]">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             
             {/* Left Column - Basic Info */}
