@@ -786,15 +786,20 @@ module.exports = async function handler(req, res) {
     else if (req.method === 'DELETE' && pathParts.length === 3 && pathParts[1] === 'assistants') {
       // DELETE /admin/assistants/:id - Delete assistant (soft delete)
       const assistantId = pathParts[2];
+      
+      console.log('🗑️ Iniciando exclusão de assistente:', assistantId);
 
       // Get current data for audit log
-      const { data: assistantToDelete } = await supabase
+      const { data: assistantToDelete, error: findError } = await supabase
         .from('assistants')
         .select('*')
         .eq('id', assistantId)
         .single();
+        
+      console.log('🔍 Assistente encontrado:', assistantToDelete, 'Erro:', findError);
 
       if (!assistantToDelete) {
+        console.log('❌ Assistente não encontrado para exclusão');
         return res.status(404).json({
           success: false,
           message: 'Assistente não encontrado'
@@ -802,11 +807,13 @@ module.exports = async function handler(req, res) {
       }
 
       // Check if assistant has active subscriptions
-      const { count: activeSubscriptions } = await supabase
+      const { count: activeSubscriptions, error: subError } = await supabase
         .from('user_subscriptions')
         .select('id', { count: 'exact', head: true })
         .eq('assistant_id', assistantId)
         .eq('status', 'active');
+        
+      console.log('📊 Assinaturas ativas encontradas:', activeSubscriptions, 'Erro:', subError);
 
       if (activeSubscriptions > 0) {
         return res.status(400).json({

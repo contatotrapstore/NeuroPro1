@@ -169,17 +169,24 @@ export function AssistantManager() {
     }
 
     try {
+      console.log('🗑️ Tentando excluir assistente:', assistant.id, assistant.name);
+      
       const result = await apiService.delete(`/admin/assistants/${assistant.id}`);
+      
+      console.log('🗑️ Resultado da exclusão:', result);
 
       if (result.success) {
+        console.log('✅ Assistente excluído com sucesso, recarregando lista...');
         await loadAssistants(); // Reload to get updated list
         toast.success('Assistente excluído com sucesso!');
       } else {
+        console.error('❌ Erro na exclusão:', result.error);
         toast.error(result.error || 'Erro ao excluir assistente');
       }
-    } catch (error) {
-      console.error('Erro ao excluir assistente:', error);
-      toast.error('Erro ao excluir assistente');
+    } catch (error: any) {
+      console.error('❌ Erro ao excluir assistente:', error);
+      console.error('❌ Error details:', error.message, error.stack);
+      toast.error(`Erro ao excluir assistente: ${error.message}`);
     }
   };
 

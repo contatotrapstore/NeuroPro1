@@ -447,23 +447,6 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                     </div>
                   </div>
 
-                  {formData.monthly_price && formData.semester_price && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 mt-6">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon name="trendingDown" className="w-4 h-4 text-green-600" />
-                        <p className="text-sm font-semibold text-green-800">
-                          Economia Semestral
-                        </p>
-                      </div>
-                      <p className="text-lg font-bold text-green-700">
-                        {((1 - (formData.semester_price / (formData.monthly_price * 6))) * 100).toFixed(1)}% de desconto
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        Cliente economiza R$ {((formData.monthly_price * 6) - formData.semester_price).toFixed(2)} 
-                        pagando semestralmente
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
