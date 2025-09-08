@@ -10,8 +10,8 @@ export class ApiService {
   private requestTimestamps = new Map<string, number>();
   private readonly CACHE_TTL = 60000; // 60 seconds (aumentado)
   private readonly MAX_RETRIES = 3;
-  private readonly BASE_DELAY = 2000; // 2 seconds
-  private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
+  private readonly BASE_DELAY = 500; // 500ms - otimizado para chat
+  private readonly MIN_REQUEST_INTERVAL = 100; // 100ms - reduzido para melhor performance
 
   constructor() {
     // Detectar se está em produção baseado na URL
@@ -46,7 +46,6 @@ export class ApiService {
   // Get current auth token
   private async getAuthToken(): Promise<string | null> {
     try {
-      console.log('🔑 Obtendo token de autenticação...');
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -55,16 +54,8 @@ export class ApiService {
       }
       
       if (!session) {
-        console.log('❌ Nenhuma sessão encontrada');
         return null;
       }
-      
-      console.log('✅ Sessão encontrada:', {
-        userId: session.user?.id,
-        email: session.user?.email,
-        hasToken: !!session.access_token,
-        tokenLength: session.access_token?.length
-      });
       
       return session?.access_token || null;
     } catch (error) {
@@ -224,26 +215,19 @@ export class ApiService {
 
       // Add authorization header if auth is required or available
       if (requireAuth) {
-        console.log('🔐 Autenticação obrigatória para:', endpoint);
         const token = await this.getAuthToken();
         if (!token) {
-          console.log('❌ Token não encontrado para requisição obrigatória');
           return {
             success: false,
             error: 'Usuário não autenticado. Faça login para continuar.'
           };
         }
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('✅ Token adicionado ao header');
       } else {
         // Optional auth - include token if available but don't require it
-        console.log('🔓 Autenticação opcional para:', endpoint);
         const token = await this.getAuthToken();
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          console.log('✅ Token opcional adicionado ao header');
-        } else {
-          console.log('ℹ️ Sem token para autenticação opcional');
         }
       }
 
@@ -400,11 +384,11 @@ export class ApiService {
   }
 
   async sendMessage(conversationId: string, message: string): Promise<ApiResponse<any>> {
-    return this.post(`/chat/conversations/${conversationId}/messages`, { content: message });
+    return this.post(`/chat/conversations/${conversationId}/messages`, { content: message }, { skipCache: true });
   }
 
   async getMessages(conversationId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/chat/conversations/${conversationId}/messages`);
+    return this.get(`/chat/conversations/${conversationId}/messages`, { skipCache: true });
   }
 
   async deleteConversation(conversationId: string): Promise<ApiResponse<any>> {

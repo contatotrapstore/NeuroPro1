@@ -8,6 +8,8 @@ module.exports = async function handler(req, res) {
   // Always set CORS headers first
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
+    'https://www.neuroialab.com.br',
+    'https://neuroialab.com.br',
     'http://localhost:5173',
     'http://localhost:3000'
   ];

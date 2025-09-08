@@ -222,7 +222,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Selecionar conversa com debounce
+  // Selecionar conversa
   const selectConversation = async (conversationId: string): Promise<void> => {
     if (!user || state.isTransitioning) return;
 
@@ -234,66 +234,63 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Se é a mesma conversa, não fazer nada
     if (state.currentConversation?.id === conversationId) return;
 
-    // Debounce de 200ms para prevenir cliques rápidos
-    selectTimeoutRef.current = setTimeout(async () => {
-      try {
-        // Cancelar operações pendentes
-        cancelPendingOperations();
-        
-        dispatch({ type: 'SET_TRANSITIONING', payload: true });
-        dispatch({ type: 'SET_ERROR', payload: null });
-        
-        // Limpar mensagens imediatamente ao trocar conversa
-        dispatch({ type: 'CLEAR_MESSAGES' });
+    try {
+      // Cancelar operações pendentes
+      cancelPendingOperations();
+      
+      dispatch({ type: 'SET_TRANSITIONING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      // Limpar mensagens imediatamente ao trocar conversa
+      dispatch({ type: 'CLEAR_MESSAGES' });
 
-        // Primeiro, tentar encontrar a conversa no estado atual
-        let conversation = state.conversations.find(c => c.id === conversationId);
+      // Primeiro, tentar encontrar a conversa no estado atual
+      let conversation = state.conversations.find(c => c.id === conversationId);
+      
+      // Se não encontrou na lista atual, tentar recarregar as conversas
+      if (!conversation) {
+        console.log('Conversa não encontrada no estado atual, recarregando...');
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) {
+          dispatch({ type: 'SET_ERROR', payload: 'Usuário não autenticado' });
+          return;
+        }
+
+        const apiService = ApiService.getInstance();
+        const result = await apiService.getConversations();
         
-        // Se não encontrou na lista atual, tentar recarregar as conversas
+        if (!result.success) {
+          dispatch({ type: 'SET_ERROR', payload: result.error || 'Erro ao carregar conversas' });
+          return;
+        }
+
+        // Atualizar as conversas no estado
+        dispatch({ type: 'SET_CONVERSATIONS', payload: result.data || [] });
+        
+        // Tentar encontrar a conversa novamente
+        conversation = result.data?.find(c => c.id === conversationId);
+        
         if (!conversation) {
-          console.log('Conversa não encontrada no estado atual, recarregando...');
-          const { data: session } = await supabase.auth.getSession();
-          if (!session.session) {
-            dispatch({ type: 'SET_ERROR', payload: 'Usuário não autenticado' });
-            return;
-          }
-
-          const apiService = ApiService.getInstance();
-          const result = await apiService.getConversations();
-          
-          if (!result.success) {
-            dispatch({ type: 'SET_ERROR', payload: result.error || 'Erro ao carregar conversas' });
-            return;
-          }
-
-          // Atualizar as conversas no estado
-          dispatch({ type: 'SET_CONVERSATIONS', payload: result.data || [] });
-          
-          // Tentar encontrar a conversa novamente
-          conversation = result.data?.find(c => c.id === conversationId);
-          
-          if (!conversation) {
-            dispatch({ type: 'SET_ERROR', payload: 'Conversa não encontrada' });
-            return;
-          }
+          dispatch({ type: 'SET_ERROR', payload: 'Conversa não encontrada' });
+          return;
         }
-
-        // Selecionar a conversa
-        dispatch({ type: 'SET_CURRENT_CONVERSATION', payload: conversation });
-        
-        // Carregar mensagens da conversa com novo AbortController
-        abortControllerRef.current = new AbortController();
-        await loadMessages(conversationId);
-
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          console.error('Erro ao selecionar conversa:', error);
-          dispatch({ type: 'SET_ERROR', payload: error.message });
-        }
-      } finally {
-        dispatch({ type: 'SET_TRANSITIONING', payload: false });
       }
-    }, 200);
+
+      // Selecionar a conversa
+      dispatch({ type: 'SET_CURRENT_CONVERSATION', payload: conversation });
+      
+      // Carregar mensagens da conversa com novo AbortController
+      abortControllerRef.current = new AbortController();
+      await loadMessages(conversationId);
+
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Erro ao selecionar conversa:', error);
+        dispatch({ type: 'SET_ERROR', payload: error.message });
+      }
+    } finally {
+      dispatch({ type: 'SET_TRANSITIONING', payload: false });
+    }
   };
 
   // Enviar mensagem com validações

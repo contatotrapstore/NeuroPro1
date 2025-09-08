@@ -11,6 +11,8 @@ module.exports = async function handler(req, res) {
   // CORS Headers
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
+    'https://www.neuroialab.com.br',
+    'https://neuroialab.com.br',
     'http://localhost:5173',
     'http://localhost:3000'
   ];
@@ -294,17 +296,11 @@ module.exports = async function handler(req, res) {
       // Try to get AI response if OpenAI is configured
       let assistantReply = null;
       
-      console.log('🤖 OpenAI Configuration Check:', {
-        hasApiKey: !!process.env.OPENAI_API_KEY,
-        keyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
-        keyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'none',
-        hasAssistantId: !!conversation.assistants?.openai_assistant_id,
-        assistantId: conversation.assistants?.openai_assistant_id || 'none',
-        threadId: conversation.thread_id,
-        conversationData: conversation,
-        hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        supabaseServiceKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0,
-        debugStep: 'BEFORE_OPENAI_VALIDATION'
+      // OpenAI configuration validation
+      console.log('🤖 OpenAI Check:', {
+        hasKey: !!process.env.OPENAI_API_KEY,
+        hasAssistant: !!conversation.assistants?.openai_assistant_id,
+        threadId: conversation.thread_id
       });
 
       // Validate OpenAI configuration before proceeding
@@ -348,9 +344,7 @@ module.exports = async function handler(req, res) {
           
           console.log('✅ Run created:', { 
             runId: run.id, 
-            status: run.status,
-            hasRunId: !!run.id,
-            runObject: Object.keys(run || {})
+            status: run.status
           });
 
           if (!run || !run.id) {
@@ -390,7 +384,7 @@ module.exports = async function handler(req, res) {
               runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: workingThreadId });
               attempts++;
               
-              if (attempts % 10 === 0 || attempts === 1) {
+              if (attempts % 15 === 0 || attempts === 1) {
                 console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}, elapsed: ${Math.round((Date.now() - startTime) / 1000)}s`);
               }
             } catch (retrieveError) {
