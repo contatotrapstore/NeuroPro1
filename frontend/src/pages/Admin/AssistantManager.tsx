@@ -249,7 +249,7 @@ export function AssistantManager() {
         <Button 
           onClick={handleCreate}
           className="bg-neuro-primary hover:bg-neuro-primary-hover"
-          leftIcon={<Icon name="plus" className="w-4 h-4" />}
+          leftIcon={<Icon name="plus" className="w-4 h-4 text-white" />}
         >
           Nova IA
         </Button>
@@ -532,7 +532,7 @@ export function AssistantManager() {
             </p>
             <Button 
               onClick={handleCreate}
-              leftIcon={<Icon name="plus" className="w-4 h-4" />}
+              leftIcon={<Icon name="plus" className="w-4 h-4 text-white" />}
             >
               Criar Nova IA
             </Button>

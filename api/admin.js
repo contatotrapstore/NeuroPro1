@@ -784,7 +784,7 @@ module.exports = async function handler(req, res) {
     }
 
     else if (req.method === 'DELETE' && pathParts.length === 3 && pathParts[1] === 'assistants') {
-      // DELETE /admin/assistants/:id - Delete assistant (soft delete)
+      // DELETE /admin/assistants/:id - Delete assistant (hard delete)
       const assistantId = pathParts[2];
       
       console.log('🗑️ Iniciando exclusão de assistente:', assistantId);
@@ -822,17 +822,12 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Soft delete - just deactivate
-      const { data: assistant, error } = await supabase
+      // Hard delete - remove completely from database
+      console.log('💥 Procedendo com exclusão física do assistente');
+      const { error } = await supabase
         .from('assistants')
-        .update({ 
-          is_active: false, 
-          updated_by: user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', assistantId)
-        .select()
-        .single();
+        .delete()
+        .eq('id', assistantId);
 
       if (error) {
         console.error('Error deleting assistant:', error);
@@ -852,14 +847,14 @@ module.exports = async function handler(req, res) {
           entity_type: 'assistant',
           entity_id: assistantId,
           old_data: assistantToDelete,
-          new_data: assistant,
+          new_data: null,
           ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
           user_agent: req.headers['user-agent']
         });
 
       return res.json({
         success: true,
-        data: assistant,
+        data: null,
         message: 'Assistente excluído com sucesso'
       });
     }
