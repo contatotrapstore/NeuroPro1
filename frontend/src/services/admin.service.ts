@@ -50,6 +50,15 @@ export interface AdminUser {
     profession?: string;
   };
   active_subscriptions: number;
+  active_packages?: number;
+  availableAssistants?: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    icon_url?: string;
+    icon_type?: 'svg' | 'image' | 'emoji';
+    color_theme: string;
+  }>;
 }
 
 export class AdminService {

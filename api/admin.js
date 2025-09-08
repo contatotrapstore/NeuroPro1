@@ -393,6 +393,39 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Get all assistants to calculate available assistants for each user
+      const { data: allAssistants, error: assistantsError } = await supabase
+        .from('assistants')
+        .select('id, name, icon, icon_url, icon_type, color_theme')
+        .eq('is_active', true);
+
+      if (assistantsError) {
+        console.error('Error fetching assistants for user calculation:', assistantsError);
+      }
+
+      // Add available assistants information to each user
+      for (const [userId, user] of userMap) {
+        if (allAssistants) {
+          // Get user's subscribed assistants
+          const userSubscriptions = allSubscriptions?.filter(sub => 
+            sub.user_id === userId && 
+            sub.status === 'active' && 
+            new Date(sub.expires_at) > new Date()
+          ) || [];
+
+          const subscribedAssistantIds = userSubscriptions.map(sub => sub.assistant_id);
+          
+          // Filter available assistants
+          const availableAssistants = allAssistants
+            .filter(assistant => !subscribedAssistantIds.includes(assistant.id))
+            .slice(0, 5); // Limit to 5 for display
+
+          user.availableAssistants = availableAssistants;
+        } else {
+          user.availableAssistants = [];
+        }
+      }
+
       // Convert map to array and paginate
       const allUsers = Array.from(userMap.values());
       const paginatedUsers = allUsers.slice(offset, offset + limit);
@@ -984,14 +1017,28 @@ module.exports = async function handler(req, res) {
             });
           }
 
-          // Create a map for quick price lookup
+          // Create a map for quick price lookup with proper type conversion
+          console.log('📊 Raw assistant data from DB:', assistants);
+          
           const assistantPriceMap = assistants.reduce((map, assistant) => {
+            const monthlyPrice = parseFloat(assistant.monthly_price) || 39.90;
+            const semesterPrice = parseFloat(assistant.semester_price) || 199.00;
+            
+            console.log(`💰 Processing prices for ${assistant.id}:`, {
+              raw_monthly: assistant.monthly_price,
+              raw_semester: assistant.semester_price,
+              parsed_monthly: monthlyPrice,
+              parsed_semester: semesterPrice
+            });
+            
             map[assistant.id] = {
-              monthly_price: assistant.monthly_price || 39.90,
-              semester_price: assistant.semester_price || 199.00
+              monthly_price: monthlyPrice,
+              semester_price: semesterPrice
             };
             return map;
           }, {});
+          
+          console.log('🗂️ Final price map:', assistantPriceMap);
 
           // Add subscriptions with proper amount field
           const subscriptionsToAdd = assistantIds.map(assistantId => {
@@ -1000,11 +1047,18 @@ module.exports = async function handler(req, res) {
               throw new Error(`Assistente ${assistantId} não encontrado`);
             }
             
+            // Ensure amount is a valid number
+            const amount = Number(priceInfo.monthly_price);
+            if (isNaN(amount) || amount <= 0) {
+              console.error(`Invalid amount for assistant ${assistantId}:`, priceInfo.monthly_price);
+              throw new Error(`Preço inválido para assistente ${assistantId}`);
+            }
+            
             return {
               user_id: userId,
               assistant_id: assistantId,
               subscription_type: 'monthly',
-              amount: priceInfo.monthly_price,
+              amount: amount,
               status: 'active',
               expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
               created_at: new Date().toISOString(),
