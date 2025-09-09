@@ -215,6 +215,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         updated_at,
         created_by,
         updated_by,
+        stats, // Remove stats field that might be added locally
         ...editableFields
       } = formData;
 

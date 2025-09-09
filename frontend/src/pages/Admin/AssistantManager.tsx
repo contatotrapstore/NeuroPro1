@@ -160,6 +160,7 @@ export function AssistantManager() {
       subscription_count,
       total_conversations,
       last_used_at,
+      stats, // Remove stats field that's added locally
       ...cleanAssistant
     } = assistant;
     

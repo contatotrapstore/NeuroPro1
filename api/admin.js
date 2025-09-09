@@ -729,6 +729,7 @@ module.exports = async function handler(req, res) {
         subscription_count,
         total_conversations,
         last_used_at,
+        stats, // Remove stats field that might be sent from frontend
         id, // Don't allow ID changes
         ...validFields
       } = updateData;
