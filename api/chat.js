@@ -2,11 +2,11 @@ const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
 
 module.exports = async function handler(req, res) {
-  console.log('🚀 Chat API v2.4 - PERFORMANCE OPTIMIZED - Progressive polling + Early exit - Build: ' + Date.now());
+  console.log('🚀 Chat API v2.5 - FIXED PARAMETERS - Compatible with OpenAI Assistants API - Build: ' + Date.now());
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
   console.log('Deploy timestamp:', new Date().toISOString());
-  console.log('Performance improvements: Progressive backoff, Early exit, Optimized model params');
+  console.log('Fix: Removed invalid params (temperature, max_tokens, top_p), using max_completion_tokens');
   
   // CORS Headers
   const allowedOrigins = [
@@ -336,13 +336,11 @@ module.exports = async function handler(req, res) {
             content: content
           });
 
-          // Create run with optimized parameters
+          // Create run (fixed parameters for Assistants API)
           console.log('▶️ Creating run with assistant...');
           const run = await openai.beta.threads.runs.create(workingThreadId, {
             assistant_id: conversation.assistants.openai_assistant_id,
-            temperature: 0.7,
-            max_tokens: 3000,
-            top_p: 0.95,
+            max_completion_tokens: 3000,
             metadata: {
               conversation_id: conversationId,
               user_id: userId,
