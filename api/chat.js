@@ -2,11 +2,11 @@ const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
 
 module.exports = async function handler(req, res) {
-  console.log('🚀 Chat API v2.3 - CACHE BYPASS - Fixed thread_id issue - Build: ' + Date.now());
+  console.log('🚀 Chat API v2.4 - PERFORMANCE OPTIMIZED - Progressive polling + Early exit - Build: ' + Date.now());
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
   console.log('Deploy timestamp:', new Date().toISOString());
-  console.log('File modification check: THREAD_ID_FIX_ENABLED');
+  console.log('Performance improvements: Progressive backoff, Early exit, Optimized model params');
   
   // CORS Headers
   const allowedOrigins = [
@@ -336,10 +336,18 @@ module.exports = async function handler(req, res) {
             content: content
           });
 
-          // Create run
+          // Create run with optimized parameters
           console.log('▶️ Creating run with assistant...');
           const run = await openai.beta.threads.runs.create(workingThreadId, {
-            assistant_id: conversation.assistants.openai_assistant_id
+            assistant_id: conversation.assistants.openai_assistant_id,
+            temperature: 0.7,
+            max_tokens: 3000,
+            top_p: 0.95,
+            metadata: {
+              conversation_id: conversationId,
+              user_id: userId,
+              timestamp: new Date().toISOString()
+            }
           });
           
           console.log('✅ Run created:', { 
@@ -356,11 +364,10 @@ module.exports = async function handler(req, res) {
             throw new Error('Failed to create run - invalid response from OpenAI');
           }
 
-          // Wait for completion (extended timeout)
-          // Fix: Use correct syntax for OpenAI v5 API - runId first, threadId in options
+          // Wait for completion (optimized timeout and polling)
           let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: workingThreadId });
           let attempts = 0;
-          const maxAttempts = 90; // Increased to 90 seconds
+          const maxAttempts = 60; // Reduced to 60 seconds for faster failures
           
           console.log('⏳ Waiting for run completion...', { 
             initialStatus: runStatus.status,
@@ -369,31 +376,44 @@ module.exports = async function handler(req, res) {
           });
           
           const startTime = Date.now();
-          const maxTimeMs = 120000; // 120 seconds for chat
+          const maxTimeMs = 60000; // 60 seconds maximum wait time
           
           // Status que indicam que o run ainda está processando
           const processingStatuses = ['queued', 'in_progress', 'running'];
           // Status que indicam conclusão (sucesso ou falha)
           const finalStatuses = ['completed', 'failed', 'cancelled', 'expired', 'requires_action'];
           
-          while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts && (Date.now() - startTime) < maxTimeMs) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            try {
-              // Fix: Use correct syntax for OpenAI v5 API - runId first, threadId in options
-              runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: workingThreadId });
-              attempts++;
+          // Early exit if already completed
+          if (finalStatuses.includes(runStatus.status)) {
+            console.log('✅ Run already completed on first check:', runStatus.status);
+          } else {
+            while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts && (Date.now() - startTime) < maxTimeMs) {
+              // Progressive backoff: 300ms, 500ms, 750ms, 1000ms (max)
+              const delayMs = Math.min(300 + (attempts * 100), 1000);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
               
-              if (attempts % 15 === 0 || attempts === 1) {
-                console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}, elapsed: ${Math.round((Date.now() - startTime) / 1000)}s`);
-              }
-            } catch (retrieveError) {
-              console.error('❌ Error retrieving run status:', retrieveError);
-              attempts++;
-              
-              // If we can't retrieve status, wait a bit longer and try again
-              if (attempts >= maxAttempts) {
-                throw new Error('Failed to retrieve run status after multiple attempts');
+              try {
+                // Fix: Use correct syntax for OpenAI v5 API - runId first, threadId in options
+                runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: workingThreadId });
+                attempts++;
+                
+                // Early exit on completion
+                if (finalStatuses.includes(runStatus.status)) {
+                  console.log(`🎯 Run completed early at attempt ${attempts}: ${runStatus.status}`);
+                  break;
+                }
+                
+                if (attempts % 10 === 0 || attempts === 1) {
+                  console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}, elapsed: ${Math.round((Date.now() - startTime) / 1000)}s, next delay: ${Math.min(300 + (attempts * 100), 1000)}ms`);
+                }
+              } catch (retrieveError) {
+                console.error('❌ Error retrieving run status:', retrieveError);
+                attempts++;
+                
+                // If we can't retrieve status, wait a bit longer and try again
+                if (attempts >= maxAttempts) {
+                  throw new Error('Failed to retrieve run status after multiple attempts');
+                }
               }
             }
           }
