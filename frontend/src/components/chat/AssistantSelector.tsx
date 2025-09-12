@@ -46,7 +46,8 @@ export function AssistantSelector({ onClose, onSelect }: AssistantSelectorProps)
       }
 
       // Buscar assistentes que o usuário tem acesso usando o ApiService
-      const result = await apiService.getUserAssistants();
+      // Forçar refresh para garantir dados atualizados no chat
+      const result = await apiService.get<Assistant[]>('/assistants/user', { forceRefresh: true });
       
       if (!result.success) {
         if (result.error?.includes('não autenticado')) {

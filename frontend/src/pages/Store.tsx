@@ -62,13 +62,13 @@ export default function Store() {
     };
   }, [searchParams]);
 
-  const loadAssistants = async () => {
+  const loadAssistants = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
       
       const apiService = ApiService.getInstance();
-      const result = await apiService.getAssistants();
+      const result = await apiService.getAssistants(forceRefresh);
 
       if (!result.success) {
         throw new Error(result.error || 'Erro ao carregar assistentes');
@@ -81,6 +81,10 @@ export default function Store() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadAssistants(true); // Force refresh
   };
 
   const handleSubscribe = (assistantId: string) => {
@@ -497,6 +501,24 @@ export default function Store() {
                         <option value="Fonoaudiologia">Fonoaudiologia</option>
                       </select>
                       <Icon name="chevronDown" className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neuro-gray-400 pointer-events-none" />
+                    </div>
+                    
+                    {/* Botão de Refresh */}
+                    <div className="flex justify-center md:justify-start">
+                      <Button
+                        variant="outline"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        className="glass-card border border-neuro-border/20 hover:border-neuro-primary/40 transition-all"
+                        leftIcon={
+                          <Icon 
+                            name={loading ? "loader" : "refreshCw"} 
+                            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                          />
+                        }
+                      >
+                        {loading ? 'Atualizando...' : 'Atualizar'}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

@@ -1,25 +1,11 @@
 {
   "version": 2,
-  "name": "neuro-pro-frontend",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
-  "framework": "vite",
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self' https://www.neuroialab.com.br https://neuroialab.com.br; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://neuro-pro-backend.vercel.app https://neuro-pro-backend-phi.vercel.app https://avgoyfartmzepdgzhroc.supabase.co https://www.neuroialab.com.br https://neuroialab.com.br;"
-        }
-      ]
-    }
-  ],
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     }
   ]
 }

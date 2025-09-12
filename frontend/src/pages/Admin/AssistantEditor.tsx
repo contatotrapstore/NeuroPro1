@@ -236,6 +236,10 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       }
 
       if (result.success) {
+        // Invalidar cache para sincronizar com loja e clientes
+        apiService.clearCache('assistants');
+        apiService.clearCache('/assistants');
+        
         toast.success(
           isEditing 
             ? 'Assistente atualizado com sucesso!' 

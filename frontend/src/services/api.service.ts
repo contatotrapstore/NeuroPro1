@@ -8,7 +8,8 @@ export class ApiService {
   private requestQueue = new Map<string, Promise<any>>();
   private retryCount = new Map<string, number>();
   private requestTimestamps = new Map<string, number>();
-  private readonly CACHE_TTL = 60000; // 60 seconds (aumentado)
+  private readonly CACHE_TTL = 30000; // 30 seconds (reduzido para sincronização mais rápida)
+  private readonly ASSISTANTS_CACHE_TTL = 15000; // 15 seconds para assistentes (dados críticos)
   private readonly MAX_RETRIES = 3;
   private readonly BASE_DELAY = 500; // 500ms - otimizado para chat
   private readonly MIN_REQUEST_INTERVAL = 100; // 100ms - reduzido para melhor performance
@@ -93,15 +94,35 @@ export class ApiService {
   }
 
   // Check cache for GET requests
-  private getCachedData<T>(cacheKey: string): T | null {
+  private getCachedData<T>(cacheKey: string, customTTL?: number): T | null {
     const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+    const ttl = customTTL || this.CACHE_TTL;
+    if (cached && Date.now() - cached.timestamp < ttl) {
       return cached.data;
     }
     if (cached) {
       this.cache.delete(cacheKey); // Remove expired cache
     }
     return null;
+  }
+
+  // Clear specific cache entries
+  public clearCache(pattern?: string): void {
+    if (pattern) {
+      // Clear cache entries matching pattern
+      const keysToDelete = Array.from(this.cache.keys()).filter(key => key.includes(pattern));
+      keysToDelete.forEach(key => this.cache.delete(key));
+      console.log(`🧹 Cleared ${keysToDelete.length} cache entries matching pattern: ${pattern}`);
+    } else {
+      // Clear all cache
+      this.cache.clear();
+      console.log('🧹 Cleared all cache');
+    }
+  }
+
+  // Force refresh by clearing cache for specific endpoint
+  public invalidateCache(endpoint: string): void {
+    this.clearCache(endpoint);
   }
 
   // Set cache data
@@ -182,15 +203,22 @@ export class ApiService {
   // Make authenticated API calls
   private async makeRequest<T>(
     endpoint: string, 
-    options: RequestInit & { requireAuth?: boolean; skipCache?: boolean } = {}
+    options: RequestInit & { requireAuth?: boolean; skipCache?: boolean; forceRefresh?: boolean } = {}
   ): Promise<ApiResponse<T>> {
-    const { requireAuth = true, skipCache = false, ...fetchOptions } = options;
+    const { requireAuth = true, skipCache = false, forceRefresh = false, ...fetchOptions } = options;
     const method = (fetchOptions.method || 'GET').toUpperCase();
     const cacheKey = `${method}:${endpoint}${fetchOptions.body ? ':' + fetchOptions.body : ''}`;
 
+    // Clear cache if force refresh is requested
+    if (forceRefresh) {
+      this.cache.delete(cacheKey);
+    }
+
     // For GET requests, check cache first
-    if (method === 'GET' && !skipCache) {
-      const cached = this.getCachedData<ApiResponse<T>>(cacheKey);
+    if (method === 'GET' && !skipCache && !forceRefresh) {
+      // Use shorter TTL for assistants endpoint
+      const customTTL = endpoint.includes('/assistants') ? this.ASSISTANTS_CACHE_TTL : undefined;
+      const cached = this.getCachedData<ApiResponse<T>>(cacheKey, customTTL);
       if (cached) {
         return cached;
       }
@@ -204,10 +232,10 @@ export class ApiService {
 
   private async _makeRequestInternal<T>(
     endpoint: string, 
-    options: RequestInit & { requireAuth?: boolean; skipCache?: boolean } = {}
+    options: RequestInit & { requireAuth?: boolean; skipCache?: boolean; forceRefresh?: boolean } = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const { requireAuth = true, skipCache = false, ...fetchOptions } = options;
+      const { requireAuth = true, skipCache = false, forceRefresh = false, ...fetchOptions } = options;
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...fetchOptions.headers,
@@ -286,7 +314,7 @@ export class ApiService {
   }
 
   // GET request
-  async get<T>(endpoint: string, options: { requireAuth?: boolean } = {}): Promise<ApiResponse<T>> {
+  async get<T>(endpoint: string, options: { requireAuth?: boolean; forceRefresh?: boolean } = {}): Promise<ApiResponse<T>> {
     return this.makeRequest<T>(endpoint, { 
       method: 'GET',
       ...options 
@@ -320,8 +348,8 @@ export class ApiService {
   }
 
   // Public methods (no auth required)
-  async getAssistants(): Promise<ApiResponse<Assistant[]>> {
-    return this.get<Assistant[]>('/assistants', { requireAuth: false });
+  async getAssistants(forceRefresh = false): Promise<ApiResponse<Assistant[]>> {
+    return this.get<Assistant[]>('/assistants', { requireAuth: false, forceRefresh });
   }
 
   async getHealthCheck(): Promise<ApiResponse<{ status: string; message: string; timestamp: string; version: string }>> {
