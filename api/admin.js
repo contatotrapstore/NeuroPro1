@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
 
 module.exports = async function handler(req, res) {
   console.log('🚀 Admin function started');
@@ -160,49 +161,15 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Lista de emails admin autorizados
-    const ADMIN_EMAILS = [
-      'admin@neuroialab.com',
-      'admin@neuroia.lab', // Email usado no frontend
-      'gouveiarx@gmail.com',
-      'psitales@gmail.com', // Email principal
-      'psitales.sales@gmail.com', // Email secundário
-      'psitales1@gmail.com' // Possível variação
-    ];
+    // Check admin role using shared admin configuration
+    const isAdmin = isAdminUser(user.email, user.user_metadata);
     
-    // Check admin role
-    const hasAdminRole = user.user_metadata?.role === 'admin';
-    const isInAdminList = ADMIN_EMAILS.includes(user.email?.toLowerCase());
-    const isAdmin = hasAdminRole || isInAdminList;
-    
-    // Debug logs para troubleshooting
+    // Debug log for admin access
     console.log('🔍 Admin Access Check:', {
       userEmail: user.email,
-      userEmailLower: user.email?.toLowerCase(),
-      userEmailOriginal: user.email,
-      hasAdminRole: hasAdminRole,
       userMetadata: user.user_metadata,
-      isInAdminList: isInAdminList,
-      adminEmails: ADMIN_EMAILS,
-      emailMatch: ADMIN_EMAILS.map(email => ({
-        adminEmail: email,
-        userEmail: user.email?.toLowerCase(),
-        matches: email === user.email?.toLowerCase()
-      })),
-      finalIsAdmin: isAdmin,
-      serviceKeyConfigured: !!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SERVICE_ROLE_KEY_HERE'
+      isAdmin: isAdmin
     });
-    
-    // Log específico para psitales
-    if (user.email?.toLowerCase().includes('psitales')) {
-      console.log('🎯 PSITALES DEBUG:', {
-        exactEmail: `"${user.email}"`,
-        emailLength: user.email?.length,
-        adminEmailsIncludePsitales: ADMIN_EMAILS.filter(e => e.includes('psitales')),
-        directMatch: ADMIN_EMAILS.includes(user.email?.toLowerCase()),
-        userAuth: user.auth_metadata || user.app_metadata || user.user_metadata
-      });
-    }
     
     if (!isAdmin) {
       console.log('❌ Admin access denied for:', user.email);
@@ -211,8 +178,7 @@ module.exports = async function handler(req, res) {
         error: 'Acesso negado. Privilégios de administrador necessários.',
         debug: {
           userEmail: user.email,
-          hasAdminRole: hasAdminRole,
-          isInAdminList: isInAdminList
+          isAdmin: isAdmin
         }
       });
     }
@@ -243,7 +209,7 @@ module.exports = async function handler(req, res) {
           },
           adminConfig: {
             adminEmails: ADMIN_EMAILS,
-            isInAdminList: ADMIN_EMAILS.includes(user.email?.toLowerCase()),
+            isAdmin: isAdminUser(user.email, user.user_metadata),
             emailMatches: ADMIN_EMAILS.map(email => ({
               adminEmail: email,
               matches: email === user.email?.toLowerCase()
@@ -749,6 +715,51 @@ module.exports = async function handler(req, res) {
           message: errorMessage,
           error: error.message
         });
+      }
+
+      // Auto-create subscriptions for all admin users
+
+      console.log('🔄 Auto-creating admin subscriptions for new assistant:', assistant.id);
+
+      try {
+        // Get all admin users from Supabase auth
+        const adminSubscriptions = [];
+
+        for (const adminEmail of ADMIN_EMAILS) {
+          // Create subscription with far future expiration date
+          const farFuture = new Date('2099-12-31T23:59:59.999Z');
+
+          adminSubscriptions.push({
+            user_id: `admin-${adminEmail.split('@')[0]}`, // Create consistent admin user ID
+            assistant_id: assistant.id,
+            plan: 'admin',
+            status: 'active',
+            expires_at: farFuture.toISOString(),
+            created_at: new Date().toISOString(),
+            subscription_type: 'admin',
+            created_by_admin: user.id
+          });
+        }
+
+        // Try to insert admin subscriptions (ignore conflicts if they already exist)
+        if (adminSubscriptions.length > 0) {
+          const { error: subError } = await supabase
+            .from('user_subscriptions')
+            .upsert(adminSubscriptions, {
+              onConflict: 'user_id,assistant_id',
+              ignoreDuplicates: false
+            });
+
+          if (subError) {
+            console.warn('⚠️ Note: Could not create admin subscriptions (this is normal):', subError.message);
+            // Don't fail the assistant creation if subscription creation fails
+          } else {
+            console.log('✅ Created', adminSubscriptions.length, 'admin subscriptions');
+          }
+        }
+      } catch (adminSubError) {
+        console.warn('⚠️ Note: Admin subscription creation failed (this is normal):', adminSubError.message);
+        // Don't fail the assistant creation if subscription creation fails
       }
 
       // Log action in audit trail

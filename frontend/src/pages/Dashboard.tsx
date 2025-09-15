@@ -255,20 +255,28 @@ export default function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Header */}
       <div className="text-center py-8">
-        <div className="w-20 h-20 flex items-center justify-center mx-auto mb-6">
-          <img src={Logo} alt="NeuroIA Lab Logo" className="w-full h-full object-contain" />
+        {/* Logo com efeito visual */}
+        <div className="flex justify-center mb-6 animate-fade-in">
+          <div className="relative">
+            <img
+              src={Logo}
+              alt="NeuroIA Lab"
+              className="h-20 lg:h-24 w-auto object-contain drop-shadow-xl"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-neuro-primary/10 to-blue-600/10 rounded-2xl blur-2xl -z-10"></div>
+          </div>
         </div>
-        
-        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-          Bem-vindo ao <span className="text-gradient">NeuroIA Lab</span>
+
+        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 animate-slide-up">
+          Bem-vindo de volta ao <span className="bg-gradient-to-r from-neuro-primary via-green-600 to-blue-600 bg-clip-text text-transparent">NeuroIA Lab</span>
         </h1>
-        
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed animate-slide-up delay-200">
           {user ? (
             <>
-              Olá <span className="font-semibold text-neuro-primary">
+              Olá <span className="font-bold text-neuro-primary bg-neuro-primary/10 px-2 py-1 rounded-lg">
                 {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
-              </span>, seus assistentes especializados em psicologia estão prontos para revolucionar sua prática clínica
+              </span>, seus assistentes especializados estão prontos para potencializar sua prática clínica
             </>
           ) : (
             <>
@@ -279,25 +287,43 @@ export default function Dashboard() {
 
         {/* Quick Start CTA for new users */}
         {subscribedAssistants.length === 0 && (
-          <div className="mt-8 card-base p-6 sm:p-8 max-w-sm sm:max-w-md mx-auto border-2 border-neuro-primary/20">
-            <div className="w-14 h-14 bg-neuro-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md">
-              <Icon name="rocket" className="w-7 h-7 text-white" />
+          <div className="mt-8 animate-slide-up delay-400">
+            <div className="bg-gradient-to-br from-neuro-primary/5 via-green-50 to-blue-50 border border-neuro-primary/20 rounded-2xl p-6 sm:p-8 max-w-lg mx-auto shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="w-16 h-16 bg-gradient-to-br from-neuro-primary to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Icon name="rocket" className="w-8 h-8 text-white" />
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 text-center">
+                Comece sua <span className="text-neuro-primary">jornada profissional</span>!
+              </h3>
+
+              <p className="text-gray-600 text-base sm:text-lg mb-6 text-center leading-relaxed">
+                Você ainda não possui assinaturas ativas. Explore nossa loja e escolha os assistentes que mais se adequam à sua prática.
+              </p>
+
+              <Button asChild className="w-full bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <Link to="/store" className="flex items-center justify-center gap-2 px-6 py-3">
+                  <Icon name="store" className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-base font-semibold">Explorar Assistentes</span>
+                </Link>
+              </Button>
+
+              {/* Mini stats */}
+              <div className="mt-6 flex justify-center items-center gap-4 text-xs text-gray-500">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>{assistants.length}+ Especialistas</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>500+ Profissionais</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span>4.9/5 ⭐</span>
+                </div>
+              </div>
             </div>
-            
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 text-center">
-              Comece sua jornada profissional!
-            </h3>
-            
-            <p className="text-gray-600 text-sm sm:text-base mb-6 text-center leading-relaxed">
-              Você ainda não possui assinaturas ativas. Explore nossa loja e escolha os assistentes que mais se adequam à sua prática.
-            </p>
-            
-            <Button asChild className="w-full bg-white hover:bg-gray-50 text-neuro-primary border-2 border-neuro-primary shadow-lg hover:shadow-xl transition-all duration-300">
-              <Link to="/store" className="flex items-center justify-center gap-2 px-4 py-2 text-neuro-primary">
-                <Icon name="store" className="w-4 h-4 flex-shrink-0 text-neuro-primary" />
-                <span className="text-sm sm:text-base font-medium text-neuro-primary">Explorar Loja de Assistentes</span>
-              </Link>
-            </Button>
           </div>
         )}
       </div>

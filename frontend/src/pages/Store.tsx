@@ -409,7 +409,7 @@ export default function Store() {
               <div className="text-xl text-gray-600 leading-relaxed mb-6">
                 Descubra uma nova era na prática psicológica com nossos{" "}
                 <span className="font-bold text-neuro-primary relative inline-block">
-                  19 assistentes especializados
+                  {assistants.length} assistentes especializados
                   <motion.div
                     className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-neuro-primary to-green-500"
                     initial={{ scaleX: 0 }}
@@ -422,7 +422,7 @@ export default function Store() {
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 {[
-                  { number: "19", label: "Assistentes", icon: "brain" },
+                  { number: assistants.length.toString(), label: "Assistentes", icon: "brain" },
                   { number: "100%", label: "Especializado", icon: "target" },
                   { number: "24/7", label: "Disponível", icon: "clock" },
                   { number: "∞", label: "Conversas", icon: "messageCircle" }
