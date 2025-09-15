@@ -100,7 +100,7 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight animate-slide-up">
             Bem-vindo à Revolução da
             <span className="block bg-gradient-to-r from-neuro-primary via-green-600 to-blue-600 bg-clip-text text-transparent">
-              Psicologia Digital
+              Prática Clínica Digital
             </span>
           </h1>
 
@@ -115,9 +115,9 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
             <Button
               onClick={handleGetStarted}
               size="lg"
-              className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+              className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center whitespace-nowrap"
             >
-              <Icon name="rocket" className="w-5 h-5 mr-2" />
+              <Icon name="rocket" className="w-5 h-5 mr-2 flex-shrink-0" />
               Começar Agora Grátis
             </Button>
             <Button
@@ -126,8 +126,8 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
               size="lg"
               className="text-lg px-8 py-4 border-2 border-neuro-primary text-neuro-primary hover:bg-neuro-primary hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
             >
-              <Link to="/store" className="flex items-center">
-                <Icon name="eye" className="w-5 h-5 mr-2" />
+              <Link to="/store" className="flex items-center whitespace-nowrap">
+                <Icon name="eye" className="w-5 h-5 mr-2 flex-shrink-0" />
                 Explorar Assistentes
               </Link>
             </Button>
@@ -286,9 +286,9 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
                   <Button
                     onClick={handleGetStarted}
                     size="lg"
-                    className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                    className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center whitespace-nowrap"
                   >
-                    <Icon name="user" className="w-5 h-5 mr-2" />
+                    <Icon name="user" className="w-5 h-5 mr-2 flex-shrink-0" />
                     Criar Conta Grátis
                   </Button>
                   <Button
@@ -297,8 +297,8 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
                     size="lg"
                     className="text-lg px-8 py-4 border-2 border-neuro-primary text-neuro-primary hover:bg-neuro-primary hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                   >
-                    <Link to="/store" className="flex items-center">
-                      <Icon name="store" className="w-5 h-5 mr-2" />
+                    <Link to="/store" className="flex items-center whitespace-nowrap">
+                      <Icon name="store" className="w-5 h-5 mr-2 flex-shrink-0" />
                       Ver Assistentes
                     </Link>
                   </Button>
