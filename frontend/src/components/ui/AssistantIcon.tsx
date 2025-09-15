@@ -13,7 +13,7 @@ interface AssistantIconProps {
 // Mapeamento de IDs de assistentes para ícones
 const assistantIdToIcon: Record<string, string> = {
   'psicoplano': 'map-route',
-  'neurocase': 'clipboard-check', 
+  'neurocase': 'clipboard-check',
   'guia-etico': 'balance-scale',
   'sessaomap': 'calendar-clock',
   'clinreplay': 'conversation',
@@ -32,29 +32,101 @@ const assistantIdToIcon: Record<string, string> = {
   'theracasal': 'rings'
 };
 
-export const AssistantIcon: React.FC<AssistantIconProps> = ({ 
-  iconType, 
-  color = 'currentColor', 
-  size = 24, 
-  className = '' 
+// Mapeamento adicional para ícones legados e aliases
+const legacyIconMapping: Record<string, string> = {
+  // Aliases comuns
+  'cerebro': 'brain',
+  'coração': 'heart',
+  'coracao': 'heart',
+  'livro': 'book',
+  'formatura': 'graduationCap',
+  'microfone': 'mic',
+  'grupo': 'users',
+  'pessoas': 'users',
+  'escudo': 'shield',
+  'estrela': 'star',
+  'lampada': 'lightBulb',
+  'lâmpada': 'lightBulb',
+  'ideia': 'lightBulb',
+
+  // Variações em inglês
+  'brain-circuit': 'brain-gear',
+  'psychology': 'psychology-brain',
+  'psychoanalysis': 'psychology-brain',
+  'neuropsychology': 'brain-gear',
+  'cognitive': 'brain-gear',
+  'therapy': 'conversation',
+  'counseling': 'conversation',
+  'assessment': 'test-clipboard',
+  'evaluation': 'test-clipboard',
+  'diagnosis': 'document-seal',
+  'treatment': 'target',
+  'intervention': 'target',
+  'family': 'family-tree',
+  'couple': 'rings',
+  'relationships': 'rings',
+  'home': 'home-heart',
+  'wellness': 'heart',
+  'health': 'heart',
+  'education': 'graduationCap',
+  'learning': 'book',
+  'development': 'trending-up',
+  'progress': 'trending-up',
+  'growth': 'trending-up',
+  'planning': 'map-route',
+  'strategy': 'map-route',
+  'consultation': 'conversation',
+  'session': 'calendar-clock',
+  'schedule': 'calendar-clock',
+  'appointment': 'calendar-clock',
+  'report': 'document-seal',
+  'documentation': 'document-seal',
+  'analysis': 'brain-gear',
+  'research': 'book-search',
+  'study': 'book-search',
+  'protection': 'shield',
+  'safety': 'shield',
+  'excellence': 'star',
+  'quality': 'star',
+  'innovation': 'lightBulb',
+  'creativity': 'lightBulb',
+  'communication': 'mic',
+  'voice': 'mic',
+  'speaking': 'mic',
+  'community': 'users',
+  'team': 'users',
+  'collaboration': 'users'
+};
+
+export const AssistantIcon: React.FC<AssistantIconProps> = ({
+  iconType,
+  color = 'currentColor',
+  size = 24,
+  className = ''
 }) => {
   console.log('AssistantIcon rendering:', { iconType, availableIcons: Object.keys(iconMap) });
-  
-  // Se o iconType é um ID de assistente, converter para o ícone correto
+
+  // Etapa 1: Se o iconType é um ID de assistente, converter para o ícone correto
   let finalIconType = iconType;
   if (assistantIdToIcon[iconType]) {
     finalIconType = assistantIdToIcon[iconType];
     console.log(`🔄 Convertendo ID '${iconType}' para ícone '${finalIconType}'`);
   }
-  
-  // Usar o iconMap diretamente
+
+  // Etapa 2: Se não encontrou, verificar mapeamento de ícones legados
+  if (!iconMap[finalIconType as IconType] && legacyIconMapping[iconType]) {
+    finalIconType = legacyIconMapping[iconType];
+    console.log(`🔄 Mapeando ícone legado '${iconType}' para '${finalIconType}'`);
+  }
+
+  // Etapa 3: Usar o iconMap diretamente
   const IconComponent = iconMap[finalIconType as IconType];
-  
+
   if (IconComponent) {
     console.log('✅ Ícone SVG encontrado:', finalIconType);
     return <IconComponent color={color} size={size} className={className} />;
   }
-  
+
   console.log('⚠️ Ícone SVG não encontrado, usando fallback para:', finalIconType);
   
   // Fallback melhorado - verificar se é emoji primeiro

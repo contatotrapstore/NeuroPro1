@@ -9,6 +9,57 @@ import { ApiService } from '../../services/api.service';
 import { cn } from '../../utils/cn';
 import toast from 'react-hot-toast';
 
+// Field length limits (must match backend limits)
+const FIELD_LIMITS = {
+  id: 100,
+  name: 100,
+  area: 50,
+  icon: 50,
+  color_theme: 30,
+  icon_type: 10,
+  specialization: 100,
+  description: 1000,
+  full_description: 5000
+};
+
+// Character counter component
+const CharacterCounter = ({ current, max, className = '' }: { current: number; max: number; className?: string }) => {
+  const remaining = max - current;
+  const isNearLimit = remaining < max * 0.1; // 10% remaining
+  const isOverLimit = remaining < 0;
+
+  return (
+    <div className={cn(
+      'text-xs mt-1 text-right',
+      isOverLimit ? 'text-red-600 font-medium' :
+      isNearLimit ? 'text-amber-600' : 'text-gray-500',
+      className
+    )}>
+      {current}/{max} caracteres
+      {isOverLimit && (
+        <span className="text-red-600 font-medium ml-1">
+          (excede em {Math.abs(remaining)})
+        </span>
+      )}
+    </div>
+  );
+};
+
+// Validation function
+const validateField = (field: string, value: string): { isValid: boolean; error?: string } => {
+  const limit = FIELD_LIMITS[field as keyof typeof FIELD_LIMITS];
+  if (!limit) return { isValid: true };
+
+  if (value.length > limit) {
+    return {
+      isValid: false,
+      error: `Campo excede o limite de ${limit} caracteres (atual: ${value.length})`
+    };
+  }
+
+  return { isValid: true };
+};
+
 interface Assistant {
   id: string;
   name: string;
@@ -34,18 +85,43 @@ interface AssistantEditorProps {
 }
 
 const PREDEFINED_ICONS = [
-  { id: 'brain', name: 'Cérebro', category: 'medical' },
-  { id: 'heart', name: 'Coração', category: 'medical' },
+  // Ícones especializados para psicologia/saúde mental
+  { id: 'psychology-brain', name: 'Cérebro Psicanálise', category: 'specialized' },
+  { id: 'brain-gear', name: 'Cérebro Cognitivo', category: 'specialized' },
+  { id: 'conversation', name: 'Conversa/Terapia', category: 'specialized' },
+  { id: 'balance-scale', name: 'Balança Ética', category: 'specialized' },
+  { id: 'test-clipboard', name: 'Avaliação', category: 'specialized' },
+  { id: 'document-seal', name: 'Laudo/Relatório', category: 'specialized' },
+  { id: 'target', name: 'Foco Terapêutico', category: 'specialized' },
+  { id: 'family-tree', name: 'Terapia Familiar', category: 'specialized' },
+  { id: 'rings', name: 'Terapia Casal', category: 'specialized' },
+  { id: 'home-heart', name: 'Acolhimento', category: 'specialized' },
+  { id: 'trending-up', name: 'Progresso', category: 'specialized' },
+
+  // Ícones para planejamento e sessões
+  { id: 'map-route', name: 'Planejamento', category: 'planning' },
+  { id: 'calendar-clock', name: 'Agendamento', category: 'planning' },
+  { id: 'compass', name: 'Orientação', category: 'planning' },
+  { id: 'clipboard-check', name: 'Checklist', category: 'planning' },
+
+  // Ícones educacionais e desenvolvimento
+  { id: 'graduation-brain', name: 'Neuroeducação', category: 'education' },
+  { id: 'book-search', name: 'Pesquisa/Base', category: 'education' },
+  { id: 'puzzle', name: 'Quebra-cabeça/ABA', category: 'education' },
+  { id: 'graduationCap', name: 'Formação', category: 'education' },
   { id: 'book', name: 'Livro', category: 'education' },
-  { id: 'graduationCap', name: 'Capelo', category: 'education' },
-  { id: 'mic', name: 'Microfone', category: 'communication' },
-  { id: 'users', name: 'Usuários', category: 'social' },
-  { id: 'target', name: 'Alvo', category: 'business' },
-  { id: 'compass', name: 'Bússola', category: 'navigation' },
-  { id: 'shield', name: 'Escudo', category: 'security' },
-  { id: 'star', name: 'Estrela', category: 'misc' },
-  { id: 'lightBulb', name: 'Lâmpada', category: 'misc' },
-  { id: 'puzzle', name: 'Quebra-cabeça', category: 'misc' },
+
+  // Ícones básicos úteis
+  { id: 'brain', name: 'Cérebro Básico', category: 'basic' },
+  { id: 'heart', name: 'Coração', category: 'basic' },
+  { id: 'mic', name: 'Comunicação', category: 'basic' },
+  { id: 'users', name: 'Grupo/Equipe', category: 'basic' },
+  { id: 'shield', name: 'Proteção', category: 'basic' },
+  { id: 'star', name: 'Excelência', category: 'basic' },
+  { id: 'lightBulb', name: 'Inovação', category: 'basic' },
+
+  // Ícones para gestão e análise
+  { id: 'calculator-dollar', name: 'Gestão Financeira', category: 'business' },
 ];
 
 const PREDEFINED_COLORS = [
@@ -203,6 +279,23 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       return;
     }
 
+    // Validate field lengths
+    const fieldErrors: string[] = [];
+    Object.keys(FIELD_LIMITS).forEach(field => {
+      const value = formData[field as keyof typeof formData];
+      if (typeof value === 'string') {
+        const validation = validateField(field, value);
+        if (!validation.isValid) {
+          fieldErrors.push(validation.error!);
+        }
+      }
+    });
+
+    if (fieldErrors.length > 0) {
+      toast.error('Erro de validação: ' + fieldErrors.join(', '));
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -332,10 +425,14 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                         onChange={(e) => handleInputChange('id', e.target.value)}
                         placeholder="Deixe em branco para gerar automaticamente"
                         error={errors.id}
+                        maxLength={FIELD_LIMITS.id}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Se não fornecido, será gerado automaticamente baseado no nome
-                      </p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-gray-500">
+                          Se não fornecido, será gerado automaticamente baseado no nome
+                        </p>
+                        <CharacterCounter current={formData.id?.length || 0} max={FIELD_LIMITS.id} />
+                      </div>
                     </div>
                   )}
 
@@ -348,7 +445,9 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="Nome do assistente"
                       error={errors.name}
+                      maxLength={FIELD_LIMITS.name}
                     />
+                    <CharacterCounter current={formData.name?.length || 0} max={FIELD_LIMITS.name} />
                   </div>
 
                   <div>
@@ -360,11 +459,13 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       onChange={(e) => handleInputChange('description', e.target.value)}
                       placeholder="Descrição resumida para exibição na loja"
                       rows={3}
+                      maxLength={FIELD_LIMITS.description}
                       className={cn(
                         "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary",
                         errors.description ? "border-red-300" : "border-gray-300"
                       )}
                     />
+                    <CharacterCounter current={formData.description?.length || 0} max={FIELD_LIMITS.description} />
                     {errors.description && (
                       <p className="text-red-600 text-sm mt-1">{errors.description}</p>
                     )}
@@ -379,8 +480,10 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       onChange={(e) => handleInputChange('full_description', e.target.value)}
                       placeholder="Descrição detalhada do assistente para o painel administrativo"
                       rows={4}
+                      maxLength={FIELD_LIMITS.full_description}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
                     />
+                    <CharacterCounter current={formData.full_description?.length || 0} max={FIELD_LIMITS.full_description} />
                   </div>
 
                   <div>
@@ -426,7 +529,9 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       value={formData.specialization || ''}
                       onChange={(e) => handleInputChange('specialization', e.target.value)}
                       placeholder="Ex: Terapia cognitivo-comportamental, Avaliação neuropsicológica"
+                      maxLength={FIELD_LIMITS.specialization}
                     />
+                    <CharacterCounter current={formData.specialization?.length || 0} max={FIELD_LIMITS.specialization} />
                   </div>
 
                   <div>
@@ -681,9 +786,12 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                           value={formData.color_theme || '#2D5A1F'}
                           onChange={(e) => handleInputChange('color_theme', e.target.value)}
                           className="flex-1 font-mono text-sm"
+                          maxLength={FIELD_LIMITS.color_theme}
                         />
                       </div>
-                      
+
+                      <CharacterCounter current={formData.color_theme?.length || 0} max={FIELD_LIMITS.color_theme} />
+
                       <div className="grid grid-cols-5 gap-2">
                         {PREDEFINED_COLORS.map((color) => (
                           <button

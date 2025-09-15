@@ -4,6 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Icon } from '../ui/Icon';
 import { cn } from '../../utils/cn';
 import LogoPng from '../../assets/Logo.png';
+import { useAuthModal } from '../../hooks/useAuthModal';
+import { AuthModal } from '../auth/AuthModal';
+import { Button } from '../ui/Button';
 
 interface ModernLayoutProps {
   children: React.ReactNode;
@@ -15,6 +18,13 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const {
+    modalState,
+    hideAuthModal,
+    switchMode,
+    executeIntendedAction,
+    showAuthModal
+  } = useAuthModal();
 
   const handleSignOut = async () => {
     try {
@@ -181,31 +191,32 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
           </div>
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile or Auth Buttons */}
         <div className="p-6 border-t border-gray-100">
-          <div className="relative">
-            <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="w-full flex items-center p-3 card-hover rounded-xl overflow-hidden"
-            >
-              <div className="w-10 h-10 bg-neuro-info rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
-                <Icon name="user" className="w-5 h-5 text-white" />
-              </div>
-              
-              <div className="flex-1 text-left min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate max-w-full">
-                  {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="w-full flex items-center p-3 card-hover rounded-xl overflow-hidden"
+              >
+                <div className="w-10 h-10 bg-neuro-info rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                  <Icon name="user" className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-xs text-gray-500 truncate max-w-full">
-                  {user?.email}
+
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate max-w-full">
+                    {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate max-w-full">
+                    {user?.email}
+                  </div>
                 </div>
-              </div>
-              
-              <Icon 
-                name={profileDropdownOpen ? "chevronUp" : "chevronDown"} 
-                className="w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ml-2" 
-              />
-            </button>
+
+                <Icon
+                  name={profileDropdownOpen ? "chevronUp" : "chevronDown"}
+                  className="w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ml-2"
+                />
+              </button>
 
             {/* Profile Dropdown */}
             {profileDropdownOpen && (
@@ -246,7 +257,26 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          ) : (
+            /* Auth Buttons for non-logged users */
+            <div className="space-y-3">
+              <Button
+                onClick={() => showAuthModal('Acesse sua conta para continuar', undefined, 'login')}
+                variant="primary"
+                className="w-full"
+              >
+                Entrar
+              </Button>
+              <Button
+                onClick={() => showAuthModal('Crie sua conta gratuita', undefined, 'register')}
+                variant="outline"
+                className="w-full"
+              >
+                Criar Conta
+              </Button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -304,6 +334,14 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
           onClick={() => setProfileDropdownOpen(false)}
         />
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        modalState={modalState}
+        onClose={hideAuthModal}
+        onModeSwitch={switchMode}
+        onSuccess={executeIntendedAction}
+      />
     </div>
   );
 };

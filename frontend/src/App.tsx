@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import ModernLayout from './components/layout/ModernLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import PublicRoute from './components/layout/PublicRoute';
 import AdminProtectedRoute from './components/layout/AdminProtectedRoute';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { Login, Register, ForgotPassword } from './pages/Auth';
@@ -57,27 +58,29 @@ const App: React.FC = () => {
             }
           />
 
-          {/* Protected Routes */}
+          {/* Public Routes with Layout */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <PublicRoute>
                 <ModernLayout>
                   <Dashboard />
                 </ModernLayout>
-              </ProtectedRoute>
+              </PublicRoute>
             }
           />
           <Route
             path="/store"
             element={
-              <ProtectedRoute>
+              <PublicRoute>
                 <ModernLayout>
                   <Store />
                 </ModernLayout>
-              </ProtectedRoute>
+              </PublicRoute>
             }
           />
+
+          {/* Protected Routes */}
           <Route
             path="/subscriptions"
             element={
@@ -140,7 +143,7 @@ const App: React.FC = () => {
 
           {/* Default Redirects */}
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/store" replace />} />
           
           {/* 404 Catch All */}
           <Route 

@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { AssistantCard } from '../components/AssistantCard';
 import { DashboardStats } from '../components/dashboard/DashboardStats';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuthModal } from '../hooks/useAuthModal';
+import { AuthModal } from '../components/auth/AuthModal';
+import { LandingDashboard } from '../components/landing/LandingDashboard';
 import { PageLoader } from '../components/ui/LoadingSpinner';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Button } from '../components/ui/Button';
@@ -32,6 +35,13 @@ interface Subscription {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const {
+    modalState,
+    hideAuthModal,
+    switchMode,
+    executeIntendedAction,
+    requireAuth
+  } = useAuthModal();
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,6 +220,21 @@ export default function Dashboard() {
   const handleSubscribe = (assistantId: string) => {
     window.location.href = `/store?assistant=${assistantId}`;
   };
+
+  // Se não está logado, mostrar landing page
+  if (!user) {
+    return (
+      <>
+        <LandingDashboard onAuthAction={requireAuth} />
+        <AuthModal
+          modalState={modalState}
+          onClose={hideAuthModal}
+          onModeSwitch={switchMode}
+          onSuccess={executeIntendedAction}
+        />
+      </>
+    );
+  }
 
   if (loading) {
     return <PageLoader message="Carregando seu dashboard..." />;

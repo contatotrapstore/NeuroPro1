@@ -1,69 +1,370 @@
-# React + TypeScript + Vite
+# NeuroIA Lab - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend da aplicação NeuroIA Lab construído com React + TypeScript + Vite.
 
-Currently, two official plugins are available:
+## 🚀 Stack Tecnológica
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 18** + TypeScript
+- **Vite** para build e desenvolvimento
+- **Tailwind CSS** com tema customizado
+- **React Router** com rotas protegidas e públicas
+- **Supabase Client** para autenticação e dados
+- **Framer Motion** para animações
+- **React Hot Toast** para notificações
+- **Lucide React** para ícones
 
-## Expanding the ESLint configuration
+## 📁 Estrutura do Projeto
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── components/
+│   ├── auth/               # Componentes de autenticação
+│   │   └── AuthModal.tsx   # Modal de login/registro
+│   ├── checkout/           # Componentes de checkout
+│   ├── icons/              # Ícones customizados SVG
+│   ├── landing/            # Componentes de landing page
+│   │   └── LandingDashboard.tsx  # Dashboard para usuários não-logados
+│   ├── layout/             # Componentes de layout
+│   │   ├── ModernLayout.tsx      # Layout principal
+│   │   ├── ProtectedRoute.tsx    # Rotas protegidas
+│   │   ├── PublicRoute.tsx       # Rotas públicas (NOVO)
+│   │   └── AdminProtectedRoute.tsx
+│   └── ui/                 # Componentes UI reutilizáveis
+│       ├── Button.tsx
+│       ├── Input.tsx
+│       ├── Card.tsx
+│       └── AssistantIcon.tsx
+├── hooks/                  # Custom hooks
+│   └── useAuthModal.tsx    # Hook para modal de autenticação (NOVO)
+├── contexts/               # React contexts
+│   └── AuthContext.tsx     # Contexto de autenticação
+├── pages/                  # Páginas da aplicação
+│   ├── Auth/               # Páginas de autenticação
+│   ├── Admin/              # Páginas administrativas
+│   │   ├── AssistantManager.tsx
+│   │   └── AssistantEditor.tsx   # Editor com validação de caracteres
+│   ├── ChatPage.tsx
+│   ├── Dashboard.tsx
+│   ├── Store.tsx           # Loja com preços dinâmicos
+│   └── Profile.tsx
+├── services/               # Serviços e APIs
+│   ├── api.service.ts
+│   ├── admin.service.ts
+│   └── supabase.ts
+├── config/                 # Configurações
+│   └── pricing.ts          # Configuração de preços dinâmica
+└── utils/                  # Utilitários
+    └── cn.ts               # Utility para classes CSS
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🆕 Novos Componentes (v2.3.0)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### AuthModal
+**Localização**: `src/components/auth/AuthModal.tsx`
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Modal profissional para login e registro:
+- Design responsivo com gradientes
+- Validação completa de formulários
+- Suporte a login e registro no mesmo componente
+- Integração com useAuth context
+- Mensagens de erro específicas
+
+### PublicRoute
+**Localização**: `src/components/layout/PublicRoute.tsx`
+
+Componente para rotas que permitem acesso público:
+- Não requer autenticação obrigatória
+- Exibe loading state durante verificação
+- Compatível com usuários logados e não-logados
+
+### LandingDashboard
+**Localização**: `src/components/landing/LandingDashboard.tsx`
+
+Dashboard específico para usuários não-autenticados:
+- Apresenta valor da plataforma
+- CTAs estratégicos para cadastro
+- Preview dos assistentes disponíveis
+
+### useAuthModal Hook
+**Localização**: `src/hooks/useAuthModal.tsx`
+
+Hook customizado para gerenciar autenticação:
+```typescript
+const {
+  modalState,
+  isLoggedIn,
+  showAuthModal,
+  hideAuthModal,
+  switchMode,
+  executeIntendedAction,
+  requireAuth
+} = useAuthModal();
 ```
+
+**Funcionalidades**:
+- `requireAuth()` - Executa ação apenas se autenticado
+- `showAuthModal()` - Exibe modal com mensagem personalizada
+- `executeIntendedAction()` - Executa ação preservada após login
+
+## 💰 Sistema de Preços Dinâmicos
+
+### Antes vs Depois
+
+**ANTES** - Preços hardcoded:
+```typescript
+// pricing.ts
+export const INDIVIDUAL_PRICING = {
+  monthly: 39.90,  // Valor fixo
+  semester: 199.00 // Valor fixo
+};
+```
+
+**DEPOIS** - Preços dinâmicos:
+```typescript
+// pricing.ts
+export const getAssistantPricingInfo = (assistant?: {
+  monthly_price?: number;
+  semester_price?: number;
+}) => {
+  const monthlyPrice = getIndividualPrice('monthly', assistant);
+  // Usa preço do assistente ou fallback para default
+};
+```
+
+### Componentes Atualizados
+
+**AssistantCard.tsx**:
+```typescript
+// Agora recebe dados do assistente
+const pricingInfo = getAssistantPricingInfo(assistant);
+```
+
+**Store.tsx**:
+```typescript
+// handleSubscribe usa preços reais do banco
+const price = type === 'monthly'
+  ? assistant.monthly_price || DEFAULT_MONTHLY_PRICE
+  : assistant.semester_price || DEFAULT_SEMESTER_PRICE;
+```
+
+## 🛡️ Sistema de Validação de Caracteres
+
+### AssistantEditor.tsx
+
+Implementação completa de validação de formulários:
+
+#### Constantes de Limite
+```typescript
+const FIELD_LIMITS = {
+  id: 100,
+  name: 100,
+  area: 50,
+  icon: 50,
+  color_theme: 30,
+  icon_type: 10,
+  specialization: 100,
+  description: 1000,
+  full_description: 5000
+};
+```
+
+#### CharacterCounter Component
+```typescript
+const CharacterCounter = ({ current, max }: {
+  current: number;
+  max: number;
+}) => (
+  <div className={cn(
+    'text-xs mt-1 text-right',
+    current > max ? 'text-red-600' : 'text-gray-500'
+  )}>
+    {current}/{max} caracteres
+    {current > max && <span>(excede em {current - max})</span>}
+  </div>
+);
+```
+
+#### Input com Validação
+```typescript
+<Input
+  value={formData.name || ''}
+  onChange={(e) => handleInputChange('name', e.target.value)}
+  maxLength={FIELD_LIMITS.name}
+/>
+<CharacterCounter current={formData.name?.length || 0} max={FIELD_LIMITS.name} />
+```
+
+#### Validação Pré-envio
+```typescript
+const handleSave = async () => {
+  // Validação de todos os campos
+  const fieldErrors: string[] = [];
+  Object.keys(FIELD_LIMITS).forEach(field => {
+    const validation = validateField(field, formData[field]);
+    if (!validation.isValid) {
+      fieldErrors.push(validation.error!);
+    }
+  });
+
+  if (fieldErrors.length > 0) {
+    toast.error('Erro de validação: ' + fieldErrors.join(', '));
+    return;
+  }
+  // Continuar com salvamento...
+};
+```
+
+## 🔄 Roteamento Atualizado
+
+### App.tsx
+
+**Rotas Públicas**:
+```typescript
+// Dashboard público
+<Route path="/dashboard" element={
+  <PublicRoute>
+    <ModernLayout>
+      <Dashboard />
+    </ModernLayout>
+  </PublicRoute>
+} />
+
+// Store público
+<Route path="/store" element={
+  <PublicRoute>
+    <ModernLayout>
+      <Store />
+    </ModernLayout>
+  </PublicRoute>
+} />
+```
+
+**Redirect Padrão**:
+```typescript
+// Mudança: "/" redireciona para /store (público)
+<Route path="/" element={<Navigate to="/store" replace />} />
+```
+
+## 🎨 Design System
+
+### Tema Customizado
+
+**Cores Principais**:
+- `neuro-primary`: #2D5A1F (Verde principal)
+- `neuro-primary-hover`: #4A9A3F (Verde hover)
+- `neuro-background`: Gradiente de fundo
+- `neuro-surface`: Superfícies de cartões
+
+### Componentes UI
+
+**Button.tsx**:
+- Variantes: primary, secondary, outline
+- Estados: loading, disabled
+- Tamanhos: sm, md, lg
+
+**Input.tsx**:
+- Suporte a ícones (leftIcon, rightIcon)
+- Estados de erro e sucesso
+- Contadores de caracteres integrados
+- Validação visual em tempo real
+
+**Card.tsx**:
+- Design glass morphism
+- Sombras e bordas suaves
+- Responsivo por padrão
+
+## 🔧 Configuração de Desenvolvimento
+
+### Scripts Disponíveis
+
+```bash
+# Desenvolvimento
+npm run dev
+
+# Build para produção
+npm run build
+
+# Preview do build
+npm run preview
+
+# Linting
+npm run lint
+```
+
+### Variáveis de Ambiente
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Configuração do Vite
+
+**vite.config.ts**:
+```typescript
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:3000'
+    }
+  }
+});
+```
+
+## 📱 Responsividade
+
+### Breakpoints
+
+- **sm**: 640px+
+- **md**: 768px+
+- **lg**: 1024px+
+- **xl**: 1280px+
+
+### Componentes Responsivos
+
+Todos os componentes principais são mobile-first:
+- **ModernLayout**: Sidebar colapsível
+- **AuthModal**: Ajusta-se a diferentes tamanhos de tela
+- **Dashboard**: Grid responsivo
+- **Store**: Cards adaptativos
+
+## 🚀 Performance
+
+### Otimizações Implementadas
+
+1. **Lazy Loading**: Componentes carregados sob demanda
+2. **Code Splitting**: Bundle otimizado por rota
+3. **Memoização**: `useCallback` e `useMemo` em hooks
+4. **Debouncing**: Prevenção de calls desnecessários
+
+### Bundle Size
+
+- **Frontend**: ~765KB (pode ser otimizado com code splitting)
+- **Chunks**: Separação por rotas e vendors
+- **Tree Shaking**: Remoção de código não utilizado
+
+## 🧪 Testes (Futuro)
+
+### Estrutura Recomendada
+
+```
+src/
+├── __tests__/
+│   ├── components/
+│   ├── hooks/
+│   └── pages/
+└── test-utils/
+    └── setup.ts
+```
+
+### Ferramentas Sugeridas
+
+- **Vitest** para unit tests
+- **React Testing Library** para component testing
+- **Cypress** para e2e testing
+
+---
+
+**NeuroIA Lab Frontend** - Interface moderna, responsiva e robusta para democratizar o acesso a assistentes de IA especializados em psicologia.

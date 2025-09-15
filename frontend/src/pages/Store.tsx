@@ -13,6 +13,9 @@ import { FloatingParticles, GradientOrb, ParallaxContainer, TextReveal } from '.
 import { Icon } from '../components/ui/Icon';
 import { cn } from '../utils/cn';
 import { ApiService } from '../services/api.service';
+import { useAuth } from '../contexts/AuthContext';
+import { useAuthModal } from '../hooks/useAuthModal';
+import { AuthModal } from '../components/auth/AuthModal';
 
 interface Assistant {
   id: string;
@@ -28,6 +31,14 @@ interface Assistant {
 export default function Store() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const {
+    modalState,
+    hideAuthModal,
+    switchMode,
+    executeIntendedAction,
+    requireAuth
+  } = useAuthModal();
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,18 +99,21 @@ export default function Store() {
   };
 
   const handleSubscribe = (assistantId: string) => {
-    // Find the assistant to get its actual price
-    const assistant = assistants.find(a => a.id === assistantId);
-    const assistantPrice = assistant?.monthly_price || 39.90; // Fallback to default if not found
+    // Verificar se o usuário está logado antes de prosseguir
+    requireAuth(() => {
+      // Find the assistant to get its actual price
+      const assistant = assistants.find(a => a.id === assistantId);
+      const assistantPrice = assistant?.monthly_price || 39.90; // Fallback to default if not found
 
-    navigate('/checkout', {
-      state: {
-        type: 'individual',
-        assistant_id: assistantId,
-        subscription_type: 'monthly',
-        total_price: assistantPrice
-      }
-    });
+      navigate('/checkout', {
+        state: {
+          type: 'individual',
+          assistant_id: assistantId,
+          subscription_type: 'monthly',
+          total_price: assistantPrice
+        }
+      });
+    }, 'Para assinar este assistente, faça login ou crie sua conta');
   };
 
   const handlePackageSelect = (packageType: 'package_3' | 'package_6') => {
@@ -723,6 +737,14 @@ export default function Store() {
           onClose={() => setShowPackageSelector(false)}
         />
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        modalState={modalState}
+        onClose={hideAuthModal}
+        onModeSwitch={switchMode}
+        onSuccess={executeIntendedAction}
+      />
     </div>
   );
 }

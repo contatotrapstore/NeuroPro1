@@ -223,6 +223,88 @@ export const PsychologyBrainIcon: React.FC<IconProps> = ({ className = '', color
   </svg>
 );
 
+// ====== ÍCONES BÁSICOS PREDEFINIDOS ======
+
+// Cérebro básico
+export const BrainIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M6 8C6 5.79086 7.79086 4 10 4C11.1046 4 12.1045 4.44772 12.8284 5.17157C13.4142 4.58579 14.2043 4.2 15 4.2C16.7673 4.2 18.2 5.6327 18.2 7.4C18.2 7.8 18.1 8.2 18 8.5C19.2 9.2 20 10.5 20 12C20 13.8 19 15.4 17.5 16.2C17.8 16.8 18 17.5 18 18.2C18 19.7 16.7 21 15.2 21H8.8C7.3 21 6 19.7 6 18.2V8Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9 10L11 12L15 8" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="11" cy="14" r="1" fill={color}/>
+    <circle cx="14" cy="16" r="1" fill={color}/>
+  </svg>
+);
+
+// Coração
+export const HeartIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M20.84 4.61C20.3292 4.099 19.7228 3.69364 19.0554 3.41708C18.3879 3.14052 17.6725 2.99817 16.95 2.99817C16.2275 2.99817 15.5121 3.14052 14.8446 3.41708C14.1772 3.69364 13.5708 4.099 13.06 4.61L12 5.67L10.94 4.61C9.9083 3.5783 8.50903 2.99864 7.05 2.99864C5.59096 2.99864 4.19169 3.5783 3.16 4.61C2.1283 5.6417 1.54864 7.04097 1.54864 8.5C1.54864 9.95903 2.1283 11.3583 3.16 12.39L12 21.23L20.84 12.39C21.351 11.8792 21.7563 11.2728 22.0329 10.6053C22.3095 9.93789 22.4518 9.22248 22.4518 8.5C22.4518 7.77752 22.3095 7.06211 22.0329 6.39467C21.7563 5.72723 21.351 5.1208 20.84 4.61Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Livro
+export const BookIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8 7H16M8 11H16M8 15H12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+// Capelo de formatura
+export const GraduationCapIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M22 10L12 5L2 10L12 15L22 10Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 12V16C6 17.1046 8.68629 20 12 20C15.3137 20 18 17.1046 18 16V12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22 10V13.5" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="22" cy="15.5" r="1.5" stroke={color} strokeWidth="2"/>
+  </svg>
+);
+
+// Microfone
+export const MicIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M12 1C13.1046 1 14 1.89543 14 3V11C14 12.1046 13.1046 13 12 13C10.8954 13 10 12.1046 10 11V3C10 1.89543 10.8954 1 12 1Z" stroke={color} strokeWidth="2"/>
+    <path d="M19 10V11C19 15.4183 15.4183 19 11 19H13C17.4183 19 21 15.4183 21 11V10" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    <path d="M5 10V11C5 15.4183 8.58172 19 13 19H11C6.58172 19 3 15.4183 3 11V10" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    <path d="M12 19V23M8 23H16" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+// Usuários/Grupo
+export const UsersIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="8.5" cy="7" r="4" stroke={color} strokeWidth="2"/>
+    <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 3.13C16.8604 3.35031 17.6227 3.85071 18.1676 4.55232C18.7126 5.25392 19.0097 6.11683 19.0097 7.005C19.0097 7.89317 18.7126 8.75608 18.1676 9.45768C17.6227 10.1593 16.8604 10.6597 16 10.88" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Escudo
+export const ShieldIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9 12L11 14L15 10" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Estrela
+export const StarIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Lâmpada
+export const LightBulbIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M9 21H15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M12 3C8.68629 3 6 5.68629 6 9C6 10.8954 6.89543 12.5684 8.33333 13.6111L9 18H15L15.6667 13.6111C17.1046 12.5684 18 10.8954 18 9C18 5.68629 15.3137 3 12 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9 18H15" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
 // Mapeamento de ícones por ID
 export const iconMap = {
   'map-route': MapRouteIcon,
@@ -244,4 +326,14 @@ export const iconMap = {
   'rings': RingsIcon,
   'family-tree': FamilyTreeIcon,
   'psychology-brain': PsychologyBrainIcon,
+  // Ícones básicos adicionados
+  'brain': BrainIcon,
+  'heart': HeartIcon,
+  'book': BookIcon,
+  'graduationCap': GraduationCapIcon,
+  'mic': MicIcon,
+  'users': UsersIcon,
+  'shield': ShieldIcon,
+  'star': StarIcon,
+  'lightBulb': LightBulbIcon,
 } as const;

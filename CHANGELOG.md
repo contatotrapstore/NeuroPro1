@@ -1,5 +1,94 @@
 # Changelog - NeuroIA Lab
 
+## [v2.3.0] - 2025-01-15
+
+### ✅ Sistema de Acesso Público
+
+#### Navegação Sem Login Obrigatório
+- **Acesso Livre à Loja**: Usuários podem explorar todos os assistentes sem precisar criar conta
+- **Dashboard Público**: Visualização do dashboard principal sem autenticação
+- **Modal de Autenticação Sob Demanda**: Sistema elegante que aparece apenas quando necessário
+- **Preservação de Intenção**: Após login, executa automaticamente a ação que o usuário pretendia realizar
+
+#### Componentes e Arquitetura
+- **PublicRoute Component**: Novo componente para rotas que permitem acesso público
+- **AuthModal Component**: Modal completo de login/registro com design profissional
+- **useAuthModal Hook**: Hook customizado para gerenciar estado e ações do modal
+- **requireAuth Function**: Função inteligente que verifica autenticação antes de executar ações
+
+### ✅ Correção de Sincronização de Preços
+
+#### Sistema Dinâmico de Preços
+- **Preços do Banco de Dados**: Eliminados todos os valores hardcoded do frontend
+- **Sincronização Admin-Store**: Alterações no painel admin refletem instantaneamente na loja
+- **Cache Invalidation**: Sistema automático de atualização de preços
+- **Dynamic Pricing Config**: Nova estrutura `getAssistantPricingInfo()` que aceita dados do assistente
+
+#### Arquivos Modificados
+- **pricing.ts**: Refatorado para usar preços dinâmicos do banco
+- **AssistantCard.tsx**: Atualizado para usar preços dinâmicos
+- **Store.tsx**: Integrado com sistema de preços em tempo real
+
+### ✅ Proteção Completa contra Erros de Caracteres
+
+#### Banco de Dados
+- **Campo ID**: Aumentado de 50 para 100 caracteres
+- **Campo Área**: Aumentado de 20 para 50 caracteres
+- **Campo Ícone**: Aumentado de 20 para 50 caracteres
+- **Campo Cor**: Aumentado de 20 para 30 caracteres
+- **Migração**: `increase_assistant_field_limits` aplicada com sucesso
+
+#### Backend (admin.js)
+- **Validação Robusta**: Sistema de validação de todos os campos antes da inserção
+- **Constantes de Limite**: `ASSISTANT_FIELD_LIMITS` centralizadas para manutenção
+- **Mensagens Específicas**: Erros detalhados para diferentes tipos de violação
+- **ID Generation**: Otimizado para gerar IDs de máximo 39 caracteres
+
+#### Frontend (AssistantEditor.tsx)
+- **Atributo maxLength**: Aplicado em todos os campos de input
+- **Contadores Visuais**: `CharacterCounter` component mostra uso em tempo real
+- **Validação Pré-envio**: Verificação de limites antes de submeter formulário
+- **Cores de Alerta**: Indicadores visuais quando próximo do limite
+
+### 🔧 Melhorias Técnicas
+
+#### Validação em 3 Camadas
+1. **Frontend**: Validação visual e preventiva com contadores
+2. **Backend**: Validação programática com mensagens específicas
+3. **Database**: Constraints atualizadas com limites maiores
+
+#### Performance
+- **Otimização de Rotas**: Sistema inteligente de roteamento público vs protegido
+- **Estado Compartilhado**: Gerenciamento eficiente de estado do modal de autenticação
+- **Lazy Loading**: Componentes carregados apenas quando necessário
+
+### 🐛 Correções Críticas
+
+#### Erro de Cadastro de Assistentes
+- **Root Cause**: ID gerado excedia 50 caracteres do banco
+- **Solução**: Limite de ID aumentado para 100 caracteres + geração otimizada
+- **Resultado**: Assistentes com nomes longos agora são cadastrados sem erro
+
+#### Preços Desatualizados
+- **Root Cause**: Valores hardcoded no frontend não sincronizavam com admin
+- **Solução**: Sistema completamente dinâmico baseado no banco de dados
+- **Resultado**: Preços sempre atualizados em tempo real
+
+### 📱 UX/UI Improvements
+
+#### Modal de Autenticação
+- **Design Profissional**: Interface elegante com gradientes e animações
+- **Responsivo**: Funciona perfeitamente em desktop e mobile
+- **Acessibilidade**: Suporte completo a teclado e leitores de tela
+- **Internacionalização**: Todas as mensagens em português brasileiro
+
+#### Navegação Pública
+- **Experiência Suave**: Transições sem interrupção entre público e autenticado
+- **Botões de CTA**: Calls-to-action estratégicos para incentivar cadastro
+- **Preview Inteligente**: Usuários veem valor antes de se comprometer
+
+---
+
 ## [v2.2.0] - 2025-09-02
 
 ### ✅ Major Chat System Improvements

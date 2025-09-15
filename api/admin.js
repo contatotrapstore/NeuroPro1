@@ -78,6 +78,54 @@ module.exports = async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('✅ Supabase admin client initialized with Service Role Key');
 
+    // Field length limits for validation
+    const ASSISTANT_FIELD_LIMITS = {
+      id: 100,
+      name: 100,
+      area: 50,
+      icon: 50,
+      color_theme: 30,
+      icon_type: 10,
+      specialization: 100,
+      description: 1000,        // TEXT field but reasonable limit
+      full_description: 5000    // TEXT field but reasonable limit
+    };
+
+    // Validation functions
+    const validateFieldLengths = (data, fieldLimits = ASSISTANT_FIELD_LIMITS) => {
+      const errors = {};
+
+      Object.keys(fieldLimits).forEach(field => {
+        if (data[field] && typeof data[field] === 'string') {
+          const value = data[field];
+          const limit = fieldLimits[field];
+
+          if (value.length > limit) {
+            errors[field] = `Campo '${field}' excede o limite de ${limit} caracteres (atual: ${value.length})`;
+          }
+        }
+      });
+
+      return { errors, isValid: Object.keys(errors).length === 0 };
+    };
+
+    const truncateFields = (data, fieldLimits = ASSISTANT_FIELD_LIMITS) => {
+      const truncated = { ...data };
+      const truncatedFields = [];
+
+      Object.keys(fieldLimits).forEach(field => {
+        if (truncated[field] && typeof truncated[field] === 'string') {
+          const limit = fieldLimits[field];
+          if (truncated[field].length > limit) {
+            truncated[field] = truncated[field].substring(0, limit);
+            truncatedFields.push(`${field} (${limit} chars)`);
+          }
+        }
+      });
+
+      return { data: truncated, truncatedFields };
+    };
+
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
@@ -632,11 +680,27 @@ module.exports = async function handler(req, res) {
           .replace(/[^a-z0-9]/g, '-') // Replace non-alphanumeric with hyphens
           .replace(/-+/g, '-') // Replace multiple hyphens with single
           .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-          .substring(0, 50); // Limit length
-        
-        newAssistant.id = `${safeId}-${Date.now()}`;
+          .substring(0, 30); // Limit to 30 chars to leave room for timestamp
+
+        // Use last 8 digits of timestamp for uniqueness
+        const timestamp = Date.now().toString().slice(-8);
+        newAssistant.id = `${safeId}-${timestamp}`.substring(0, 100); // Updated to new limit
+
+        console.log('🆔 Generated ID:', newAssistant.id, '(length:', newAssistant.id.length, ')');
       }
-      
+
+      // Validate all field lengths using our validation function
+      const validation = validateFieldLengths(newAssistant);
+      if (!validation.isValid) {
+        console.error('❌ Field validation failed:', validation.errors);
+        const errorMessages = Object.values(validation.errors);
+        return res.status(400).json({
+          success: false,
+          error: 'Dados inválidos: ' + errorMessages.join(', '),
+          details: validation.errors
+        });
+      }
+
       // Add audit trail data
       newAssistant.created_by = user.id;
       newAssistant.updated_by = user.id;
@@ -671,9 +735,18 @@ module.exports = async function handler(req, res) {
 
       if (error) {
         console.error('Error creating assistant:', error);
+
+        // Check for specific database constraint errors
+        let errorMessage = 'Erro ao criar assistente';
+        if (error.message.includes('value too long')) {
+          errorMessage = 'Nome do assistente é muito longo. Tente um nome mais curto.';
+        } else if (error.message.includes('duplicate key')) {
+          errorMessage = 'Já existe um assistente com esse ID. Tente novamente.';
+        }
+
         return res.status(500).json({
           success: false,
-          message: 'Erro ao criar assistente',
+          message: errorMessage,
           error: error.message
         });
       }
@@ -749,6 +822,18 @@ module.exports = async function handler(req, res) {
       }
       if (cleanUpdateData.order_index) {
         cleanUpdateData.order_index = parseInt(cleanUpdateData.order_index);
+      }
+
+      // Validate all field lengths for update
+      const validation = validateFieldLengths(cleanUpdateData);
+      if (!validation.isValid) {
+        console.error('❌ Update validation failed:', validation.errors);
+        const errorMessages = Object.values(validation.errors);
+        return res.status(400).json({
+          success: false,
+          error: 'Dados inválidos: ' + errorMessages.join(', '),
+          details: validation.errors
+        });
       }
 
       console.log('🔄 Clean update data:', {
