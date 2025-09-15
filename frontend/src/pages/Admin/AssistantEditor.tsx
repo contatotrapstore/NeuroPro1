@@ -207,7 +207,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
 
       // Upload via our custom endpoint
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/upload/assistant-icon/${formData.id}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/upload/assistant-icon/${formData.id}`,
         {
           method: 'POST',
           headers: {

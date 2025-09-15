@@ -135,11 +135,18 @@ module.exports = async function handler(req, res) {
     
     console.log('Upload path parts:', pathParts);
 
-    if (req.method === 'POST' && pathParts.length >= 2 && pathParts[0] === 'upload') {
-      // POST /upload/assistant-icon/:id - Upload icon for assistant
-      
-      if (pathParts[1] === 'assistant-icon' && pathParts.length === 3) {
-        const assistantId = pathParts[2];
+    // Handle both /api/upload and /upload routes
+    const isApiRoute = pathParts[0] === 'api';
+    const uploadIndex = isApiRoute ? 1 : 0;
+    const iconIndex = isApiRoute ? 2 : 1;
+    const idIndex = isApiRoute ? 3 : 2;
+    const expectedLength = isApiRoute ? 4 : 3;
+
+    if (req.method === 'POST' && pathParts[uploadIndex] === 'upload') {
+      // POST /[api/]upload/assistant-icon/:id - Upload icon for assistant
+
+      if (pathParts[iconIndex] === 'assistant-icon' && pathParts.length === expectedLength) {
+        const assistantId = pathParts[idIndex];
 
         console.log('📤 Starting assistant icon upload:', {
           assistantId: assistantId,
