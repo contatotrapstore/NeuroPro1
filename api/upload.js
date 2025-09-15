@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const formidable = require('formidable');
+const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
 
 module.exports = async function handler(req, res) {
   console.log('🚀 Upload function started');
@@ -104,24 +105,29 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Check admin role
-    const ADMIN_EMAILS = [
-      'admin@neuroialab.com',
-      'admin@neuroia.lab', // Email usado no frontend
-      'gouveiarx@gmail.com',
-      'psitales@gmail.com' // Correção do email
-    ];
-    
-    const hasAdminRole = user.user_metadata?.role === 'admin';
-    const isInAdminList = ADMIN_EMAILS.includes(user.email?.toLowerCase());
-    const isAdmin = hasAdminRole || isInAdminList;
-    
+    // Check admin role using centralized configuration
+    const isAdmin = isAdminUser(user.email, user.user_metadata);
+
+    console.log('🔍 Upload Admin Check:', {
+      userEmail: user.email,
+      userMetadata: user.user_metadata,
+      isAdmin: isAdmin,
+      adminEmails: ADMIN_EMAILS
+    });
+
     if (!isAdmin) {
+      console.log('❌ Upload access denied for:', user.email);
       return res.status(403).json({
         success: false,
-        error: 'Acesso negado. Apenas administradores podem fazer upload.'
+        error: 'Acesso negado. Apenas administradores podem fazer upload.',
+        debug: {
+          userEmail: user.email,
+          isAdmin: isAdmin
+        }
       });
     }
+
+    console.log('✅ Upload access granted for admin:', user.email);
 
     // Parse the URL for routing
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -134,7 +140,13 @@ module.exports = async function handler(req, res) {
       
       if (pathParts[1] === 'assistant-icon' && pathParts.length === 3) {
         const assistantId = pathParts[2];
-        
+
+        console.log('📤 Starting assistant icon upload:', {
+          assistantId: assistantId,
+          userEmail: user.email,
+          timestamp: new Date().toISOString()
+        });
+
         // Parse the multipart form data
         const form = formidable({
           maxFileSize: 5 * 1024 * 1024, // 5MB max
@@ -152,8 +164,19 @@ module.exports = async function handler(req, res) {
         try {
           const [fields, files] = await form.parse(req);
           const iconFile = Array.isArray(files.icon) ? files.icon[0] : files.icon;
-          
+
+          console.log('📁 File parsing result:', {
+            fields: Object.keys(fields),
+            files: Object.keys(files),
+            iconFile: iconFile ? {
+              originalFilename: iconFile.originalFilename,
+              mimetype: iconFile.mimetype,
+              size: iconFile.size
+            } : 'null'
+          });
+
           if (!iconFile) {
+            console.log('❌ No icon file provided');
             return res.status(400).json({
               success: false,
               error: 'Nenhum arquivo de ícone fornecido'
@@ -167,7 +190,14 @@ module.exports = async function handler(req, res) {
           // Generate unique filename
           const fileExtension = iconFile.originalFilename.split('.').pop();
           const fileName = `assistant-${assistantId}-${Date.now()}.${fileExtension}`;
-          
+
+          console.log('☁️ Uploading to Supabase Storage:', {
+            fileName: fileName,
+            contentType: iconFile.mimetype,
+            fileSize: fileBuffer.length,
+            bucket: 'assistant-icons'
+          });
+
           // Upload to Supabase Storage
           const { data: uploadData, error: uploadError } = await supabase
             .storage
@@ -230,6 +260,13 @@ module.exports = async function handler(req, res) {
 
           // Clean up temporary file
           fs.unlinkSync(iconFile.filepath);
+
+          console.log('✅ Upload completed successfully:', {
+            assistantId: assistantId,
+            fileName: fileName,
+            iconUrl: iconUrl,
+            userEmail: user.email
+          });
 
           return res.json({
             success: true,

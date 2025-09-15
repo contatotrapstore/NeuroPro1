@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { AssistantIcon } from '../../components/ui/AssistantIcon';
 import { ApiService } from '../../services/api.service';
 import { cn } from '../../utils/cn';
+import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 
 // Field length limits (must match backend limits)
@@ -196,13 +197,21 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       const uploadFormData = new FormData();
       uploadFormData.append('icon', file);
 
+      // Get proper auth token from Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        toast.error('Erro de autenticação. Faça login novamente.');
+        return;
+      }
+
       // Upload via our custom endpoint
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/upload/assistant-icon/${formData.id}`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
+            'Authorization': `Bearer ${session.access_token}`
           },
           body: uploadFormData
         }

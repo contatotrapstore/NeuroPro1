@@ -1,4 +1,5 @@
 import { ApiService } from './api.service';
+import { supabase } from './supabase';
 
 export interface AssistantStats {
   subscriptionCount: number;
@@ -106,14 +107,22 @@ export class AdminService {
     formData.append('icon', file);
 
     try {
-      const token = localStorage.getItem('supabase.auth.token');
-      
+      // Get proper auth token from Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        return {
+          success: false,
+          error: 'Erro de autenticação. Faça login novamente.'
+        };
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/upload/assistant-icon/${assistantId}`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${session.access_token}`
           },
           body: formData
         }
