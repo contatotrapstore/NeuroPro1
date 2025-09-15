@@ -118,7 +118,7 @@ export class AdminService {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/upload/assistant-icon/${assistantId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/upload/assistant-icon/${assistantId}`,
         {
           method: 'POST',
           headers: {

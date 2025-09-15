@@ -531,36 +531,6 @@ module.exports = async function handler(req, res) {
 
       const userId = user.id;
 
-      // Check if user is admin - admins get all assistants
-      const isAdmin = isAdminUser(user.email, user.user_metadata);
-
-      if (isAdmin) {
-        console.log('✅ Admin user detected, returning all assistants for:', user.email);
-
-        // Return all active assistants for admin users
-        const { data: allAssistants, error: adminError } = await userClient
-          .from('assistants')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: true })
-          .order('name', { ascending: true });
-
-        if (adminError) {
-          console.error('Error getting all assistants for admin:', adminError);
-          return res.status(500).json({
-            success: false,
-            error: 'Erro ao carregar assistentes para admin'
-          });
-        }
-
-        return res.json({
-          success: true,
-          data: allAssistants || [],
-          count: allAssistants?.length || 0,
-          message: 'Todos os assistentes retornados para usuário admin'
-        });
-      }
-
       // Get user's subscriptions (individual + packages)
       const { data: subscriptions, error: subError } = await userClient
         .from('user_subscriptions')
@@ -702,21 +672,6 @@ module.exports = async function handler(req, res) {
       }
 
       const userId = user.id;
-
-      // Check if user is admin - admins have automatic access to all assistants
-      const isAdmin = isAdminUser(user.email, user.user_metadata);
-
-      if (isAdmin) {
-        console.log('✅ Admin access granted to:', user.email, 'for assistant:', assistantId);
-        return res.json({
-          success: true,
-          data: {
-            hasAccess: true,
-            accessType: 'admin'
-          },
-          message: 'Acesso admin concedido automaticamente'
-        });
-      }
 
       // Check individual subscription
       const { data: subscription, error: subError } = await userClient
