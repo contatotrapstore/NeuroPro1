@@ -115,7 +115,7 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
             <Button
               onClick={handleGetStarted}
               size="lg"
-              leftIcon={<Icon name="rocket" className="w-5 h-5" />}
+              leftIcon={<Icon name="rocket" className="w-5 h-5 text-white" />}
               className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
             >
               Começar Agora
@@ -285,7 +285,7 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
                   <Button
                     onClick={handleGetStarted}
                     size="lg"
-                    leftIcon={<Icon name="user" className="w-5 h-5" />}
+                    leftIcon={<Icon name="user" className="w-5 h-5 text-white" />}
                     className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                   >
                     Criar Conta
