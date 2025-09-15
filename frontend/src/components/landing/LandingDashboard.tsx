@@ -115,22 +115,21 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
             <Button
               onClick={handleGetStarted}
               size="lg"
-              className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center whitespace-nowrap"
+              leftIcon={<Icon name="rocket" className="w-5 h-5" />}
+              className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
             >
-              <Icon name="rocket" className="w-5 h-5 mr-2 flex-shrink-0" />
-              Começar Agora Grátis
+              Começar Agora
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="text-lg px-8 py-4 border-2 border-neuro-primary text-neuro-primary hover:bg-neuro-primary hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-            >
-              <Link to="/store" className="flex items-center whitespace-nowrap">
-                <Icon name="eye" className="w-5 h-5 mr-2 flex-shrink-0" />
+            <Link to="/store">
+              <Button
+                variant="outline"
+                size="lg"
+                leftIcon={<Icon name="eye" className="w-5 h-5" />}
+                className="text-lg px-8 py-4 border-2 border-neuro-primary text-neuro-primary hover:bg-neuro-primary hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              >
                 Explorar Assistentes
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
 
           {/* Trust Indicators */}
@@ -278,7 +277,7 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
                   Junte-se a <span className="font-bold text-neuro-primary">centenas de profissionais</span> que já estão usando NeuroIA Lab
                   para potencializar seus atendimentos e resultados.
                   <span className="block mt-2 text-base">
-                    Comece gratuitamente e veja a diferença em sua primeira sessão!
+                    Transforme sua prática profissional e veja a diferença em sua primeira sessão!
                   </span>
                 </p>
 
@@ -286,30 +285,25 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
                   <Button
                     onClick={handleGetStarted}
                     size="lg"
-                    className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center whitespace-nowrap"
+                    leftIcon={<Icon name="user" className="w-5 h-5" />}
+                    className="text-lg px-8 py-4 bg-gradient-to-r from-neuro-primary to-green-600 hover:from-neuro-primary-hover hover:to-green-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                   >
-                    <Icon name="user" className="w-5 h-5 mr-2 flex-shrink-0" />
-                    Criar Conta Grátis
+                    Criar Conta
                   </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="lg"
-                    className="text-lg px-8 py-4 border-2 border-neuro-primary text-neuro-primary hover:bg-neuro-primary hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                  >
-                    <Link to="/store" className="flex items-center whitespace-nowrap">
-                      <Icon name="store" className="w-5 h-5 mr-2 flex-shrink-0" />
+                  <Link to="/store">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      leftIcon={<Icon name="store" className="w-5 h-5" />}
+                      className="text-lg px-8 py-4 border-2 border-neuro-primary text-neuro-primary hover:bg-neuro-primary hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    >
                       Ver Assistentes
-                    </Link>
-                  </Button>
+                    </Button>
+                  </Link>
                 </div>
 
                 {/* Additional Trust Elements */}
                 <div className="mt-8 flex flex-wrap justify-center items-center gap-6 text-sm text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <Icon name="checkCircle" className="w-4 h-4 text-green-500" />
-                    <span>Sem cartão de crédito</span>
-                  </div>
                   <div className="flex items-center gap-2">
                     <Icon name="shield" className="w-4 h-4 text-green-500" />
                     <span>Dados 100% seguros</span>
@@ -317,6 +311,10 @@ export const LandingDashboard: React.FC<LandingDashboardProps> = ({ onAuthAction
                   <div className="flex items-center gap-2">
                     <Icon name="zap" className="w-4 h-4 text-green-500" />
                     <span>Ativação instantânea</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="star" className="w-4 h-4 text-green-500" />
+                    <span>Suporte profissional</span>
                   </div>
                 </div>
               </div>
