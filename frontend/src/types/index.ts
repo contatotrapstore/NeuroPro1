@@ -85,6 +85,7 @@ export interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   resendConfirmation: (email: string) => Promise<void>;
   updateProfile: (data: ProfileUpdateData) => Promise<{ error?: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error?: any }>;
 }
 
 // Profile update data

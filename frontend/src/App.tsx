@@ -6,6 +6,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import AdminProtectedRoute from './components/layout/AdminProtectedRoute';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { Login, Register, ForgotPassword } from './pages/Auth';
+import ResetPassword from './pages/Auth/ResetPassword';
 import ChatPage from './pages/ChatPage';
 import Dashboard from './pages/Dashboard';
 import Store from './pages/Store';
@@ -44,6 +45,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requireAuth={false}>
                 <ForgotPassword />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/auth/reset-password"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <ResetPassword />
               </ProtectedRoute>
             }
           />

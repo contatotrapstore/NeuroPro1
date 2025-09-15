@@ -239,6 +239,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         // Invalidar cache para sincronizar com loja e clientes
         apiService.clearCache('assistants');
         apiService.clearCache('/assistants');
+        apiService.clearCache(); // Clear all cache for full sync
         
         toast.success(
           isEditing 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  Users, 
-  DollarSign, 
-  Activity, 
+import {
+  Users,
+  DollarSign,
+  Activity,
   LogOut,
   Eye,
   Settings,
@@ -14,7 +14,8 @@ import {
   X,
   Check,
   Plus,
-  Minus
+  Minus,
+  KeyRound
 } from 'lucide-react';
 import { NeuroLabIconMedium } from '../components/icons/NeuroLabLogo';
 import { adminService } from '../services/admin.service';
@@ -22,6 +23,7 @@ import type { AdminStats, AdminUser } from '../services/admin.service';
 import { AssistantManager } from './Admin/AssistantManager';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
 import toast, { Toaster } from 'react-hot-toast';
+import { supabase } from '../services/supabase';
 
 interface AdminStatsDisplay extends AdminStats {
   conversionRate?: number;
@@ -216,6 +218,35 @@ export default function AdminDashboard() {
     setSelectedUser(null);
     setUserAssistants([]);
     // Não recarregar automaticamente - apenas limpar o estado do modal
+  };
+
+  const handleResetPassword = async (userEmail: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success(
+        `Email de recuperação enviado para ${userEmail}`,
+        {
+          duration: 5000,
+          position: 'top-right'
+        }
+      );
+    } catch (error: any) {
+      console.error('Error sending password reset:', error);
+      toast.error(
+        'Erro ao enviar email de recuperação. Tente novamente.',
+        {
+          duration: 4000,
+          position: 'top-right'
+        }
+      );
+    }
   };
 
   const StatCard = ({ icon: Icon, title, value, change, color = 'blue' }: {
@@ -413,18 +444,38 @@ export default function AdminDashboard() {
                           : 'Nunca'
                         }
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        {!user.is_admin ? (
-                          <button 
-                            onClick={() => handleManageAssistants(user)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Gerenciar IAs"
-                          >
-                            <Settings size={16} />
-                          </button>
-                        ) : (
-                          <span className="text-gray-400 text-xs">Admin</span>
-                        )}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          {!user.is_admin ? (
+                            <>
+                              <button
+                                onClick={() => handleManageAssistants(user)}
+                                className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                                title="Gerenciar IAs"
+                              >
+                                <Settings size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleResetPassword(user.email)}
+                                className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                                title="Enviar link de reset de senha"
+                              >
+                                <KeyRound size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-gray-400 text-xs">Admin</span>
+                              <button
+                                onClick={() => handleResetPassword(user.email)}
+                                className="text-orange-600 hover:text-orange-900 p-1 rounded ml-2"
+                                title="Enviar link de reset de senha"
+                              >
+                                <KeyRound size={16} />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

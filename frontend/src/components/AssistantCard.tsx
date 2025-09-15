@@ -46,8 +46,8 @@ export function AssistantCard({
   showChatLink = false 
 }: AssistantCardProps) {
   
-  // Get pricing information from centralized config
-  const pricingInfo = getAssistantPricingInfo();
+  // Get pricing information from centralized config (using assistant's dynamic pricing)
+  const pricingInfo = getAssistantPricingInfo(assistant);
 
   // Area configuration for visual styling
   const areaConfig = {

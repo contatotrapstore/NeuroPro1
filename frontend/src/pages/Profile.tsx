@@ -26,7 +26,7 @@ const specialtyOptions = [
 ];
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, updatePassword } = useAuth();
   const [profile, setProfile] = useState<ProfileData>({
     name: '',
     email: '',
@@ -35,9 +35,14 @@ export default function Profile() {
     crp: '',
     specialties: []
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'personal'>('personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'security'>('personal');
 
   useEffect(() => {
     if (user) {
@@ -72,7 +77,7 @@ export default function Profile() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setMessage(null);
@@ -91,7 +96,7 @@ export default function Profile() {
       }
 
       // TODO: Save notifications and preferences to database
-      
+
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
     } catch (error: any) {
       console.error('Erro ao salvar perfil:', error);
@@ -101,8 +106,47 @@ export default function Profile() {
     }
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: 'error', text: 'As senhas não coincidem' });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setMessage({ type: 'error', text: 'A nova senha deve ter pelo menos 8 caracteres' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage(null);
+
+      const { error } = await updatePassword(passwordData.newPassword);
+
+      if (error) {
+        throw error;
+      }
+
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      setMessage({ type: 'error', text: error.message || 'Erro ao alterar senha' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const tabs = [
-    { id: 'personal', label: 'Informações Pessoais', icon: '👤' }
+    { id: 'personal', label: 'Informações Pessoais', icon: '👤' },
+    { id: 'security', label: 'Segurança', icon: '🔒' }
   ];
 
   return (
@@ -269,20 +313,97 @@ export default function Profile() {
             </div>
           )}
 
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <form onSubmit={handlePasswordChange} className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="text-blue-600 mr-3 text-lg">🔒</div>
+                  <div>
+                    <h3 className="font-medium text-blue-800 mb-1">Alteração de Senha</h3>
+                    <p className="text-sm text-blue-700">
+                      Para sua segurança, confirme sua senha atual e digite uma nova senha com pelo menos 8 caracteres.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-6 border-t border-gray-200">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-3 bg-neuro-primary text-white rounded-lg hover:bg-neuro-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center"
-            >
-              {saving && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              )}
-              {saving ? 'Salvando...' : 'Salvar Alterações'}
-            </button>
-          </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Senha Atual *
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
+                    required
+                    placeholder="Digite sua senha atual"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nova Senha *
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
+                    required
+                    minLength={8}
+                    placeholder="Digite sua nova senha (mínimo 8 caracteres)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirmar Nova Senha *
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neuro-primary focus:border-neuro-primary"
+                    required
+                    minLength={8}
+                    placeholder="Confirme sua nova senha"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6 border-t border-gray-200">
+                <button
+                  type="submit"
+                  disabled={saving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                  className="px-6 py-3 bg-neuro-primary text-white rounded-lg hover:bg-neuro-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center"
+                >
+                  {saving && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  )}
+                  {saving ? 'Alterando...' : 'Alterar Senha'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Save Button for Personal Info */}
+          {activeTab === 'personal' && (
+            <div className="flex justify-end pt-6 border-t border-gray-200">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-3 bg-neuro-primary text-white rounded-lg hover:bg-neuro-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center"
+              >
+                {saving && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                )}
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
+              </button>
+            </div>
+          )}
         </form>
       </div>
 

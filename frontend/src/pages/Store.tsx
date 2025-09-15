@@ -88,12 +88,16 @@ export default function Store() {
   };
 
   const handleSubscribe = (assistantId: string) => {
+    // Find the assistant to get its actual price
+    const assistant = assistants.find(a => a.id === assistantId);
+    const assistantPrice = assistant?.monthly_price || 39.90; // Fallback to default if not found
+
     navigate('/checkout', {
       state: {
         type: 'individual',
         assistant_id: assistantId,
         subscription_type: 'monthly',
-        total_price: 39.90
+        total_price: assistantPrice
       }
     });
   };

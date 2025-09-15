@@ -4,8 +4,8 @@
  * All prices should be managed from this single source of truth
  */
 
-// Base pricing for individual assistants
-export const INDIVIDUAL_PRICING = {
+// Default base pricing for individual assistants (fallback values)
+export const DEFAULT_INDIVIDUAL_PRICING = {
   monthly: 39.90,
   semester: 199.00,
 } as const;
@@ -49,10 +49,23 @@ export const calculatePackageDiscount = (
 };
 
 /**
- * Get individual assistant price
+ * Get individual assistant price (with dynamic pricing support)
  */
-export const getIndividualPrice = (subscriptionType: SubscriptionType): number => {
-  return INDIVIDUAL_PRICING[subscriptionType];
+export const getIndividualPrice = (
+  subscriptionType: SubscriptionType,
+  dynamicPricing?: { monthly_price?: number; semester_price?: number }
+): number => {
+  if (dynamicPricing) {
+    const price = subscriptionType === 'monthly'
+      ? dynamicPricing.monthly_price
+      : dynamicPricing.semester_price;
+
+    if (price && price > 0) {
+      return price;
+    }
+  }
+
+  return DEFAULT_INDIVIDUAL_PRICING[subscriptionType];
 };
 
 /**
@@ -110,18 +123,26 @@ export const formatSubscriptionLabel = (subscriptionType: SubscriptionType): str
 };
 
 /**
- * Get complete pricing info for an assistant
+ * Get complete pricing info for an assistant (with dynamic pricing support)
  */
-export const getAssistantPricingInfo = () => ({
-  monthly: {
-    price: INDIVIDUAL_PRICING.monthly,
-    formatted: `${formatPrice(INDIVIDUAL_PRICING.monthly)}/mês`,
-  },
-  semester: {
-    price: INDIVIDUAL_PRICING.semester,
-    formatted: `${formatPrice(INDIVIDUAL_PRICING.semester)}/semestre`,
-  }
-});
+export const getAssistantPricingInfo = (assistant?: {
+  monthly_price?: number;
+  semester_price?: number;
+}) => {
+  const monthlyPrice = getIndividualPrice('monthly', assistant);
+  const semesterPrice = getIndividualPrice('semester', assistant);
+
+  return {
+    monthly: {
+      price: monthlyPrice,
+      formatted: `${formatPrice(monthlyPrice)}/mês`,
+    },
+    semester: {
+      price: semesterPrice,
+      formatted: `${formatPrice(semesterPrice)}/semestre`,
+    }
+  };
+};
 
 /**
  * Get complete pricing info for packages
@@ -149,6 +170,6 @@ export const getPackagePricingInfo = (packageSize: PackageSize) => {
 
 // Export all pricing constants for direct access if needed
 export const PRICING_CONFIG = {
-  INDIVIDUAL_PRICING,
+  DEFAULT_INDIVIDUAL_PRICING,
   PACKAGE_PRICING,
 } as const;
