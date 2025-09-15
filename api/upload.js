@@ -2,6 +2,12 @@ const { createClient } = require('@supabase/supabase-js');
 const formidable = require('formidable');
 const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
 
+// Helper function to send response with CORS headers
+const sendResponse = (res, status, data) => {
+  // CORS headers are already set at the beginning of the handler
+  return res.status(status).json(data);
+};
+
 module.exports = async function handler(req, res) {
   console.log('🚀 Upload function started');
   console.log('Request method:', req.method);
@@ -46,9 +52,17 @@ module.exports = async function handler(req, res) {
       serviceKeyValid: supabaseServiceKey && supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE',
       hasAnonKey: !!supabaseAnonKey
     });
+
+    // Detailed environment check for debugging
+    console.log('📋 Environment Debug:', {
+      hasServiceKey: !!supabaseServiceKey,
+      keyLength: supabaseServiceKey ? supabaseServiceKey.length : 0,
+      isPlaceholder: supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE',
+      keyPreview: supabaseServiceKey ? `${supabaseServiceKey.substring(0, 10)}...` : 'undefined'
+    });
     
     if (!supabaseUrl || !supabaseAnonKey) {
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         success: false,
         error: 'Configuração do servidor incompleta'
       });
@@ -57,7 +71,7 @@ module.exports = async function handler(req, res) {
     // Check if Service Role Key is properly configured
     if (!supabaseServiceKey || supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
       console.error('❌ Upload: Service Role Key not configured properly');
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         success: false,
         error: 'Service Role Key não configurada. Configure a chave no arquivo .env',
         debug: {
@@ -76,7 +90,7 @@ module.exports = async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json({
+      return sendResponse(res, 401, {
         success: false,
         error: 'Token de acesso não fornecido'
       });
@@ -99,7 +113,7 @@ module.exports = async function handler(req, res) {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     
     if (userError || !user) {
-      return res.status(401).json({
+      return sendResponse(res, 401, {
         success: false,
         error: 'Token inválido'
       });
@@ -117,7 +131,7 @@ module.exports = async function handler(req, res) {
 
     if (!isAdmin) {
       console.log('❌ Upload access denied for:', user.email);
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         success: false,
         error: 'Acesso negado. Apenas administradores podem fazer upload.',
         debug: {
@@ -184,7 +198,7 @@ module.exports = async function handler(req, res) {
 
           if (!iconFile) {
             console.log('❌ No icon file provided');
-            return res.status(400).json({
+            return sendResponse(res, 400, {
               success: false,
               error: 'Nenhum arquivo de ícone fornecido'
             });
@@ -216,7 +230,7 @@ module.exports = async function handler(req, res) {
 
           if (uploadError) {
             console.error('Upload error:', uploadError);
-            return res.status(500).json({
+            return sendResponse(res, 500, {
               success: false,
               error: 'Erro ao fazer upload do ícone',
               details: uploadError.message
@@ -245,7 +259,7 @@ module.exports = async function handler(req, res) {
 
           if (updateError) {
             console.error('Database update error:', updateError);
-            return res.status(500).json({
+            return sendResponse(res, 500, {
               success: false,
               error: 'Erro ao atualizar assistente com novo ícone'
             });
@@ -275,7 +289,7 @@ module.exports = async function handler(req, res) {
             userEmail: user.email
           });
 
-          return res.json({
+          return sendResponse(res, 200, {
             success: true,
             data: {
               assistant,
@@ -287,7 +301,7 @@ module.exports = async function handler(req, res) {
 
         } catch (parseError) {
           console.error('Form parse error:', parseError);
-          return res.status(400).json({
+          return sendResponse(res, 400, {
             success: false,
             error: 'Erro ao processar upload',
             details: parseError.message
@@ -296,7 +310,7 @@ module.exports = async function handler(req, res) {
       }
       
       else {
-        return res.status(404).json({
+        return sendResponse(res, 404, {
           success: false,
           error: 'Endpoint de upload não encontrado'
         });
@@ -304,7 +318,7 @@ module.exports = async function handler(req, res) {
     }
 
     else {
-      return res.status(405).json({
+      return sendResponse(res, 405, {
         success: false,
         error: 'Método não permitido'
       });
@@ -314,7 +328,7 @@ module.exports = async function handler(req, res) {
     console.error('💥 Upload function error:', error);
     console.error('Error stack:', error.stack);
     
-    return res.status(500).json({
+    return sendResponse(res, 500, {
       success: false,
       error: 'Erro interno do servidor',
       details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
