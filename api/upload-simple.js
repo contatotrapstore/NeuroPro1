@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
 
 module.exports = async function handler(req, res) {
   console.log('🚀 Simple Upload function started');
@@ -72,24 +73,106 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    // Extract and validate user token
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token de acesso não fornecido'
+      });
+    }
+
+    // Create authenticated Supabase client
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+
+    // Get user from token and verify admin role
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error('User authentication error:', userError);
+      return res.status(401).json({
+        success: false,
+        error: 'Token inválido'
+      });
+    }
+
+    // Check admin role using centralized configuration
+    const isAdmin = isAdminUser(user.email, user.user_metadata);
+
+    console.log('🔍 Simple Upload Admin Check:', {
+      userEmail: user.email,
+      userMetadata: user.user_metadata,
+      isAdmin: isAdmin,
+      adminEmails: ADMIN_EMAILS
+    });
+
+    if (!isAdmin) {
+      console.log('❌ Simple Upload access denied for:', user.email);
+      return res.status(403).json({
+        success: false,
+        error: 'Acesso negado. Apenas administradores podem fazer upload.'
+      });
+    }
+
+    console.log('✅ Simple Upload access granted for admin:', user.email);
+
+    // Verify if assistant exists first
+    const { data: existingAssistant, error: checkError } = await supabase
+      .from('assistants')
+      .select('id, name')
+      .eq('id', assistantId)
+      .single();
+
+    if (checkError || !existingAssistant) {
+      console.error('Assistant not found:', checkError);
+      return res.status(404).json({
+        success: false,
+        error: 'Assistente não encontrado'
+      });
+    }
+
+    console.log('✅ Assistant found:', existingAssistant.name);
 
     // Convert base64 to buffer
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
+    // Detect content type from base64 data
+    let contentType = 'image/png'; // default
+    if (imageBase64.startsWith('data:image/jpeg')) {
+      contentType = 'image/jpeg';
+    } else if (imageBase64.startsWith('data:image/jpg')) {
+      contentType = 'image/jpeg';
+    } else if (imageBase64.startsWith('data:image/svg+xml')) {
+      contentType = 'image/svg+xml';
+    } else if (imageBase64.startsWith('data:image/webp')) {
+      contentType = 'image/webp';
+    }
+
     console.log('☁️ Uploading to Supabase Storage:', {
       fileName: fileName,
       bufferSize: buffer.length,
+      contentType: contentType,
       bucket: 'assistant-icons'
     });
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage using authenticated client
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('assistant-icons')
       .upload(fileName, buffer, {
-        contentType: 'image/png',
+        contentType: contentType,
         upsert: true
       });
 
@@ -107,28 +190,94 @@ module.exports = async function handler(req, res) {
       .from('assistant-icons')
       .getPublicUrl(fileName);
 
-    const publicUrl = urlData.publicUrl;
+    const iconUrl = urlData.publicUrl;
 
-    console.log('✅ Upload completed successfully:', {
+    console.log('✅ Upload to storage completed:', {
       fileName: fileName,
-      publicUrl: publicUrl
+      iconUrl: iconUrl
+    });
+
+    // Update assistant with new icon URL using authenticated client
+    const { data: updatedAssistant, error: updateError } = await supabase
+      .from('assistants')
+      .update({
+        icon_url: iconUrl,
+        icon_type: 'image',
+        updated_by: user.id
+      })
+      .eq('id', assistantId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao atualizar assistente com novo ícone',
+        details: updateError.message
+      });
+    }
+
+    // Log action in audit trail using authenticated client
+    await supabase
+      .from('admin_audit_log')
+      .insert({
+        admin_id: user.id,
+        action: 'update',
+        entity_type: 'assistant',
+        entity_id: assistantId,
+        new_data: { icon_url: iconUrl, icon_type: 'image' },
+        changes: { icon: { old: 'svg', new: 'image' } },
+        ip_address: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',
+        user_agent: req.headers['user-agent']
+      });
+
+    console.log('✅ Assistant updated successfully:', {
+      assistantId: assistantId,
+      fileName: fileName,
+      iconUrl: iconUrl,
+      userEmail: user.email
     });
 
     return res.status(200).json({
       success: true,
-      url: publicUrl,
-      fileName: fileName,
-      message: 'Upload realizado com sucesso'
+      data: {
+        assistant: updatedAssistant,
+        iconUrl,
+        fileName
+      },
+      message: 'Ícone do assistente atualizado com sucesso'
     });
 
   } catch (error) {
     console.error('💥 Simple upload function error:', error);
     console.error('Error stack:', error.stack);
 
-    return res.status(500).json({
+    // Handle specific error types
+    let errorMessage = 'Erro interno do servidor';
+    let statusCode = 500;
+
+    if (error.message?.includes('Invalid JWT')) {
+      errorMessage = 'Token de autenticação inválido';
+      statusCode = 401;
+    } else if (error.message?.includes('JWT expired')) {
+      errorMessage = 'Token de autenticação expirado';
+      statusCode = 401;
+    } else if (error.message?.includes('Row Level Security')) {
+      errorMessage = 'Erro de permissão no banco de dados';
+      statusCode = 403;
+    } else if (error.message?.includes('not found')) {
+      errorMessage = 'Recurso não encontrado';
+      statusCode = 404;
+    }
+
+    return res.status(statusCode).json({
       success: false,
-      error: 'Erro interno do servidor',
-      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? {
+        originalError: error.message,
+        stack: error.stack
+      } : undefined
     });
   }
 };

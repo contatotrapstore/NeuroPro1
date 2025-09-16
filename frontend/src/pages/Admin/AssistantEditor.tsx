@@ -186,7 +186,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       return;
     }
 
-    if (!formData.id && isEditing) {
+    if (!formData.id) {
       toast.error('Salve o assistente primeiro antes de fazer upload do ícone.');
       return;
     }
@@ -236,16 +236,34 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       if (result.success) {
         setFormData(prev => ({
           ...prev,
-          icon_url: result.url,
+          icon_url: result.data.iconUrl,
           icon_type: 'image'
         }));
-        toast.success('Ícone atualizado com sucesso!');
+        toast.success(result.message || 'Ícone atualizado com sucesso!');
       } else {
+        console.error('Upload failed:', result);
         toast.error(result.error || 'Erro ao fazer upload do ícone');
+
+        // Show more specific error messages
+        if (result.error?.includes('Token')) {
+          toast.error('Erro de autenticação. Faça login novamente.');
+        } else if (result.error?.includes('Acesso negado')) {
+          toast.error('Acesso negado. Apenas administradores podem fazer upload.');
+        } else if (result.error?.includes('não encontrado')) {
+          toast.error('Assistente não encontrado. Salve o assistente primeiro.');
+        }
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erro ao fazer upload do ícone');
+
+      // Handle network and other errors
+      if (error.message?.includes('Failed to fetch')) {
+        toast.error('Erro de rede: Verifique sua conexão');
+      } else if (error.message?.includes('NetworkError')) {
+        toast.error('Erro de rede: Não foi possível conectar ao servidor');
+      } else {
+        toast.error('Erro inesperado ao fazer upload do ícone');
+      }
     } finally {
       setUploading(false);
     }
@@ -736,13 +754,13 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                         onChange={handleIconUpload}
                         className="hidden"
                         id="icon-upload"
-                        disabled={!formData.id && isEditing}
+                        disabled={!formData.id}
                       />
                       <label
                         htmlFor="icon-upload"
                         className={cn(
                           "flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                          (!formData.id && isEditing)
+                          (!formData.id)
                             ? "border-gray-200 text-gray-400 cursor-not-allowed" 
                             : "border-gray-300 hover:border-neuro-primary hover:bg-neuro-primary/5"
                         )}
@@ -758,7 +776,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       </label>
                       <p className="text-xs text-gray-500">
                         PNG, JPG ou SVG (max 5MB)
-                        {(!formData.id && isEditing) && " - Salve primeiro"}
+                        {(!formData.id) && " - Salve primeiro"}
                       </p>
                     </div>
                   </div>
