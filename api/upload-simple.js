@@ -133,10 +133,19 @@ module.exports = async function handler(req, res) {
       .from('assistants')
       .select('id, name')
       .eq('id', assistantId)
-      .single();
+      .maybeSingle();
 
-    if (checkError || !existingAssistant) {
-      console.error('Assistant not found:', checkError);
+    if (checkError) {
+      console.error('Error checking assistant:', checkError);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao verificar assistente',
+        details: checkError.message
+      });
+    }
+
+    if (!existingAssistant) {
+      console.error('Assistant not found for ID:', assistantId);
       return res.status(404).json({
         success: false,
         error: 'Assistente não encontrado'
@@ -198,7 +207,7 @@ module.exports = async function handler(req, res) {
     });
 
     // Update assistant with new icon URL using authenticated client
-    const { data: updatedAssistant, error: updateError } = await supabase
+    const { data: updateResult, error: updateError } = await supabase
       .from('assistants')
       .update({
         icon_url: iconUrl,
@@ -206,8 +215,7 @@ module.exports = async function handler(req, res) {
         updated_by: user.id
       })
       .eq('id', assistantId)
-      .select()
-      .single();
+      .select();
 
     if (updateError) {
       console.error('Database update error:', updateError);
@@ -218,19 +226,36 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Log action in audit trail using authenticated client
-    await supabase
-      .from('admin_audit_log')
-      .insert({
-        admin_id: user.id,
-        action: 'update',
-        entity_type: 'assistant',
-        entity_id: assistantId,
-        new_data: { icon_url: iconUrl, icon_type: 'image' },
-        changes: { icon: { old: 'svg', new: 'image' } },
-        ip_address: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',
-        user_agent: req.headers['user-agent']
+    // Check if update was successful
+    if (!updateResult || updateResult.length === 0) {
+      console.error('No assistant was updated - possible permission issue');
+      return res.status(500).json({
+        success: false,
+        error: 'Nenhum assistente foi atualizado - possível problema de permissão'
       });
+    }
+
+    const updatedAssistant = updateResult[0]; // Get first result
+
+    // Log action in audit trail using authenticated client (non-blocking)
+    try {
+      await supabase
+        .from('admin_audit_log')
+        .insert({
+          admin_id: user.id,
+          action: 'update',
+          entity_type: 'assistant',
+          entity_id: assistantId,
+          new_data: { icon_url: iconUrl, icon_type: 'image' },
+          changes: { icon: { old: 'svg', new: 'image' } },
+          ip_address: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',
+          user_agent: req.headers['user-agent']
+        });
+      console.log('✅ Audit log created successfully');
+    } catch (auditError) {
+      console.warn('⚠️ Failed to create audit log (non-critical):', auditError.message);
+      // Don't fail the upload if audit log fails
+    }
 
     console.log('✅ Assistant updated successfully:', {
       assistantId: assistantId,
@@ -242,9 +267,9 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       success: true,
       data: {
-        assistant: updatedAssistant,
         iconUrl,
-        fileName
+        fileName,
+        assistantId: assistantId
       },
       message: 'Ícone do assistente atualizado com sucesso'
     });
