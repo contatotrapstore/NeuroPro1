@@ -717,23 +717,26 @@ module.exports = async function handler(req, res) {
       console.log('🔄 Auto-creating admin subscriptions for new assistant:', assistant.id);
 
       try {
-        // Get all admin users from Supabase auth
+        // Use real admin user IDs from auth.users table
+        const adminUserIds = {
+          'gouveiarx@gmail.com': 'b31367e7-a725-41b9-8cc2-d583a6ea84cd',
+          'psitales.sales@gmail.com': 'b421c5fd-c416-4cee-a9a6-5e680ee18e63'
+          // psitales@gmail.com not in database yet
+        };
+
         const adminSubscriptions = [];
 
-        for (const adminEmail of ADMIN_EMAILS) {
-          // Create subscription with far future expiration date
-          const farFuture = new Date('2099-12-31T23:59:59.999Z');
-
-          adminSubscriptions.push({
-            user_id: `admin-${adminEmail.split('@')[0]}`, // Create consistent admin user ID
-            assistant_id: assistant.id,
-            plan: 'admin',
-            status: 'active',
-            expires_at: farFuture.toISOString(),
-            created_at: new Date().toISOString(),
-            subscription_type: 'admin',
-            created_by_admin: user.id
-          });
+        for (const [adminEmail, userId] of Object.entries(adminUserIds)) {
+          if (userId) { // Only create if we have a valid UUID
+            adminSubscriptions.push({
+              user_id: userId, // Real UUID from auth.users
+              assistant_id: assistant.id,
+              subscription_type: 'semester',
+              status: 'active',
+              expires_at: new Date('2099-12-31T23:59:59.999Z').toISOString(),
+              amount: 0
+            });
+          }
         }
 
         // Try to insert admin subscriptions (ignore conflicts if they already exist)
