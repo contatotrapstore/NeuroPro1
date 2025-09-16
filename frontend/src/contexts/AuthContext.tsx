@@ -231,9 +231,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return `${currentOrigin}/auth/reset-password`;
         }
 
-        // Para produção, usar URL do Vercel (SSL funcionando)
-        // Temporariamente usando Vercel até SSL do neuroialab.com.br ser corrigido
-        return 'https://neuro-pro-frontend.vercel.app/auth/reset-password';
+        // Para produção, usar domínio principal (SSL funcionando no www subdomain)
+        return 'https://www.neuroialab.com.br/auth/reset-password';
       };
 
       const redirectUrl = getRedirectUrl();

@@ -257,8 +257,8 @@ const ResetPassword: React.FC = () => {
                 onClick={() => navigate('/auth/login')}
                 variant="ghost"
                 size="sm"
+                leftIcon={<ArrowLeft className="h-4 w-4" />}
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar para login
               </Button>
             </div>
