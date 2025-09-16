@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const formidable = require('formidable');
+const fs = require('fs');
 const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
 
 // Helper function to send response with CORS headers
@@ -12,6 +13,8 @@ module.exports = async function handler(req, res) {
   console.log('🚀 Upload function started');
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
+  console.log('Running on Vercel:', !!process.env.VERCEL);
+  console.log('Node version:', process.version);
   
   // CORS Headers
   const allowedOrigins = [
@@ -191,7 +194,6 @@ module.exports = async function handler(req, res) {
           }
 
           // Read file buffer
-          const fs = require('fs');
           const fileBuffer = fs.readFileSync(iconFile.filepath);
           
           // Generate unique filename
@@ -261,7 +263,7 @@ module.exports = async function handler(req, res) {
               entity_id: assistantId,
               new_data: { icon_url: iconUrl, icon_type: 'image' },
               changes: { icon: { old: 'svg', new: 'image' } },
-              ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+              ip_address: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',
               user_agent: req.headers['user-agent']
             });
 
@@ -287,6 +289,10 @@ module.exports = async function handler(req, res) {
 
         } catch (parseError) {
           console.error('Form parse error:', parseError);
+          console.error('Error stack:', parseError.stack);
+          console.error('Request headers:', req.headers);
+          console.error('Request method:', req.method);
+          console.error('Request URL:', req.url);
           return sendResponse(res, 400, {
             success: false,
             error: 'Erro ao processar upload',
