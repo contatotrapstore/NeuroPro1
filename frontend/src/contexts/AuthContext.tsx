@@ -224,22 +224,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Determinar a URL de redirecionamento baseada no ambiente
       const getRedirectUrl = () => {
-        // URLs de produção conhecidas
-        const productionUrls = [
-          'https://neuroialab.com.br',
-          'https://www.neuroialab.com.br',
-          'https://neuro-pro-frontend.vercel.app'
-        ];
-
         const currentOrigin = window.location.origin;
 
-        // Se estamos em produção, usar a URL principal
-        if (productionUrls.includes(currentOrigin)) {
-          return 'https://neuroialab.com.br/auth/reset-password';
+        // Para desenvolvimento local
+        if (currentOrigin.includes('localhost')) {
+          return `${currentOrigin}/auth/reset-password`;
         }
 
-        // Para desenvolvimento, usar a URL atual
-        return `${currentOrigin}/auth/reset-password`;
+        // Para produção, usar URL do Vercel (SSL funcionando)
+        // Temporariamente usando Vercel até SSL do neuroialab.com.br ser corrigido
+        return 'https://neuro-pro-frontend.vercel.app/auth/reset-password';
       };
 
       const redirectUrl = getRedirectUrl();
