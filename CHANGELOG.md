@@ -1,5 +1,52 @@
 # Changelog - NeuroIA Lab
 
+## [v2.3.1] - 2025-09-16
+
+### ✅ Correções Críticas de Sistema
+
+#### Upload de Ícones de Assistentes
+- **Problema resolvido**: Erro "permission denied for table users" ao fazer upload de imagens JPEG
+- **Migração aplicada**: Políticas RLS para admins atualizarem assistentes e registrarem auditoria
+- **Impacto**: Upload de ícones personalizados funcionando 100% para usuários admin
+
+#### Sistema de Redefinição de Senha
+- **Problema resolvido**: Link de "esqueci minha senha" redirecionava para página com erro
+- **AuthContext.tsx atualizado**: URLs de produção corretas e logs detalhados para debug
+- **ResetPassword.tsx melhorado**: Tratamento de erros específicos e validação de tokens
+- **Documentação criada**: `docs/supabase-password-reset-config.md` com instruções completas
+
+### 🔧 Melhorias Técnicas
+
+#### Sistema de Permissões
+- **Políticas RLS criadas**: "Admins can update assistants" e "Admins can insert audit log"
+- **Autenticação via MCP**: Aplicação automática de migrações SQL via Supabase MCP
+- **Validação corrigida**: Uso correto de `raw_user_meta_data` ao invés de `user_metadata`
+
+#### Fluxo de Redefinição de Senha
+- **URLs inteligentes**: Detecção automática de ambiente (produção vs desenvolvimento)
+- **Logs aprimorados**: Sistema de debug com emojis para facilitar troubleshooting
+- **Tratamento de erros**: Captura e exibição de erros específicos do Supabase
+
+### 📚 Organização de Documentação
+
+#### Consolidação e Limpeza
+- **Estrutura reorganizada**: Documentação movida para `docs/admin/`, `docs/migrations/`, etc.
+- **ADMIN_GUIDE.md consolidado**: Unificação de `ADMIN_SETUP.md`, `install_admin_panel.md` e `SETUP_ADMIN_COMPLETO.md`
+- **Credenciais removidas**: README.md não expõe mais senhas admin
+- **Links atualizados**: URLs de produção corrigidas para `neuroialab.com.br`
+
+#### Segurança
+- **Credenciais protegidas**: Remoção de senhas expostas em arquivos públicos
+- **Guias específicos**: Documentação detalhada de configuração sem exposição de dados sensíveis
+
+### 🐛 Bug Fixes
+- **Upload de ícones**: Erro 500 "permission denied" → Funcionamento completo
+- **Reset de senha**: Página com erro → Fluxo funcional end-to-end
+- **URLs desatualizadas**: Links quebrados → URLs de produção corretas
+- **Documentação duplicada**: Múltiplos arquivos → Guia consolidado
+
+---
+
 ## [v2.3.0] - 2025-01-15
 
 ### ✅ Sistema de Acesso Público

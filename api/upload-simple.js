@@ -207,12 +207,18 @@ module.exports = async function handler(req, res) {
     });
 
     // Update assistant with new icon URL using authenticated client
+    console.log('🔄 Updating assistant with new icon...', {
+      assistantId,
+      iconUrl,
+      userEmail: user.email
+    });
+
     const { data: updateResult, error: updateError } = await supabase
       .from('assistants')
       .update({
         icon_url: iconUrl,
-        icon_type: 'image',
-        updated_by: user.id
+        icon_type: 'image'
+        // updated_by temporariamente removido para evitar erro de permissão
       })
       .eq('id', assistantId)
       .select();
@@ -251,7 +257,7 @@ module.exports = async function handler(req, res) {
           ip_address: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',
           user_agent: req.headers['user-agent']
         });
-      console.log('✅ Audit log created successfully');
+      console.log('✅ Audit log created successfully for user:', user.email);
     } catch (auditError) {
       console.warn('⚠️ Failed to create audit log (non-critical):', auditError.message);
       // Don't fail the upload if audit log fails

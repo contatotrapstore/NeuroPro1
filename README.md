@@ -149,12 +149,12 @@ O projeto está pré-configurado para deploy no Vercel:
 
 ## 📄 Documentação
 
-A documentação técnica completa está disponível em `.trae/documents/`:
-- PRD (Product Requirements Document)
-- Arquitetura Técnica
-- Especificação dos Assistentes
-- Plano de Implementação
-- Guia de Desenvolvimento
+A documentação completa está organizada em:
+- `docs/admin/ADMIN_GUIDE.md` - Guia completo do painel administrativo
+- `docs/supabase-password-reset-config.md` - Configuração de redefinição de senha
+- `docs/migrations/` - Documentação de migrações SQL
+- `CHANGELOG.md` - Histórico detalhado de mudanças
+- `docs/CLAUDE.md` - Guia para desenvolvimento com Claude Code
 
 ## 🔐 Segurança
 
@@ -186,10 +186,10 @@ A documentação técnica completa está disponível em `.trae/documents/`:
 - **Análise financeira** - receita mensal e total de conversões
 - **Autenticação segura** com role-based access control
 
-**Credenciais Admin:**
-- Email: `admin@neuroialab.com`
-- Senha: `Admin123!@#`
+**Acesso Admin:**
 - URL: `/admin`
+- Emails autorizados: Consulte `docs/admin/ADMIN_GUIDE.md`
+- Configuração: Veja documentação completa em `docs/admin/`
 
 ### 🌐 Sistema de Acesso Público (Janeiro 2025)
 - **Navegação Livre**: Usuários podem explorar loja e dashboard sem login obrigatório
@@ -222,8 +222,8 @@ A documentação técnica completa está disponível em `.trae/documents/`:
 - **Performance**: Optimized message loading and sending processes
 
 ## 🌐 URLs de Produção
-- **Frontend**: https://neuroai-lab.vercel.app
-- **Backend API**: https://neuro-pro-backend.vercel.app
+- **Site Principal**: https://neuroialab.com.br
+- **Backend API**: https://neuro-pro-backend-phi.vercel.app
 - **Status**: ✅ Totalmente operacional com chat em tempo real
 
 ## 🏗️ Status do Desenvolvimento
