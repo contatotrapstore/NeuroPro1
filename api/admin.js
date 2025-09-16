@@ -236,9 +236,9 @@ module.exports = async function handler(req, res) {
       // Admin emails that should be excluded from stats
       const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
 
-      // Get admin user IDs from subscriptions to exclude from stats
+      // Get admin user IDs from subscription details view to exclude from stats
       const { data: adminSubscriptions } = await supabase
-        .from('user_subscriptions')
+        .from('user_subscription_details')
         .select('user_id')
         .in('user_email', adminEmails);
 
@@ -362,10 +362,10 @@ module.exports = async function handler(req, res) {
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
 
-      // Get all unique users from subscriptions with aggregated data
+      // Get all unique users from subscription details view with user data
       const { data: allSubscriptions, error: subsError } = await supabase
-        .from('user_subscriptions')
-        .select('user_id, created_at, status, expires_at, package_type, assistant_id')
+        .from('user_subscription_details')
+        .select('user_id, user_email, user_name, user_created_at, user_last_sign_in_at, user_email_confirmed_at, created_at, status, expires_at, package_type, assistant_id')
         .order('created_at', { ascending: false });
 
       if (subsError) {
@@ -393,11 +393,11 @@ module.exports = async function handler(req, res) {
             userMap.set(sub.user_id, {
               id: sub.user_id,
               email: sub.user_email,
-              name: sub.user_email ? sub.user_email.split('@')[0] : 'Usuário',
-              created_at: sub.created_at,
-              last_sign_in_at: null,
-              email_confirmed_at: null,
-              user_metadata: {},
+              name: sub.user_name || (sub.user_email ? sub.user_email.split('@')[0] : 'Usuário'),
+              created_at: sub.user_created_at || sub.created_at,
+              last_sign_in_at: sub.user_last_sign_in_at,
+              email_confirmed_at: sub.user_email_confirmed_at,
+              user_metadata: { name: sub.user_name },
               active_subscriptions: 0,
               active_packages: 0,
               is_admin: isAdmin
