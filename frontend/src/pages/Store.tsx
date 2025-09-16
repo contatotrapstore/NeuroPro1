@@ -16,17 +16,7 @@ import { ApiService } from '../services/api.service';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthModal } from '../hooks/useAuthModal';
 import { AuthModal } from '../components/auth/AuthModal';
-
-interface Assistant {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color_theme: string;
-  monthly_price: number;
-  semester_price: number;
-  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
-}
+import type { Assistant } from '../types';
 
 export default function Store() {
   const [searchParams] = useSearchParams();
