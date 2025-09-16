@@ -80,7 +80,7 @@ module.exports = async function handler(req, res) {
         }
       });
     }
-    
+
     // Use service key for admin operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('✅ Upload Supabase admin client initialized with Service Role Key');
