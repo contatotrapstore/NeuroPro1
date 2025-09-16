@@ -193,9 +193,14 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
 
     try {
       setUploading(true);
-      
-      const uploadFormData = new FormData();
-      uploadFormData.append('icon', file);
+
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
       // Get proper auth token from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -205,15 +210,24 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         return;
       }
 
-      // Upload via our custom endpoint
+      // Generate filename
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `assistant-${formData.id}-${Date.now()}.${fileExtension}`;
+
+      // Upload via simplified base64 endpoint
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/upload/assistant-icon/${formData.id}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/upload-simple`,
         {
           method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`
           },
-          body: uploadFormData
+          body: JSON.stringify({
+            imageBase64: base64,
+            fileName: fileName,
+            assistantId: formData.id
+          })
         }
       );
 
@@ -222,7 +236,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       if (result.success) {
         setFormData(prev => ({
           ...prev,
-          icon_url: result.data.iconUrl,
+          icon_url: result.url,
           icon_type: 'image'
         }));
         toast.success('Ícone atualizado com sucesso!');

@@ -42,6 +42,10 @@
     {
       "src": "/upload/(.*)",
       "dest": "/upload.js"
+    },
+    {
+      "src": "/api/upload-simple",
+      "dest": "/upload-simple.js"
     }
   ]
 }
