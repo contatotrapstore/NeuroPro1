@@ -712,51 +712,22 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Auto-create subscriptions for all admin users
-
+      // Auto-create subscriptions for admin users using RPC function
       console.log('🔄 Auto-creating admin subscriptions for new assistant:', assistant.id);
 
       try {
-        // Use real admin user IDs from auth.users table
-        const adminUserIds = {
-          'gouveiarx@gmail.com': 'b31367e7-a725-41b9-8cc2-d583a6ea84cd',
-          'psitales.sales@gmail.com': 'b421c5fd-c416-4cee-a9a6-5e680ee18e63'
-          // psitales@gmail.com not in database yet
-        };
+        const { error: rpcError } = await supabase.rpc('setup_admin_subscriptions_for_assistant', {
+          p_assistant_id: assistant.id
+        });
 
-        const adminSubscriptions = [];
-
-        for (const [adminEmail, userId] of Object.entries(adminUserIds)) {
-          if (userId) { // Only create if we have a valid UUID
-            adminSubscriptions.push({
-              user_id: userId, // Real UUID from auth.users
-              assistant_id: assistant.id,
-              subscription_type: 'semester',
-              status: 'active',
-              expires_at: new Date('2099-12-31T23:59:59.999Z').toISOString(),
-              amount: 0
-            });
-          }
-        }
-
-        // Try to insert admin subscriptions (ignore conflicts if they already exist)
-        if (adminSubscriptions.length > 0) {
-          const { error: subError } = await supabase
-            .from('user_subscriptions')
-            .upsert(adminSubscriptions, {
-              onConflict: 'user_id,assistant_id',
-              ignoreDuplicates: false
-            });
-
-          if (subError) {
-            console.warn('⚠️ Note: Could not create admin subscriptions (this is normal):', subError.message);
-            // Don't fail the assistant creation if subscription creation fails
-          } else {
-            console.log('✅ Created', adminSubscriptions.length, 'admin subscriptions');
-          }
+        if (rpcError) {
+          console.warn('⚠️ Note: Could not create admin subscriptions:', rpcError.message);
+          // Don't fail the assistant creation if subscription creation fails
+        } else {
+          console.log('✅ Created admin subscriptions via RPC function');
         }
       } catch (adminSubError) {
-        console.warn('⚠️ Note: Admin subscription creation failed (this is normal):', adminSubError.message);
+        console.warn('⚠️ Note: Admin subscription creation failed:', adminSubError.message);
         // Don't fail the assistant creation if subscription creation fails
       }
 
