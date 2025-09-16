@@ -895,19 +895,25 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check if assistant has active subscriptions
+      // Check if assistant has active subscriptions (excluding admin subscriptions)
+      const adminUserIds = [
+        'b31367e7-a725-41b9-8cc2-d583a6ea84cd', // gouveiarx@gmail.com
+        'b421c5fd-c416-4cee-a9a6-5e680ee18e63'  // psitales.sales@gmail.com
+      ];
+
       const { count: activeSubscriptions, error: subError } = await supabase
         .from('user_subscriptions')
         .select('id', { count: 'exact', head: true })
         .eq('assistant_id', assistantId)
-        .eq('status', 'active');
-        
-      console.log('📊 Assinaturas ativas encontradas:', activeSubscriptions, 'Erro:', subError);
+        .eq('status', 'active')
+        .not('user_id', 'in', `(${adminUserIds.join(',')})`); // Exclude admin subscriptions
+
+      console.log('📊 Assinaturas ativas (excluindo admins):', activeSubscriptions, 'Erro:', subError);
 
       if (activeSubscriptions > 0) {
         return res.status(400).json({
           success: false,
-          message: `Não é possível excluir assistente com ${activeSubscriptions} assinatura(s) ativa(s). Desative primeiro.`
+          message: `Não é possível excluir assistente. Existem ${activeSubscriptions} usuário(s) pagante(s) com assinatura ativa.`
         });
       }
 
