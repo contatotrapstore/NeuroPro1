@@ -14,19 +14,26 @@ const ResetPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [tokensProcessed, setTokensProcessed] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { updatePassword } = useAuth();
 
   useEffect(() => {
-    // Verificar se há tokens de recuperação na URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const errorParam = searchParams.get('error');
-    const errorDescription = searchParams.get('error_description');
+    // Verificar tokens tanto no hash (#) quanto em query params (?)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = searchParams;
+
+    // Tentar obter tokens de ambos os formatos
+    const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+    const errorParam = hashParams.get('error') || queryParams.get('error');
+    const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
 
     console.log('🔍 ResetPassword useEffect - URL params:', {
+      hashParams: Object.fromEntries(hashParams),
+      queryParams: Object.fromEntries(queryParams),
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
       error: errorParam,
@@ -52,11 +59,14 @@ const ResetPassword: React.FC = () => {
         } else {
           console.log('✅ Sessão configurada com sucesso');
         }
+        setTokensProcessed(true);
       });
     } else {
-      console.log('❌ Tokens não encontrados na URL, redirecionando para login');
-      // Se não há tokens, mostrar erro e permitir redirecionamento manual
-      setError('Link de recuperação inválido. Clique em "Voltar para login" para solicitar um novo link.');
+      console.log('❌ Tokens não encontrados na URL');
+      // Se não há tokens, apenas mostrar uma mensagem informativa
+      // Não definir como erro para permitir que a página seja renderizada
+      console.warn('⚠️ Nenhum token encontrado na URL. Usuário pode estar acessando diretamente.');
+      setTokensProcessed(true);
     }
   }, [searchParams, navigate]);
 
@@ -170,6 +180,27 @@ const ResetPassword: React.FC = () => {
                   <p className="text-sm text-neuro-error font-medium">{error}</p>
                 </div>
               )}
+
+              {/* Mostrar aviso se não há tokens válidos após processamento */}
+              {tokensProcessed && (() => {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const queryParams = new URLSearchParams(window.location.search);
+                const hasValidTokens =
+                  (hashParams.get('access_token') && hashParams.get('refresh_token')) ||
+                  (queryParams.get('access_token') && queryParams.get('refresh_token'));
+
+                if (!hasValidTokens && !error) {
+                  return (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-amber-800">
+                        <strong>Link inválido:</strong> Este link de redefinição de senha não é válido ou expirou.
+                        Para redefinir sua senha, <a href="/auth/forgot-password" className="text-amber-900 underline font-medium">clique aqui para solicitar um novo link</a>.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start">
