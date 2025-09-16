@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
       // Query database for assistants
       const { data: assistants, error } = await supabase
         .from('assistants')
-        .select('id, name, description, icon, color_theme, monthly_price, semester_price, is_active, area, created_at, updated_at')
+        .select('id, name, description, icon, icon_url, icon_type, color_theme, monthly_price, semester_price, is_active, area, created_at, updated_at')
         .eq('is_active', true)
         .order('created_at', { ascending: true })
         .order('name', { ascending: true });
@@ -537,7 +537,7 @@ module.exports = async function handler(req, res) {
         .select(`
           assistant_id,
           assistants (
-            id, name, description, icon, color_theme, 
+            id, name, description, icon, icon_url, icon_type, color_theme,
             monthly_price, semester_price, is_active, area
           )
         `)
