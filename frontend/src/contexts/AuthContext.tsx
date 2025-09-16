@@ -222,15 +222,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string): Promise<void> => {
     try {
+      // Determinar a URL de redirecionamento baseada no ambiente
+      const getRedirectUrl = () => {
+        // URLs de produção conhecidas
+        const productionUrls = [
+          'https://neuroialab.com.br',
+          'https://www.neuroialab.com.br',
+          'https://neuro-pro-frontend.vercel.app'
+        ];
+
+        const currentOrigin = window.location.origin;
+
+        // Se estamos em produção, usar a URL principal
+        if (productionUrls.includes(currentOrigin)) {
+          return 'https://neuroialab.com.br/auth/reset-password';
+        }
+
+        // Para desenvolvimento, usar a URL atual
+        return `${currentOrigin}/auth/reset-password`;
+      };
+
+      const redirectUrl = getRedirectUrl();
+
+      console.log('🔄 Enviando email de reset para:', email);
+      console.log('🔗 URL de redirecionamento:', redirectUrl);
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: redirectUrl,
       });
 
       if (error) {
+        console.error('❌ Erro no Supabase resetPasswordForEmail:', error);
         throw error;
       }
+
+      console.log('✅ Email de reset enviado com sucesso');
     } catch (error) {
-      console.error('Error resetting password:', error);
+      console.error('💥 Error resetting password:', error);
       throw error;
     }
   };

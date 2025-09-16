@@ -494,7 +494,7 @@ module.exports = async function handler(req, res) {
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'user') {
       // GET /assistants/user - List assistants available to authenticated user
-      
+
       // Extract user token for authentication
       const authHeader = req.headers.authorization;
       const token = authHeader && authHeader.split(' ')[1];
@@ -521,7 +521,7 @@ module.exports = async function handler(req, res) {
 
       // Get user from token
       const { data: { user }, error: userError } = await userClient.auth.getUser();
-      
+
       if (userError || !user) {
         return res.status(401).json({
           success: false,
@@ -530,6 +530,31 @@ module.exports = async function handler(req, res) {
       }
 
       const userId = user.id;
+      const userEmail = user.email;
+
+      // Check if user is admin - if so, give access to all assistants
+      if (isAdminUser(userEmail)) {
+        console.log('👑 Admin user detected, returning all assistants:', userEmail);
+
+        // Get all active assistants for admin
+        const { data: allAssistants, error: adminError } = await supabase
+          .from('assistants')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        if (adminError) {
+          console.error('Error getting assistants for admin:', adminError);
+        }
+
+        return res.json({
+          success: true,
+          data: allAssistants || [],
+          count: allAssistants ? allAssistants.length : 0,
+          message: 'Assistentes do admin recuperados com sucesso',
+          access_type: 'admin'
+        });
+      }
 
       // Get user's subscriptions (individual + packages)
       const { data: subscriptions, error: subError } = await userClient
@@ -663,7 +688,7 @@ module.exports = async function handler(req, res) {
 
       // Get user from token
       const { data: { user }, error: userError } = await userClient.auth.getUser();
-      
+
       if (userError || !user) {
         return res.status(401).json({
           success: false,
@@ -672,6 +697,20 @@ module.exports = async function handler(req, res) {
       }
 
       const userId = user.id;
+      const userEmail = user.email;
+
+      // Check if user is admin - if so, always allow access
+      if (isAdminUser(userEmail)) {
+        console.log('👑 Admin user detected, granting access to assistant:', userEmail, assistantId);
+        return res.json({
+          success: true,
+          data: {
+            hasAccess: true,
+            accessType: 'admin'
+          },
+          message: 'Admin tem acesso total'
+        });
+      }
 
       // Check individual subscription
       const { data: subscription, error: subError } = await userClient

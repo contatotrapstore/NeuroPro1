@@ -23,16 +23,40 @@ const ResetPassword: React.FC = () => {
     // Verificar se há tokens de recuperação na URL
     const accessToken = searchParams.get('access_token');
     const refreshToken = searchParams.get('refresh_token');
+    const errorParam = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+
+    console.log('🔍 ResetPassword useEffect - URL params:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      error: errorParam,
+      errorDescription: errorDescription
+    });
+
+    if (errorParam) {
+      console.error('❌ Error in reset password URL:', errorParam, errorDescription);
+      setError(errorDescription || 'Link de recuperação inválido ou expirado. Solicite um novo link.');
+      return;
+    }
 
     if (accessToken && refreshToken) {
+      console.log('✅ Tokens encontrados, configurando sessão...');
       // Configurar a sessão com os tokens da URL
       supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken
+      }).then(({ error }) => {
+        if (error) {
+          console.error('❌ Erro ao configurar sessão:', error);
+          setError('Erro ao processar link de recuperação. Tente novamente.');
+        } else {
+          console.log('✅ Sessão configurada com sucesso');
+        }
       });
     } else {
-      // Se não há tokens, redirecionar para login
-      navigate('/auth/login');
+      console.log('❌ Tokens não encontrados na URL, redirecionando para login');
+      // Se não há tokens, mostrar erro e permitir redirecionamento manual
+      setError('Link de recuperação inválido. Clique em "Voltar para login" para solicitar um novo link.');
     }
   }, [searchParams, navigate]);
 

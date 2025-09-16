@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
 
 module.exports = async function handler(req, res) {
   console.log('🚀 Subscriptions API v2.1 - Fixed query structure');
@@ -123,7 +124,55 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Extract email from JWT for admin check
+    let userEmail;
+    try {
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      userEmail = payload.email;
+    } catch (error) {
+      console.error('❌ Erro ao extrair email do token:', error.message);
+    }
+
     if (req.method === 'GET') {
+      // Check if user is admin - return all assistants as active subscriptions
+      if (isAdminUser(userEmail)) {
+        console.log('👑 Admin user detected in subscriptions, returning all assistants:', userEmail);
+
+        // Get all active assistants for admin
+        const { data: allAssistants, error: adminError } = await supabase
+          .from('assistants')
+          .select('id, name, description, icon, openai_assistant_id, color_theme')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        if (adminError) {
+          console.error('Error getting assistants for admin subscriptions:', adminError);
+          return res.status(500).json({
+            success: false,
+            error: `Erro ao buscar assistentes para admin: ${adminError.message}`
+          });
+        }
+
+        // Create virtual subscriptions for all assistants
+        const virtualSubscriptions = allAssistants.map(assistant => ({
+          id: `admin-${assistant.id}`,
+          user_id: userId,
+          assistant_id: assistant.id,
+          plan: 'admin',
+          status: 'active',
+          expires_at: '2099-12-31T23:59:59Z', // Far future date
+          created_at: new Date().toISOString(),
+          assistants: assistant
+        }));
+
+        console.log('✅ Returning admin virtual subscriptions:', virtualSubscriptions.length);
+
+        return res.status(200).json({
+          success: true,
+          data: virtualSubscriptions,
+          access_type: 'admin'
+        });
+      }
       // Get user subscriptions using service key
       console.log('📊 Buscando assinaturas do usuário:', {
         userId: userId,
