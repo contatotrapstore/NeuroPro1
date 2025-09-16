@@ -109,15 +109,14 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Check admin role with explicit email verification
-    const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'admin@neuroialab.com'];
-    const isAdmin = adminEmails.includes(user.email) || user.user_metadata?.role === 'admin';
+    // Check admin role using centralized configuration
+    const isAdmin = isAdminUser(user.email, user.user_metadata);
 
     console.log('🔍 Simple Upload Admin Check:', {
       userEmail: user.email,
       userMetadata: user.user_metadata,
       isAdmin: isAdmin,
-      adminEmails: adminEmails
+      adminEmails: ADMIN_EMAILS
     });
 
     if (!isAdmin) {

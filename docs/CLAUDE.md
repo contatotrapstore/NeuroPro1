@@ -347,3 +347,49 @@ Complete technical documentation is now centralized in the `/docs` folder. Legac
 ## System Overview
 
 The NeuroIA Lab platform is now a mature, fully operational SaaS solution with 19 specialized AI assistants, comprehensive admin tools, real-time chat functionality, and integrated payment processing. All components are deployed on Vercel with Supabase backend integration, serving psychology professionals with subscription-based access to AI-powered clinical tools.
+
+## 🔐 Password Reset System (v2.3.2)
+
+### Latest Implementation
+
+The password reset system has been completely rebuilt to use Supabase's native `PASSWORD_RECOVERY` events:
+
+#### Technical Flow
+1. **Email Request**: User requests reset via `/auth/forgot-password`
+2. **Supabase Processing**: Sends email with recovery tokens
+3. **Event Detection**: `PASSWORD_RECOVERY` event captured in `AuthContext`
+4. **Session Management**: Temporary data stored in `sessionStorage`
+5. **Password Update**: Uses existing session for `updatePassword()`
+6. **Cleanup**: Automatic removal of temporary data
+
+#### Key Components
+
+**AuthContext.tsx**
+```javascript
+if (event === 'PASSWORD_RECOVERY') {
+  sessionStorage.setItem('password_recovery_active', 'true');
+  sessionStorage.setItem('password_recovery_session', JSON.stringify(session));
+}
+```
+
+**ResetPassword.tsx**
+- Checks `sessionStorage` for recovery mode
+- Uses `isRecoveryMode` state for validation
+- Implements secure password update flow
+
+**ProtectedRoute.tsx**
+- Allows access to reset page when in recovery mode
+- Prevents unauthorized access to auth pages
+
+#### Security Features
+- Uses `sessionStorage` (not `localStorage`) for temporary data
+- Automatic cleanup after successful password change
+- No token exposure in URL hash
+- Native Supabase token validation
+
+#### Troubleshooting
+- Console logs with emojis for easy debugging
+- Clear error messages for different failure states
+- Handles edge cases like expired tokens and invalid states
+
+The system now works seamlessly with the production domain `https://www.neuroialab.com.br`.

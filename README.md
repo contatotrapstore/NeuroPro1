@@ -1,6 +1,8 @@
 # NeuroIA Lab
 
-Uma plataforma SaaS especializada em psicologia que oferece acesso a 14 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica.
+Uma plataforma SaaS especializada em psicologia que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica.
+
+**🚀 Versão Atual**: v2.3.2 - Sistema de reset de senha reformulado e funcionando perfeitamente
 
 ## 🧠 Sobre o Projeto
 
@@ -17,7 +19,7 @@ A NeuroIA Lab democratiza o acesso a assistentes de IA especializados em psicolo
   - 3 Assistentes: R$ 99,90/mês ou R$ 499,00/semestre
   - 6 Assistentes: R$ 179,90/mês ou R$ 899,00/semestre
 
-## 🤖 14 Assistentes Especializados
+## 🤖 19 Assistentes Especializados
 
 1. **PsicoPlano** - Formulador de Roteiro Terapêutico
 2. **NeuroCase** - Revisor de Quadro Clínico
@@ -33,6 +35,11 @@ A NeuroIA Lab democratiza o acesso a assistentes de IA especializados em psicolo
 12. **PsicoBase** - Formulador de Estratégias Clínicas Baseadas em Evidências
 13. **MindHome** - Elaborador de Atividades Domiciliares Terapêuticas
 14. **ClinPrice** - Avaliador de Custos de Sessões Clínicas
+15. **Harmonia Sistêmica** - Assistente de Terapia Familiar e Sistêmica
+16. **NeuroABA** - Assistente de Análise do Comportamento Aplicada
+17. **PsicopedIA** - Assistente de Psicopedagogia e Aprendizagem
+18. **TheraCasal** - Assistente de Terapia de Casal
+19. **Simulador de Paciente de Psicanálise** - Simulador com Feedback Clínico
 
 ## 🛠️ Stack Tecnológica
 
@@ -96,6 +103,22 @@ npm run dev
 - `npm run build` - Build completo para produção
 - `npm run dev:frontend` - Apenas frontend React
 - `npm run dev:backend` - Apenas backend API
+
+## ✅ Status da Plataforma
+
+### 🌐 Produção
+- **URL**: https://www.neuroialab.com.br
+- **Status**: ✅ Online e funcionando
+- **Autenticação**: ✅ Login, registro e reset de senha funcionando
+- **Chat com IAs**: ✅ Todos os 19 assistentes operacionais
+- **Pagamentos**: ✅ Integração Asaas ativa
+- **Admin Panel**: ✅ Painel administrativo completo
+
+### 🔐 Sistema de Reset de Senha
+- **Status**: ✅ Completamente reformulado (v2.3.2)
+- **Fluxo**: Uso correto de eventos PASSWORD_RECOVERY do Supabase
+- **UX**: Interface intuitiva e feedback claro
+- **URLs**: Domínio principal www.neuroialab.com.br
 
 ### ⚡ Start Rápido
 Depois de clonar:

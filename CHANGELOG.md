@@ -1,5 +1,48 @@
 # Changelog - NeuroIA Lab
 
+## [v2.3.2] - 2025-09-16
+
+### 🔐 Sistema de Reset de Senha Totalmente Reformulado
+
+#### Correção Fundamental do Fluxo
+- **Problema resolvido**: Reset de senha fazia login automático e redirecionava para dashboard
+- **Solução implementada**: Uso correto do evento `PASSWORD_RECOVERY` do Supabase
+- **AuthContext.tsx**: Adicionado handler para capturar evento PASSWORD_RECOVERY
+- **ResetPassword.tsx**: Reformulado para usar sessionStorage ao invés de ler tokens do URL
+- **ProtectedRoute.tsx**: Ajustado para permitir acesso em modo recovery
+
+#### Melhorias de UX
+- **Botão "Voltar para login"**: Removido ícone desalinhado, deixando apenas texto
+- **Loading spinner**: Substituído por SVG simples e centralizado no lugar do logo girando
+- **Button.tsx**: Simplificado sistema de loading com spinner SVG inline
+
+#### Correções de URLs
+- **Produção**: Todas as URLs atualizadas para `https://www.neuroialab.com.br`
+- **AuthContext.tsx**: Correção definitiva das URLs de redirecionamento
+- **Documentação**: URLs atualizadas em toda documentação
+
+### 🎯 Fluxo Correto Implementado
+
+1. **Email de reset** → Usuário clica no link
+2. **Supabase detecta** → Dispara evento `PASSWORD_RECOVERY`
+3. **AuthContext captura** → Salva estado no `sessionStorage`
+4. **ResetPassword carrega** → Verifica modo recovery via sessionStorage
+5. **Usuário define senha** → Usa sessão existente para `updatePassword`
+6. **Sucesso** → Limpa dados e permite login normal
+
+### 🔧 Melhorias Técnicas
+
+#### Sistema de Loading
+- **Spinner centralizado**: SVG simple ao invés de logo rotativo
+- **Performance**: Removida dependência do LoadingSpinner com imagem
+
+#### Gerenciamento de Estado
+- **sessionStorage**: Uso correto para dados temporários de recovery
+- **Eventos nativos**: Integração correta com sistema de auth do Supabase
+- **Limpeza automática**: Dados removidos após uso bem-sucedido
+
+---
+
 ## [v2.3.1] - 2025-09-16
 
 ### ✅ Correções Críticas de Sistema

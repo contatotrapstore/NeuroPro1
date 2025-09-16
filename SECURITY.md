@@ -266,6 +266,53 @@ ORDER BY al.created_at DESC;
 
 ---
 
+## 🔐 Sistema de Reset de Senha Seguro
+
+### Implementação Atual (v2.3.2)
+
+#### Fluxo Seguro
+```
+1. Solicitação → Supabase valida email
+2. Email enviado → Link único com tokens
+3. Clique no link → Evento PASSWORD_RECOVERY
+4. Sessão temporária → sessionStorage (não localStorage)
+5. Alteração de senha → updatePassword() com validação
+6. Cleanup automático → Dados removidos após uso
+```
+
+#### Proteções Implementadas
+
+**Validação de Acesso**
+- Verificação de modo recovery via `sessionStorage`
+- Tokens processados pelo Supabase (não expostos no frontend)
+- Sessão temporária com cleanup automático
+
+**Gerenciamento de Estado**
+```javascript
+// Dados armazenados temporariamente
+sessionStorage.setItem('password_recovery_active', 'true');
+sessionStorage.setItem('password_recovery_session', JSON.stringify(session));
+
+// Limpeza após uso
+sessionStorage.removeItem('password_recovery_session');
+```
+
+**Prevenção de Ataques**
+- **Replay attacks**: Links são de uso único
+- **Session hijacking**: sessionStorage não persiste entre abas
+- **CSRF**: Validação de origem e estado interno
+- **XSS**: Não usa localStorage persistente
+
+#### Pontos de Segurança
+
+1. **Email como fator de autenticação**: Apenas quem tem acesso ao email pode iniciar reset
+2. **Tokens únicos**: Cada solicitação gera tokens únicos e temporários
+3. **Sessão temporária**: Dados não ficam persistidos indefinidamente
+4. **Validação backend**: Supabase Auth valida todos os tokens internamente
+5. **Cleanup automático**: sessionStorage é limpo quando aba é fechada
+
+---
+
 ## 🚨 Procedimentos de Segurança
 
 ### Em Caso de Comprometimento

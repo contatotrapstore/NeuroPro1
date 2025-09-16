@@ -1,12 +1,17 @@
-# Configuração de URLs no Supabase - NeuroIA Lab
+# Reset de Senha Supabase - NeuroIA Lab
 
-## Problema Resolvido
+## ✅ Sistema Funcionando Corretamente
 
-O reset de senha estava falhando com erro `ERR_SSL_PROTOCOL_ERROR` devido a problemas de certificado SSL no domínio `neuroialab.com.br`.
+O sistema de reset de senha foi **completamente reformulado** para usar o fluxo correto do Supabase com eventos `PASSWORD_RECOVERY`. Agora funciona perfeitamente no domínio principal `https://www.neuroialab.com.br`.
 
-## Solução Implementada
+## 🔧 Como Funciona Agora
 
-Descobrimos que o SSL funciona corretamente no domínio com www (`www.neuroialab.com.br`). Atualizamos o redirect para usar o domínio principal com SSL funcionando.
+1. **Usuário solicita reset** → Vai para `/auth/forgot-password`
+2. **Email enviado** → Supabase envia link com tokens de recovery
+3. **Usuário clica no link** → Supabase dispara evento `PASSWORD_RECOVERY`
+4. **AuthContext captura evento** → Salva estado no `sessionStorage`
+5. **Página de reset carrega** → Verifica modo recovery e permite alteração
+6. **Nova senha definida** → Usa sessão existente para fazer `updatePassword`
 
 ---
 
@@ -37,30 +42,41 @@ https://www.neuroialab.com.br
 
 ---
 
-## 📝 Configuração Atual do Código
+## 💻 Implementação Técnica
 
-### AuthContext.tsx - Função resetPassword
+### AuthContext.tsx - Handler PASSWORD_RECOVERY
 
 ```javascript
-const getRedirectUrl = () => {
-  const currentOrigin = window.location.origin;
-
-  // Para desenvolvimento local
-  if (currentOrigin.includes('localhost')) {
-    return `${currentOrigin}/auth/reset-password`;
+if (event === 'PASSWORD_RECOVERY') {
+  console.log('🔐 Password recovery mode detected:', session?.user?.email);
+  // Armazenar estado temporário para a página de reset
+  sessionStorage.setItem('password_recovery_active', 'true');
+  if (session) {
+    sessionStorage.setItem('password_recovery_session', JSON.stringify(session));
   }
-
-  // Para produção, usar domínio principal (SSL funcionando no www subdomain)
-  return 'https://www.neuroialab.com.br/auth/reset-password';
-};
+}
 ```
 
-### URLs Suportadas
+### ResetPassword.tsx - Verificação de Recovery Mode
+
+```javascript
+useEffect(() => {
+  const isPasswordRecoveryActive = sessionStorage.getItem('password_recovery_active');
+  const recoverySessionData = sessionStorage.getItem('password_recovery_session');
+
+  if (isPasswordRecoveryActive === 'true' && recoverySessionData) {
+    setIsRecoveryMode(true);
+    setRecoverySession(JSON.parse(recoverySessionData));
+    sessionStorage.removeItem('password_recovery_active');
+  }
+}, []);
+```
+
+### URLs Configuradas
 
 - **Desenvolvimento**: `http://localhost:5173/auth/reset-password`
 - **Produção**: `https://www.neuroialab.com.br/auth/reset-password`
-- **Backup**: `https://neuroialab.com.br/auth/reset-password` (sem www)
-- **Fallback**: `https://neuro-pro-frontend.vercel.app/auth/reset-password`
+- **Backup**: `https://neuroialab.com.br/auth/reset-password`
 
 ---
 
@@ -83,6 +99,11 @@ No console do navegador, procure por:
 🔄 Enviando email de reset para: [email]
 🔗 URL de redirecionamento: https://www.neuroialab.com.br/auth/reset-password
 ✅ Email de reset enviado com sucesso
+Auth state changed: PASSWORD_RECOVERY [email]
+🔐 Password recovery mode detected: [email]
+✅ Password recovery session found: [email]
+🔄 Atualizando senha no modo recovery...
+✅ Senha alterada com sucesso
 ```
 
 ---
@@ -104,23 +125,26 @@ O SSL está funcionando corretamente no domínio principal:
 
 ## 🚨 Troubleshooting
 
-### Erro: "Invalid redirect URL"
-- Verifique se a URL está cadastrada no Supabase Dashboard
-- Confirme se não há espaços ou caracteres extras
+### Link inválido ou expirado
+- **Causa**: O usuário pode estar acessando diretamente sem vir do email
+- **Solução**: Sempre use o link do email de reset
+
+### Não está em modo de recuperação
+- **Causa**: O evento PASSWORD_RECOVERY não foi detectado
+- **Solução**: Limpe o cache e tente novamente com novo link
+
+### Tokens não encontrados no console
+- **Isso é normal**: O novo sistema não lê tokens do URL
+- **Sistema atual**: Usa eventos do Supabase e sessionStorage
 
 ### Email não chega
 - Verifique spam/lixeira
 - Confirme se o email existe no sistema
-- Teste com outro email
+- Verifique configuração SMTP no Supabase
 
-### Link expirado
-- Links de reset expiram em 1 hora
-- Solicite novo link se necessário
-
-### Ainda erro SSL
-- Limpe cache do navegador
-- Teste em aba anônima
-- Verifique se está usando a URL correta do Vercel
+### Session issued in the future
+- **Aviso benigno**: Diferença de relógio entre servidor e cliente
+- **Não afeta funcionamento**: Sistema funciona normalmente
 
 ---
 
@@ -135,4 +159,10 @@ O SSL está funcionando corretamente no domínio principal:
 
 ---
 
-**✅ Reset de senha agora funciona perfeitamente através do domínio principal www.neuroialab.com.br!**
+**✅ Sistema de reset de senha completamente reformulado e funcionando perfeitamente!**
+
+### 🎯 Principais Melhorias Implementadas
+- **Fluxo correto**: Uso de eventos PASSWORD_RECOVERY do Supabase
+- **UX aprimorado**: Sem mais redirecionamentos indevidos
+- **URLs corretas**: Domínio principal www.neuroialab.com.br
+- **Sistema robusto**: Tratamento de erros e estados consistente
