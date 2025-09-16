@@ -47,24 +47,13 @@ const ResetPassword: React.FC = () => {
     }
 
     if (accessToken && refreshToken) {
-      console.log('✅ Tokens encontrados, configurando sessão...');
-      // Configurar a sessão com os tokens da URL
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      }).then(({ error }) => {
-        if (error) {
-          console.error('❌ Erro ao configurar sessão:', error);
-          setError('Erro ao processar link de recuperação. Tente novamente.');
-        } else {
-          console.log('✅ Sessão configurada com sucesso');
-        }
-        setTokensProcessed(true);
-      });
+      console.log('✅ Tokens de reset encontrados, guardando para uso posterior...');
+      // NÃO fazer setSession automaticamente - apenas validar que os tokens existem
+      // Os tokens serão usados apenas após o usuário definir a nova senha
+      setTokensProcessed(true);
     } else {
       console.log('❌ Tokens não encontrados na URL');
-      // Se não há tokens, apenas mostrar uma mensagem informativa
-      // Não definir como erro para permitir que a página seja renderizada
+      // Se não há tokens, mostrar mensagem informativa
       console.warn('⚠️ Nenhum token encontrado na URL. Usuário pode estar acessando diretamente.');
       setTokensProcessed(true);
     }
@@ -109,18 +98,44 @@ const ResetPassword: React.FC = () => {
       setError('');
       setLoading(true);
 
+      // Obter tokens da URL novamente
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = searchParams;
+      const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+
+      if (!accessToken || !refreshToken) {
+        throw new Error('Tokens de reset não encontrados. Solicite um novo link.');
+      }
+
+      // Primeiro, configurar a sessão com os tokens
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      console.log('✅ Sessão temporária configurada para reset de senha');
+
+      // Agora tentar atualizar a senha
       const { error } = await updatePassword(password);
 
       if (error) {
         throw error;
       }
 
+      console.log('✅ Senha alterada com sucesso');
       setSuccess(true);
     } catch (error: any) {
       console.error('Reset password error:', error);
 
       if (error.message?.includes('Invalid or expired')) {
         setError('Link de recuperação expirado ou inválido. Solicite um novo link.');
+      } else if (error.message?.includes('Tokens de reset')) {
+        setError(error.message);
       } else {
         setError('Erro ao redefinir senha. Tente novamente.');
       }
@@ -257,9 +272,7 @@ const ResetPassword: React.FC = () => {
                 onClick={() => navigate('/auth/login')}
                 variant="ghost"
                 size="sm"
-                className="inline-flex items-center justify-center"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar para login
               </Button>
             </div>

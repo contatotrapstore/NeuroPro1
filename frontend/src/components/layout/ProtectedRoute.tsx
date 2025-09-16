@@ -40,21 +40,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If user is logged in but trying to access auth pages
   if (!requireAuth && user) {
-    // Exceção especial para reset de senha: permitir acesso se há tokens na URL
+    // Exceção especial para reset de senha: sempre permitir acesso
+    // pois o usuário pode ter tokens de reset mas não estar "logado" ainda
     if (location.pathname === '/auth/reset-password') {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const queryParams = new URLSearchParams(window.location.search);
-      const hasResetTokens =
-        (hashParams.get('access_token') && hashParams.get('refresh_token')) ||
-        (queryParams.get('access_token') && queryParams.get('refresh_token'));
-
-      // Se há tokens válidos, permitir acesso à página de reset
-      if (hasResetTokens) {
-        return <>{children}</>;
-      }
+      return <>{children}</>;
     }
 
-    // Caso contrário, redirecionar para dashboard
+    // Para outras páginas de auth, redirecionar para dashboard
     return <Navigate to="/dashboard" replace />;
   }
 
