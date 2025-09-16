@@ -57,19 +57,19 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Initialize Supabase
+    // Initialize Supabase with Service Role Key for admin operations
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     console.log('🔑 Simple Upload Supabase Configuration Check:', {
       hasUrl: !!supabaseUrl,
-      hasAnonKey: !!supabaseAnonKey
+      hasServiceKey: !!supabaseServiceKey
     });
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'Configuração do servidor incompleta - Service Role Key necessária'
       });
     }
 
@@ -84,17 +84,18 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Create authenticated Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    // Create Service Role Supabase client for admin operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
       }
+    });
+
+    // Set the user session manually for RLS context
+    await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: token // Usando token temporariamente
     });
 
     // Get user from token and verify admin role
@@ -108,21 +109,22 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Check admin role using centralized configuration
-    const isAdmin = isAdminUser(user.email, user.user_metadata);
+    // Check admin role with explicit email verification
+    const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'admin@neuroialab.com'];
+    const isAdmin = adminEmails.includes(user.email) || user.user_metadata?.role === 'admin';
 
     console.log('🔍 Simple Upload Admin Check:', {
       userEmail: user.email,
       userMetadata: user.user_metadata,
       isAdmin: isAdmin,
-      adminEmails: ADMIN_EMAILS
+      adminEmails: adminEmails
     });
 
     if (!isAdmin) {
       console.log('❌ Simple Upload access denied for:', user.email);
       return res.status(403).json({
         success: false,
-        error: 'Acesso negado. Apenas administradores podem fazer upload.'
+        error: 'Acesso negado. Apenas administradores podem fazer upload de ícones.'
       });
     }
 
