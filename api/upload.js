@@ -68,22 +68,8 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Check if Service Role Key is properly configured
-    if (!supabaseServiceKey || supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
-      console.error('❌ Upload: Service Role Key not configured properly');
-      return sendResponse(res, 500, {
-        success: false,
-        error: 'Service Role Key não configurada. Configure a chave no arquivo .env',
-        debug: {
-          serviceKeySet: !!supabaseServiceKey,
-          isPlaceholder: supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE'
-        }
-      });
-    }
-
-    // Use service key for admin operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('✅ Upload Supabase admin client initialized with Service Role Key');
+    // We'll use user authentication with RLS policies instead of Service Role Key
+    console.log('✅ Upload will use user authentication with RLS policies');
 
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
@@ -219,8 +205,8 @@ module.exports = async function handler(req, res) {
             bucket: 'assistant-icons'
           });
 
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase
+          // Upload to Supabase Storage using user authentication
+          const { data: uploadData, error: uploadError } = await userClient
             .storage
             .from('assistant-icons')
             .upload(fileName, fileBuffer, {
@@ -238,15 +224,15 @@ module.exports = async function handler(req, res) {
           }
 
           // Get public URL
-          const { data: urlData } = supabase
+          const { data: urlData } = userClient
             .storage
             .from('assistant-icons')
             .getPublicUrl(fileName);
 
           const iconUrl = urlData.publicUrl;
 
-          // Update assistant with new icon URL
-          const { data: assistant, error: updateError } = await supabase
+          // Update assistant with new icon URL using user authentication
+          const { data: assistant, error: updateError } = await userClient
             .from('assistants')
             .update({
               icon_url: iconUrl,
@@ -265,8 +251,8 @@ module.exports = async function handler(req, res) {
             });
           }
 
-          // Log action in audit trail
-          await supabase
+          // Log action in audit trail using user authentication
+          await userClient
             .from('admin_audit_log')
             .insert({
               admin_id: user.id,
