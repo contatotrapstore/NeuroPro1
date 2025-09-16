@@ -155,6 +155,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
   const [uploading, setUploading] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [featureInput, setFeatureInput] = useState('');
+  const [pendingImage, setPendingImage] = useState<{ base64: string; fileName: string } | null>(null);
 
   const apiService = ApiService.getInstance();
 
@@ -186,11 +187,6 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       return;
     }
 
-    if (!formData.id) {
-      toast.error('Salve o assistente primeiro antes de fazer upload do ícone.');
-      return;
-    }
-
     try {
       setUploading(true);
 
@@ -202,6 +198,33 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         reader.readAsDataURL(file);
       });
 
+      // Generate filename
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `assistant-${Date.now()}.${fileExtension}`;
+
+      // Store image for later upload after assistant creation
+      setPendingImage({ base64, fileName });
+
+      // Update form data to show image will be used
+      setFormData(prev => ({
+        ...prev,
+        icon_type: 'image'
+      }));
+
+      toast.success('Imagem selecionada! Será enviada após criar o assistente.');
+
+    } catch (error) {
+      console.error('File processing error:', error);
+      toast.error('Erro ao processar arquivo de imagem');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadPendingImage = async (assistantId: string): Promise<void> => {
+    if (!pendingImage) return;
+
+    try {
       // Get proper auth token from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -210,9 +233,9 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
         return;
       }
 
-      // Generate filename
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `assistant-${formData.id}-${Date.now()}.${fileExtension}`;
+      // Update filename with actual assistant ID
+      const fileExtension = pendingImage.fileName.split('.').pop();
+      const fileName = `assistant-${assistantId}-${Date.now()}.${fileExtension}`;
 
       // Upload via simplified base64 endpoint
       const response = await fetch(
@@ -224,9 +247,9 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
             'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
-            imageBase64: base64,
+            imageBase64: pendingImage.base64,
             fileName: fileName,
-            assistantId: formData.id
+            assistantId: assistantId
           })
         }
       );
@@ -234,38 +257,16 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       const result = await response.json();
 
       if (result.success) {
-        setFormData(prev => ({
-          ...prev,
-          icon_url: result.data.iconUrl,
-          icon_type: 'image'
-        }));
-        toast.success(result.message || 'Ícone atualizado com sucesso!');
+        // Clear pending image
+        setPendingImage(null);
+        toast.success('Imagem do assistente enviada com sucesso!');
       } else {
         console.error('Upload failed:', result);
-        toast.error(result.error || 'Erro ao fazer upload do ícone');
-
-        // Show more specific error messages
-        if (result.error?.includes('Token')) {
-          toast.error('Erro de autenticação. Faça login novamente.');
-        } else if (result.error?.includes('Acesso negado')) {
-          toast.error('Acesso negado. Apenas administradores podem fazer upload.');
-        } else if (result.error?.includes('não encontrado')) {
-          toast.error('Assistente não encontrado. Salve o assistente primeiro.');
-        }
+        toast.error(result.error || 'Erro ao fazer upload da imagem');
       }
     } catch (error) {
       console.error('Upload error:', error);
-
-      // Handle network and other errors
-      if (error.message?.includes('Failed to fetch')) {
-        toast.error('Erro de rede: Verifique sua conexão');
-      } else if (error.message?.includes('NetworkError')) {
-        toast.error('Erro de rede: Não foi possível conectar ao servidor');
-      } else {
-        toast.error('Erro inesperado ao fazer upload do ícone');
-      }
-    } finally {
-      setUploading(false);
+      toast.error('Erro inesperado ao fazer upload da imagem');
     }
   };
 
@@ -370,14 +371,19 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
       }
 
       if (result.success) {
+        // Se há imagem pendente e foi criado um novo assistente, fazer upload da imagem
+        if (pendingImage && !isEditing && result.data?.id) {
+          await uploadPendingImage(result.data.id);
+        }
+
         // Invalidar cache para sincronizar com loja e clientes
         apiService.clearCache('assistants');
         apiService.clearCache('/assistants');
         apiService.clearCache(); // Clear all cache for full sync
-        
+
         toast.success(
-          isEditing 
-            ? 'Assistente atualizado com sucesso!' 
+          isEditing
+            ? 'Assistente atualizado com sucesso!'
             : 'Assistente criado com sucesso!'
         );
         onClose(true);
@@ -725,17 +731,17 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4"
                       style={{ backgroundColor: formData.color_theme }}
                     >
-                      {formData.icon_url && formData.icon_type === 'image' ? (
-                        <img 
-                          src={formData.icon_url} 
+                      {(formData.icon_url && formData.icon_type === 'image') || pendingImage ? (
+                        <img
+                          src={pendingImage ? pendingImage.base64 : formData.icon_url}
                           alt="Preview"
                           className="w-12 h-12 object-contain"
                         />
                       ) : (
-                        <AssistantIcon 
-                          iconType={formData.icon || 'brain'} 
-                          color="white" 
-                          size={32} 
+                        <AssistantIcon
+                          iconType={formData.icon || 'brain'}
+                          color="white"
+                          size={32}
                         />
                       )}
                     </div>
@@ -754,16 +760,11 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                         onChange={handleIconUpload}
                         className="hidden"
                         id="icon-upload"
-                        disabled={!formData.id}
+                        disabled={false}
                       />
                       <label
                         htmlFor="icon-upload"
-                        className={cn(
-                          "flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                          (!formData.id)
-                            ? "border-gray-200 text-gray-400 cursor-not-allowed" 
-                            : "border-gray-300 hover:border-neuro-primary hover:bg-neuro-primary/5"
-                        )}
+                        className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors border-gray-300 hover:border-neuro-primary hover:bg-neuro-primary/5"
                       >
                         <Icon 
                           name={uploading ? "loader" : "upload"} 
@@ -776,7 +777,7 @@ export function AssistantEditor({ assistant, onClose }: AssistantEditorProps) {
                       </label>
                       <p className="text-xs text-gray-500">
                         PNG, JPG ou SVG (max 5MB)
-                        {(!formData.id) && " - Salve primeiro"}
+                        {pendingImage && " - Imagem selecionada"}
                       </p>
                     </div>
                   </div>
