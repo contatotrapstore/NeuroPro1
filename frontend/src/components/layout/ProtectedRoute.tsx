@@ -40,13 +40,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If user is logged in but trying to access auth pages
   if (!requireAuth && user) {
-    // Exceção especial para reset de senha: sempre permitir acesso
-    // pois o usuário pode ter tokens de reset mas não estar "logado" ainda
+    // Exceção especial para reset de senha: verificar se está em modo recovery
     if (location.pathname === '/auth/reset-password') {
-      return <>{children}</>;
+      const isPasswordRecovery = sessionStorage.getItem('password_recovery_active') === 'true' ||
+                                sessionStorage.getItem('password_recovery_session');
+
+      // Se está em modo recovery, permitir acesso
+      if (isPasswordRecovery) {
+        return <>{children}</>;
+      }
     }
 
-    // Para outras páginas de auth, redirecionar para dashboard
+    // Para outras páginas de auth ou reset sem recovery, redirecionar para dashboard
     return <Navigate to="/dashboard" replace />;
   }
 

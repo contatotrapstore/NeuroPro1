@@ -80,6 +80,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (event === 'SIGNED_IN') {
           console.log('User signed in successfully');
         }
+
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('🔐 Password recovery mode detected:', session?.user?.email);
+          // Armazenar estado temporário para a página de reset
+          sessionStorage.setItem('password_recovery_active', 'true');
+          if (session) {
+            sessionStorage.setItem('password_recovery_session', JSON.stringify(session));
+          }
+        }
       }
     );
 

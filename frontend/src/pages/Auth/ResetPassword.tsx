@@ -14,50 +14,39 @@ const ResetPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [tokensProcessed, setTokensProcessed] = useState(false);
-  const [searchParams] = useSearchParams();
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [recoverySession, setRecoverySession] = useState(null);
   const navigate = useNavigate();
 
   const { updatePassword } = useAuth();
 
   useEffect(() => {
-    // Verificar tokens tanto no hash (#) quanto em query params (?)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const queryParams = searchParams;
+    // Verificar se estamos em modo PASSWORD_RECOVERY
+    const isPasswordRecoveryActive = sessionStorage.getItem('password_recovery_active');
+    const recoverySessionData = sessionStorage.getItem('password_recovery_session');
 
-    // Tentar obter tokens de ambos os formatos
-    const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-    const errorParam = hashParams.get('error') || queryParams.get('error');
-    const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
-
-    console.log('🔍 ResetPassword useEffect - URL params:', {
-      hashParams: Object.fromEntries(hashParams),
-      queryParams: Object.fromEntries(queryParams),
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      error: errorParam,
-      errorDescription: errorDescription
+    console.log('🔍 ResetPassword useEffect - Recovery check:', {
+      isPasswordRecoveryActive,
+      hasRecoverySession: !!recoverySessionData
     });
 
-    if (errorParam) {
-      console.error('❌ Error in reset password URL:', errorParam, errorDescription);
-      setError(errorDescription || 'Link de recuperação inválido ou expirado. Solicite um novo link.');
-      return;
-    }
-
-    if (accessToken && refreshToken) {
-      console.log('✅ Tokens de reset encontrados, guardando para uso posterior...');
-      // NÃO fazer setSession automaticamente - apenas validar que os tokens existem
-      // Os tokens serão usados apenas após o usuário definir a nova senha
-      setTokensProcessed(true);
+    if (isPasswordRecoveryActive === 'true' && recoverySessionData) {
+      try {
+        const session = JSON.parse(recoverySessionData);
+        console.log('✅ Password recovery session found:', session.user?.email);
+        setIsRecoveryMode(true);
+        setRecoverySession(session);
+        // Limpar flag após usar
+        sessionStorage.removeItem('password_recovery_active');
+      } catch (error) {
+        console.error('❌ Erro ao parsear sessão de recovery:', error);
+        setError('Erro ao processar sessão de recuperação. Solicite um novo link.');
+      }
     } else {
-      console.log('❌ Tokens não encontrados na URL');
-      // Se não há tokens, mostrar mensagem informativa
-      console.warn('⚠️ Nenhum token encontrado na URL. Usuário pode estar acessando diretamente.');
-      setTokensProcessed(true);
+      console.log('❌ Não está em modo de recuperação de senha');
+      setError('Link de recuperação inválido ou expirado. Solicite um novo link.');
     }
-  }, [searchParams, navigate]);
+  }, []);
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
@@ -98,29 +87,13 @@ const ResetPassword: React.FC = () => {
       setError('');
       setLoading(true);
 
-      // Obter tokens da URL novamente
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const queryParams = searchParams;
-      const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-
-      if (!accessToken || !refreshToken) {
-        throw new Error('Tokens de reset não encontrados. Solicite um novo link.');
+      if (!isRecoveryMode) {
+        throw new Error('Não está em modo de recuperação de senha. Solicite um novo link.');
       }
 
-      // Primeiro, configurar a sessão com os tokens
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
+      console.log('🔄 Atualizando senha no modo recovery...');
 
-      if (sessionError) {
-        throw sessionError;
-      }
-
-      console.log('✅ Sessão temporária configurada para reset de senha');
-
-      // Agora tentar atualizar a senha
+      // Usar updatePassword diretamente - já temos sessão ativa
       const { error } = await updatePassword(password);
 
       if (error) {
@@ -128,13 +101,17 @@ const ResetPassword: React.FC = () => {
       }
 
       console.log('✅ Senha alterada com sucesso');
+
+      // Limpar dados de recovery
+      sessionStorage.removeItem('password_recovery_session');
+
       setSuccess(true);
     } catch (error: any) {
       console.error('Reset password error:', error);
 
       if (error.message?.includes('Invalid or expired')) {
         setError('Link de recuperação expirado ou inválido. Solicite um novo link.');
-      } else if (error.message?.includes('Tokens de reset')) {
+      } else if (error.message?.includes('modo de recuperação')) {
         setError(error.message);
       } else {
         setError('Erro ao redefinir senha. Tente novamente.');
@@ -196,26 +173,15 @@ const ResetPassword: React.FC = () => {
                 </div>
               )}
 
-              {/* Mostrar aviso se não há tokens válidos após processamento */}
-              {tokensProcessed && (() => {
-                const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                const queryParams = new URLSearchParams(window.location.search);
-                const hasValidTokens =
-                  (hashParams.get('access_token') && hashParams.get('refresh_token')) ||
-                  (queryParams.get('access_token') && queryParams.get('refresh_token'));
-
-                if (!hasValidTokens && !error) {
-                  return (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-amber-800">
-                        <strong>Link inválido:</strong> Este link de redefinição de senha não é válido ou expirou.
-                        Para redefinir sua senha, <a href="/auth/forgot-password" className="text-amber-900 underline font-medium">clique aqui para solicitar um novo link</a>.
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
+              {/* Mostrar aviso se não está em modo recovery */}
+              {!isRecoveryMode && !error && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>Link inválido:</strong> Este link de redefinição de senha não é válido ou expirou.
+                    Para redefinir sua senha, <a href="/auth/forgot-password" className="text-amber-900 underline font-medium">clique aqui para solicitar um novo link</a>.
+                  </p>
+                </div>
+              )}
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start">
