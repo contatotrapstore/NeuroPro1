@@ -235,12 +235,14 @@ module.exports = async function handler(req, res) {
       
       // Admin emails that should be excluded from stats
       const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
-      
-      // Get admin user IDs to exclude from stats
-      const { data: adminUsers, error: adminUsersError } = await supabase.auth.admin.listUsers();
-      const adminUserIds = adminUsers?.users
-        ?.filter(user => adminEmails.includes(user.email || ''))
-        ?.map(user => user.id) || [];
+
+      // Get admin user IDs from subscriptions to exclude from stats
+      const { data: adminSubscriptions } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .in('user_email', adminEmails);
+
+      const adminUserIds = adminSubscriptions?.map(sub => sub.user_id) || [];
 
       // Get unique users from subscriptions (excluding admins)
       const { data: allUserSubscriptions, error: uniqueUsersError } = await supabase
@@ -375,41 +377,34 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Get actual user data from auth.users
-      const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
-      
-      if (authUsersError) {
-        console.error('Error fetching auth users:', authUsersError);
-        return res.status(500).json({
-          success: false,
-          message: 'Erro ao buscar usuários de autenticação',
-          error: authUsersError.message
-        });
-      }
-
       // Admin emails that should be marked
       const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
 
-      // Create user map with real user data
+      // Create user map from subscription data (we only need users who have subscriptions)
       const userMap = new Map();
-      const realUsers = authUsers?.users || [];
-      
-      // Initialize with real user data (mark admins)
-      realUsers.forEach(authUser => {
-        const isAdmin = adminEmails.includes(authUser.email || '');
-        userMap.set(authUser.id, {
-          id: authUser.id,
-          email: authUser.email,
-          name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || null,
-          created_at: authUser.created_at,
-          last_sign_in_at: authUser.last_sign_in_at,
-          email_confirmed_at: authUser.email_confirmed_at,
-          user_metadata: authUser.user_metadata,
-          active_subscriptions: 0,
-          active_packages: 0,
-          is_admin: isAdmin
+
+      // Initialize users from subscription data
+      if (allSubscriptions) {
+        allSubscriptions.forEach(sub => {
+          if (!sub.user_id) return;
+
+          if (!userMap.has(sub.user_id)) {
+            const isAdmin = adminEmails.includes(sub.user_email || '');
+            userMap.set(sub.user_id, {
+              id: sub.user_id,
+              email: sub.user_email,
+              name: sub.user_email ? sub.user_email.split('@')[0] : 'Usuário',
+              created_at: sub.created_at,
+              last_sign_in_at: null,
+              email_confirmed_at: null,
+              user_metadata: {},
+              active_subscriptions: 0,
+              active_packages: 0,
+              is_admin: isAdmin
+            });
+          }
         });
-      });
+      }
       
       // Add subscription and package counts
       if (allSubscriptions) {
