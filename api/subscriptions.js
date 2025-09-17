@@ -1,32 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
+const { applyCors } = require('./utils/cors');
 
 module.exports = async function handler(req, res) {
   console.log('🚀 Subscriptions API v2.1 - Fixed query structure');
-  
-  // Enable CORS
-  const allowedOrigins = [
-    'https://neuroai-lab.vercel.app',
-    'https://www.neuroialab.com.br',
-    'https://neuroialab.com.br',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ];
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+
+  // Apply CORS
+  const corsHandled = applyCors(req, res);
+  if (corsHandled) {
+    return; // Preflight request handled
   }
 
   try {

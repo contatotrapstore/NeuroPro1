@@ -5,9 +5,16 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const AsaasService = require('../services/asaas.service');
+const { applyCors } = require('../utils/cors');
 
 module.exports = async function handler(req, res) {
   console.log('🔔 Asaas Webhook received');
+
+  // Apply CORS
+  const corsHandled = applyCors(req, res);
+  if (corsHandled) {
+    return; // Preflight request handled
+  }
 
   // Only accept POST requests
   if (req.method !== 'POST') {
