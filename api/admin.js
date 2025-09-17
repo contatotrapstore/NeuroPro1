@@ -1,12 +1,11 @@
-const { createClient } = require('@supabase/supabase-js');
-const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
-
 module.exports = async function handler(req, res) {
+  // 🚨 CORS HEADERS PRIMEIRO - PREVENTIVO CONTRA FALHAS
   console.log('🚀 Admin function started');
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
-  
-  // CORS Headers
+  console.log('Request origin:', req.headers.origin);
+
+  // CORS Headers - SEMPRE definidos primeiro
   const allowedOrigins = [
     'https://neuroai-lab.vercel.app',
     'https://neuro-pro-frontend.vercel.app',
@@ -15,18 +14,20 @@ module.exports = async function handler(req, res) {
     'http://localhost:5173',
     'http://localhost:3000'
   ];
-  
+
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    console.log('✅ CORS origin allowed:', origin);
   } else {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    console.log('⚠️ CORS fallback to * for origin:', origin);
   }
-  
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
+
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     console.log('✅ Admin preflight handled');
@@ -34,6 +35,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Import modules INSIDE try/catch to prevent import failures
+    const { createClient } = require('@supabase/supabase-js');
+    const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
+
+    console.log('✅ Modules imported successfully');
     // Initialize Supabase
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -1400,10 +1406,43 @@ module.exports = async function handler(req, res) {
 
   } catch (error) {
     console.error('💥 Admin function error:', error);
+    console.error('💥 Error stack:', error.stack);
+    console.error('💥 Error at line:', error.stack?.split('\n')[1]);
+
+    // Ensure CORS headers are set even in error cases (fallback protection)
+    if (!res.headersSent) {
+      const origin = req.headers.origin;
+      const allowedOrigins = [
+        'https://neuroai-lab.vercel.app',
+        'https://neuro-pro-frontend.vercel.app',
+        'https://www.neuroialab.com.br',
+        'https://neuroialab.com.br',
+        'http://localhost:5173',
+        'http://localhost:3000'
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
     return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor',
-      error: error.message
+      error: error.message,
+      debug: {
+        timestamp: new Date().toISOString(),
+        errorType: error.name,
+        url: req.url,
+        method: req.method,
+        origin: req.headers.origin
+      }
     });
   }
 };
