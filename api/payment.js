@@ -367,7 +367,6 @@ module.exports = async function handler(req, res) {
             console.log('✅ Subscription created successfully:', subscription.id);
 
             dbResult = subscription;
-              }
             }
           } else {
             // Create package
