@@ -247,7 +247,120 @@ class AsaasService {
    * Generate PIX QR Code
    */
   async generatePixQrCode(paymentId) {
-    return await this.makeRequest(`/payments/${paymentId}/pixQrCode`);
+    console.log('🎯 Generating PIX QR Code for payment ID:', paymentId);
+
+    // First, let's check the payment status to ensure it supports PIX
+    try {
+      const payment = await this.getPayment(paymentId);
+      console.log('💳 Payment details before PIX generation:', {
+        id: payment.id,
+        status: payment.status,
+        billingType: payment.billingType,
+        value: payment.value,
+        dueDate: payment.dueDate
+      });
+
+      if (payment.billingType !== 'PIX') {
+        throw new Error(`Payment billing type is ${payment.billingType}, not PIX`);
+      }
+
+      if (!['PENDING', 'AWAITING_PAYMENT'].includes(payment.status)) {
+        console.warn('⚠️ Payment status is not pending:', payment.status);
+      }
+    } catch (paymentError) {
+      console.error('❌ Error checking payment before PIX generation:', paymentError);
+      throw new Error(`Error validating payment: ${paymentError.message}`);
+    }
+
+    // Now generate the PIX QR Code with enhanced error handling
+    try {
+      const pixResult = await this.makeRequestWithRawResponse(`/payments/${paymentId}/pixQrCode`);
+      console.log('✅ PIX QR Code generated successfully:', {
+        hasEncodedImage: !!pixResult.encodedImage,
+        hasPayload: !!pixResult.payload,
+        hasExpirationDate: !!pixResult.expirationDate,
+        payloadLength: pixResult.payload?.length || 0
+      });
+
+      return pixResult;
+    } catch (pixError) {
+      console.error('❌ Error generating PIX QR Code:', pixError);
+      throw new Error(`Failed to generate PIX QR Code: ${pixError.message}`);
+    }
+  }
+
+  /**
+   * Make HTTP request with raw response handling for debugging
+   */
+  async makeRequestWithRawResponse(endpoint, method = 'GET', data = null) {
+    const url = `${this.baseUrl}${endpoint}`;
+
+    const options = {
+      method,
+      headers: {
+        'access_token': this.apiKey,
+        'Content-Type': 'application/json',
+        'User-Agent': 'NeuroIA-Lab/1.0'
+      }
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    try {
+      const { default: fetch } = await import('node-fetch');
+      const response = await fetch(url, options);
+
+      console.log('🌐 Raw API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      // Get raw text first
+      const rawText = await response.text();
+      console.log('📄 Raw response text:', {
+        length: rawText.length,
+        isEmpty: rawText.length === 0,
+        firstChars: rawText.substring(0, 100),
+        isHtml: rawText.toLowerCase().includes('<html')
+      });
+
+      if (!response.ok) {
+        console.error('🚨 API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          rawText: rawText
+        });
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      if (!rawText || rawText.length === 0) {
+        throw new Error('Empty response from API');
+      }
+
+      if (rawText.toLowerCase().includes('<html')) {
+        throw new Error('Received HTML instead of JSON response');
+      }
+
+      // Try to parse JSON
+      try {
+        const result = JSON.parse(rawText);
+        return result;
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', {
+          parseError: parseError.message,
+          rawText: rawText.substring(0, 500)
+        });
+        throw new Error(`Invalid JSON response: ${parseError.message}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Request Error:', error);
+      throw error;
+    }
   }
 
   /**

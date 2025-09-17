@@ -236,17 +236,87 @@ module.exports = async function handler(req, res) {
           let dbResult;
 
           if (type === 'individual') {
-            // Prepare subscription data with detailed logging
-            const subscriptionData = {
+            // Check for existing subscription first
+            console.log('🔍 Checking for existing subscription:', {
               user_id: userId,
-              assistant_id: assistant_id,
-              subscription_type: subscription_type,
-              package_type: 'individual',
-              amount: totalAmount,
-              status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
-              asaas_subscription_id: asaasResult.id,
-              expires_at: asaasService.calculateNextDueDate(subscription_type)
-            };
+              assistant_id: assistant_id
+            });
+
+            const { data: existingSubscription, error: existingError } = await supabase
+              .from('user_subscriptions')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('assistant_id', assistant_id)
+              .single();
+
+            if (existingError && existingError.code !== 'PGRST116') {
+              // PGRST116 = no rows returned, which is fine
+              console.error('❌ Error checking existing subscription:', existingError);
+            }
+
+            if (existingSubscription) {
+              console.log('📋 Found existing subscription:', {
+                id: existingSubscription.id,
+                status: existingSubscription.status,
+                asaas_subscription_id: existingSubscription.asaas_subscription_id
+              });
+
+              // If subscription exists and is pending/cancelled, we'll update it
+              if (['pending', 'cancelled', 'expired'].includes(existingSubscription.status)) {
+                console.log('🔄 Updating existing subscription instead of creating new');
+
+                const updateData = {
+                  subscription_type: subscription_type,
+                  amount: totalAmount,
+                  status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+                  asaas_subscription_id: asaasResult.id,
+                  expires_at: asaasService.calculateNextDueDate(subscription_type),
+                  updated_at: new Date().toISOString()
+                };
+
+                const { data: updatedSubscription, error: updateError } = await supabase
+                  .from('user_subscriptions')
+                  .update(updateData)
+                  .eq('id', existingSubscription.id)
+                  .select()
+                  .single();
+
+                if (updateError) {
+                  console.error('❌ Error updating subscription:', updateError);
+                  return res.status(500).json({
+                    success: false,
+                    error: `Erro ao atualizar assinatura: ${updateError.message}`
+                  });
+                }
+
+                console.log('✅ Subscription updated successfully:', updatedSubscription.id);
+                dbResult = updatedSubscription;
+              } else {
+                // Subscription is active - should not allow duplicate
+                return res.status(409).json({
+                  success: false,
+                  error: 'Você já possui uma assinatura ativa para este assistente',
+                  existing_subscription: {
+                    id: existingSubscription.id,
+                    status: existingSubscription.status,
+                    expires_at: existingSubscription.expires_at
+                  }
+                });
+              }
+            } else {
+              console.log('➕ No existing subscription found, creating new');
+
+              // Prepare subscription data with detailed logging
+              const subscriptionData = {
+                user_id: userId,
+                assistant_id: assistant_id,
+                subscription_type: subscription_type,
+                package_type: 'individual',
+                amount: totalAmount,
+                status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+                asaas_subscription_id: asaasResult.id,
+                expires_at: asaasService.calculateNextDueDate(subscription_type)
+              };
 
             console.log('💾 Creating subscription in database:', {
               user_id: userId,
@@ -302,6 +372,8 @@ module.exports = async function handler(req, res) {
             console.log('✅ Subscription created successfully:', subscription.id);
 
             dbResult = subscription;
+              }
+            }
           } else {
             // Create package
             const { data: userPackage, error: packageError } = await supabase
@@ -362,32 +434,62 @@ module.exports = async function handler(req, res) {
           };
 
           if (payment_method === 'PIX') {
-            // Generate PIX QR Code
-            try {
-              console.log('🎯 Generating PIX QR Code for payment:', asaasResult.id);
-              const pixData = await asaasService.generatePixQrCode(asaasResult.id);
-              console.log('✅ PIX QR Code generated successfully:', {
-                hasEncodedImage: !!pixData.encodedImage,
-                hasPayload: !!pixData.payload,
-                hasExpiration: !!pixData.expirationDate
-              });
+            // Generate PIX QR Code with retry logic
+            let pixData = null;
+            let pixAttempts = 0;
+            const maxPixAttempts = 3;
+            const pixRetryDelay = 2000; // 2 seconds
 
-              responseData.pix = {
-                qr_code: pixData.encodedImage,
-                copy_paste: pixData.payload,
-                expiration_date: pixData.expirationDate
-              };
-            } catch (pixError) {
-              console.error('❌ Error generating PIX QR Code:', pixError);
-              // Return error if PIX generation fails
-              return res.status(500).json({
-                success: false,
-                error: `Erro ao gerar PIX: ${pixError.message}`,
-                debug: {
-                  paymentId: asaasResult.id,
-                  pixError: pixError.message
+            while (pixAttempts < maxPixAttempts && !pixData) {
+              pixAttempts++;
+              try {
+                console.log(`🎯 Attempting PIX QR Code generation (attempt ${pixAttempts}/${maxPixAttempts}) for payment:`, asaasResult.id);
+
+                // Add delay for subsequent attempts
+                if (pixAttempts > 1) {
+                  console.log(`⏳ Waiting ${pixRetryDelay}ms before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, pixRetryDelay));
                 }
-              });
+
+                pixData = await asaasService.generatePixQrCode(asaasResult.id);
+
+                console.log('✅ PIX QR Code generated successfully:', {
+                  hasEncodedImage: !!pixData.encodedImage,
+                  hasPayload: !!pixData.payload,
+                  hasExpiration: !!pixData.expirationDate,
+                  attempt: pixAttempts
+                });
+
+                responseData.pix = {
+                  qr_code: pixData.encodedImage,
+                  copy_paste: pixData.payload,
+                  expiration_date: pixData.expirationDate
+                };
+
+                break; // Success, exit retry loop
+
+              } catch (pixError) {
+                console.error(`❌ PIX generation attempt ${pixAttempts} failed:`, {
+                  error: pixError.message,
+                  paymentId: asaasResult.id,
+                  willRetry: pixAttempts < maxPixAttempts
+                });
+
+                if (pixAttempts >= maxPixAttempts) {
+                  // All attempts failed
+                  console.error('💥 All PIX generation attempts failed');
+                  return res.status(500).json({
+                    success: false,
+                    error: `Erro ao gerar PIX após ${maxPixAttempts} tentativas: ${pixError.message}`,
+                    debug: {
+                      paymentId: asaasResult.id,
+                      attempts: pixAttempts,
+                      lastError: pixError.message,
+                      suggestion: 'Verifique se a conta Asaas tem PIX habilitado e se o pagamento foi criado corretamente'
+                    }
+                  });
+                }
+              }
             }
           } else if (payment_method === 'BOLETO') {
             responseData.boleto = {
