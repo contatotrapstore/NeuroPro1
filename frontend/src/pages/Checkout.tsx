@@ -130,43 +130,69 @@ export default function Checkout() {
     setError(null);
 
     try {
-      const endpoint = checkoutData.type === 'individual' 
-        ? '/api/subscriptions/individual'
-        : '/api/subscriptions/package';
-
-      const payload = checkoutData.type === 'individual' 
-        ? {
-            assistant_id: checkoutData.assistant_id,
-            subscription_type: checkoutData.subscription_type,
-            payment_method: paymentMethod,
-            customer_data: customerData,
-            ...(paymentMethod === 'CREDIT_CARD' && { card_data: cardData })
-          }
-        : {
-            package_type: checkoutData.package_type,
-            subscription_type: checkoutData.subscription_type,
-            assistant_ids: checkoutData.selected_assistants,
-            payment_method: paymentMethod,
-            customer_data: customerData,
-            ...(paymentMethod === 'CREDIT_CARD' && { card_data: cardData })
-          };
+      const paymentData = {
+        payment_method: paymentMethod,
+        customer_data: customerData,
+        ...(paymentMethod === 'CREDIT_CARD' && { card_data: cardData })
+      };
 
       const apiService = ApiService.getInstance();
-      const result = checkoutData.type === 'individual' 
-        ? await apiService.createSubscription(checkoutData.assistant_id!, checkoutData.subscription_type!)
-        : await apiService.createPackage(checkoutData.selected_assistants!, checkoutData.subscription_type!);
+      let result;
+
+      if (checkoutData.type === 'individual') {
+        result = await apiService.createSubscriptionWithPayment(
+          checkoutData.assistant_id!,
+          checkoutData.subscription_type!,
+          paymentData
+        );
+      } else {
+        result = await apiService.createPackageWithPayment(
+          checkoutData.selected_assistants!,
+          checkoutData.subscription_type!,
+          checkoutData.package_type!,
+          paymentData
+        );
+      }
 
       if (!result.success) {
         throw new Error(result.error || 'Erro ao processar pagamento');
       }
 
-      // Redirect to success page
-      navigate('/dashboard', { 
-        state: { 
-          message: 'Pagamento processado com sucesso! Sua assinatura está ativa.',
-          type: 'success'
-        } 
-      });
+      const paymentResult = result.data;
+
+      // Handle different payment methods
+      if (paymentMethod === 'PIX' && paymentResult.pix) {
+        // Redirect to PIX payment page
+        navigate('/payment/pix', {
+          state: {
+            payment_id: paymentResult.payment_id,
+            qr_code: paymentResult.pix.qr_code,
+            copy_paste: paymentResult.pix.copy_paste,
+            amount: paymentResult.amount,
+            description: paymentResult.description
+          }
+        });
+      } else if (paymentMethod === 'BOLETO' && paymentResult.boleto) {
+        // Redirect to boleto payment page
+        navigate('/payment/boleto', {
+          state: {
+            payment_id: paymentResult.payment_id,
+            barcode: paymentResult.boleto.barcode,
+            pdf_url: paymentResult.boleto.pdf_url,
+            due_date: paymentResult.boleto.due_date,
+            amount: paymentResult.amount,
+            description: paymentResult.description
+          }
+        });
+      } else {
+        // Credit card or immediate payment - redirect to success
+        navigate('/dashboard', {
+          state: {
+            message: 'Pagamento processado com sucesso! Sua assinatura está ativa.',
+            type: 'success'
+          }
+        });
+      }
 
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error);

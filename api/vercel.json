@@ -46,6 +46,14 @@
     {
       "src": "/api/upload-simple",
       "dest": "/upload-simple.js"
+    },
+    {
+      "src": "/payment/(.*)",
+      "dest": "/payment.js"
+    },
+    {
+      "src": "/webhooks/asaas",
+      "dest": "/webhooks/asaas.js"
     }
   ]
 }

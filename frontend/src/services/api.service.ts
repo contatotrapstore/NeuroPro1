@@ -479,6 +479,62 @@ export class ApiService {
       };
     }
   }
+
+  // Payment methods
+  async createPayment(paymentData: {
+    type: 'individual' | 'package';
+    assistant_id?: string;
+    package_type?: 'package_3' | 'package_6';
+    subscription_type: 'monthly' | 'semester';
+    selected_assistants?: string[];
+    payment_method: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+    customer_data: any;
+    card_data?: any;
+  }): Promise<ApiResponse<any>> {
+    return this.post('/payment/create', paymentData);
+  }
+
+  async getPaymentStatus(paymentId: string): Promise<ApiResponse<any>> {
+    return this.get(`/payment/status/${paymentId}`);
+  }
+
+  async getPaymentMethods(): Promise<ApiResponse<any[]>> {
+    return this.get('/payment/methods');
+  }
+
+  // Individual subscription creation with payment
+  async createSubscriptionWithPayment(
+    assistantId: string,
+    subscriptionType: 'monthly' | 'semester',
+    paymentData: any
+  ): Promise<ApiResponse<any>> {
+    return this.createPayment({
+      type: 'individual',
+      assistant_id: assistantId,
+      subscription_type: subscriptionType,
+      payment_method: paymentData.payment_method,
+      customer_data: paymentData.customer_data,
+      card_data: paymentData.card_data
+    });
+  }
+
+  // Package creation with payment
+  async createPackageWithPayment(
+    assistantIds: string[],
+    subscriptionType: 'monthly' | 'semester',
+    packageType: 'package_3' | 'package_6',
+    paymentData: any
+  ): Promise<ApiResponse<any>> {
+    return this.createPayment({
+      type: 'package',
+      package_type: packageType,
+      subscription_type: subscriptionType,
+      selected_assistants: assistantIds,
+      payment_method: paymentData.payment_method,
+      customer_data: paymentData.customer_data,
+      card_data: paymentData.card_data
+    });
+  }
 }
 
 // Export singleton instance
