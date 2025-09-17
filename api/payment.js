@@ -236,28 +236,70 @@ module.exports = async function handler(req, res) {
           let dbResult;
 
           if (type === 'individual') {
+            // Prepare subscription data with detailed logging
+            const subscriptionData = {
+              user_id: userId,
+              assistant_id: assistant_id,
+              subscription_type: subscription_type,
+              package_type: 'individual',
+              amount: totalAmount,
+              status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+              asaas_subscription_id: asaasResult.id,
+              expires_at: asaasService.calculateNextDueDate(subscription_type)
+            };
+
+            console.log('💾 Creating subscription in database:', {
+              user_id: userId,
+              assistant_id: assistant_id,
+              subscription_type: subscription_type,
+              package_type: 'individual',
+              amount: totalAmount,
+              status: subscriptionData.status,
+              asaas_subscription_id: asaasResult.id,
+              expires_at: subscriptionData.expires_at
+            });
+
+            // Validate required fields
+            if (!userId || !assistant_id || !subscription_type || !asaasResult.id) {
+              console.error('❌ Missing required fields for subscription:', {
+                hasUserId: !!userId,
+                hasAssistantId: !!assistant_id,
+                hasSubscriptionType: !!subscription_type,
+                hasAsaasId: !!asaasResult.id
+              });
+              return res.status(400).json({
+                success: false,
+                error: 'Dados obrigatórios faltando para criar assinatura'
+              });
+            }
+
             const { data: subscription, error: subscriptionError } = await supabase
               .from('user_subscriptions')
-              .insert({
-                user_id: userId,
-                assistant_id: assistant_id,
-                subscription_type: subscription_type,
-                package_type: 'individual',
-                amount: totalAmount,
-                status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
-                asaas_subscription_id: asaasResult.id,
-                expires_at: asaasService.calculateNextDueDate(subscription_type)
-              })
+              .insert(subscriptionData)
               .select()
               .single();
 
             if (subscriptionError) {
-              console.error('Database error creating subscription:', subscriptionError);
+              console.error('❌ Database error creating subscription:', {
+                error: subscriptionError,
+                code: subscriptionError.code,
+                message: subscriptionError.message,
+                details: subscriptionError.details,
+                hint: subscriptionError.hint,
+                data: subscriptionData
+              });
               return res.status(500).json({
                 success: false,
-                error: 'Erro ao criar assinatura no banco de dados'
+                error: `Erro ao criar assinatura no banco de dados: ${subscriptionError.message}`,
+                debug: {
+                  code: subscriptionError.code,
+                  details: subscriptionError.details,
+                  hint: subscriptionError.hint
+                }
               });
             }
+
+            console.log('✅ Subscription created successfully:', subscription.id);
 
             dbResult = subscription;
           } else {
