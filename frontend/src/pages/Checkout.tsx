@@ -164,12 +164,13 @@ export default function Checkout() {
       if (paymentMethod === 'PIX') {
         console.log('🎯 Processing PIX payment result:', {
           hasPix: !!paymentResult.pix,
+          hasPixFallback: !!paymentResult.pix_fallback,
           pixData: paymentResult.pix,
           paymentId: paymentResult.payment_id
         });
 
         if (paymentResult.pix && paymentResult.pix.qr_code && paymentResult.pix.copy_paste) {
-          // Redirect to PIX payment page
+          // Normal PIX flow - redirect to PIX payment page
           navigate('/payment/pix', {
             state: {
               payment_id: paymentResult.payment_id,
@@ -177,6 +178,17 @@ export default function Checkout() {
               copy_paste: paymentResult.pix.copy_paste,
               amount: paymentResult.amount,
               description: paymentResult.description
+            }
+          });
+        } else if (paymentResult.pix_fallback) {
+          // PIX fallback - show manual instructions
+          console.log('⚠️ PIX fallback mode activated');
+          navigate('/dashboard', {
+            state: {
+              message: `Pagamento criado com sucesso! ${paymentResult.pix_fallback.message}. ${paymentResult.pix_fallback.manual_instructions}`,
+              type: 'warning',
+              payment_id: paymentResult.payment_id,
+              support_email: paymentResult.pix_fallback.support_email
             }
           });
         } else {

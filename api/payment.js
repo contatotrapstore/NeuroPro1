@@ -432,7 +432,7 @@ module.exports = async function handler(req, res) {
             let pixData = null;
             let pixAttempts = 0;
             const maxPixAttempts = 3;
-            const pixRetryDelay = 2000; // 2 seconds
+            const pixRetryDelay = 5000; // 5 seconds - increased for API stability
 
             while (pixAttempts < maxPixAttempts && !pixData) {
               pixAttempts++;
@@ -470,18 +470,21 @@ module.exports = async function handler(req, res) {
                 });
 
                 if (pixAttempts >= maxPixAttempts) {
-                  // All attempts failed
-                  console.error('💥 All PIX generation attempts failed');
-                  return res.status(500).json({
-                    success: false,
-                    error: `Erro ao gerar PIX após ${maxPixAttempts} tentativas: ${pixError.message}`,
-                    debug: {
-                      paymentId: asaasResult.id,
-                      attempts: pixAttempts,
-                      lastError: pixError.message,
-                      suggestion: 'Verifique se a conta Asaas tem PIX habilitado e se o pagamento foi criado corretamente'
-                    }
-                  });
+                  // All attempts failed - continue without PIX for now
+                  console.error('💥 All PIX generation attempts failed - continuing without QR Code');
+                  console.log('⚠️ Fallback: Returning payment data without PIX for manual processing');
+
+                  responseData.pix_fallback = {
+                    message: 'PIX QR Code temporariamente indisponível',
+                    payment_id: asaasResult.id,
+                    manual_instructions: 'Entre em contato com o suporte para gerar o PIX manualmente',
+                    support_email: 'suporte@neuroialab.com',
+                    error_details: pixError.message
+                  };
+
+                  // Continue with success but without QR code
+                  console.log('✅ Payment created successfully (PIX fallback mode)');
+                  break;
                 }
               }
             }
