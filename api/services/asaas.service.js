@@ -11,8 +11,20 @@ class AsaasService {
     this.baseUrl = 'https://api.asaas.com/v3';
     this.webhookSecret = process.env.ASAAS_WEBHOOK_SECRET;
 
+    console.log('🔑 Asaas API Key Debug:', {
+      hasApiKey: !!this.apiKey,
+      keyLength: this.apiKey?.length,
+      keyStart: this.apiKey?.substring(0, 15) + '...',
+      keyFormat: this.apiKey?.startsWith('$aact_prod_') ? 'PRODUCTION' :
+                  this.apiKey?.startsWith('$aact_hmlg_') ? 'SANDBOX' : 'UNKNOWN'
+    });
+
     if (!this.apiKey) {
       throw new Error('ASAAS_API_KEY not configured');
+    }
+
+    if (!this.apiKey.startsWith('$aact_')) {
+      throw new Error('ASAAS_API_KEY format is invalid. Must start with $aact_prod_ or $aact_hmlg_');
     }
   }
 
@@ -42,13 +54,21 @@ class AsaasService {
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('Asaas API Error:', {
+        console.error('🚨 Asaas API Error:', {
           status: response.status,
           url,
           method,
           data,
-          error: result
+          error: result,
+          apiKeyFormat: this.apiKey?.startsWith('$aact_prod_') ? 'PRODUCTION' :
+                        this.apiKey?.startsWith('$aact_hmlg_') ? 'SANDBOX' : 'INVALID',
+          headers: options.headers
         });
+
+        if (response.status === 401) {
+          throw new Error(`API Key inválida ou expirada. Verifique: 1) Se está configurada no Vercel, 2) Se tem o formato correto ($aact_prod_ ou $aact_hmlg_), 3) Se não expirou no painel Asaas`);
+        }
+
         throw new Error(result.errors?.[0]?.description || result.message || 'Erro na API do Asaas');
       }
 
