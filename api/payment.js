@@ -322,14 +322,30 @@ module.exports = async function handler(req, res) {
           if (payment_method === 'PIX') {
             // Generate PIX QR Code
             try {
+              console.log('🎯 Generating PIX QR Code for payment:', asaasResult.id);
               const pixData = await asaasService.generatePixQrCode(asaasResult.id);
+              console.log('✅ PIX QR Code generated successfully:', {
+                hasEncodedImage: !!pixData.encodedImage,
+                hasPayload: !!pixData.payload,
+                hasExpiration: !!pixData.expirationDate
+              });
+
               responseData.pix = {
                 qr_code: pixData.encodedImage,
                 copy_paste: pixData.payload,
                 expiration_date: pixData.expirationDate
               };
             } catch (pixError) {
-              console.error('Error generating PIX QR Code:', pixError);
+              console.error('❌ Error generating PIX QR Code:', pixError);
+              // Return error if PIX generation fails
+              return res.status(500).json({
+                success: false,
+                error: `Erro ao gerar PIX: ${pixError.message}`,
+                debug: {
+                  paymentId: asaasResult.id,
+                  pixError: pixError.message
+                }
+              });
             }
           } else if (payment_method === 'BOLETO') {
             responseData.boleto = {

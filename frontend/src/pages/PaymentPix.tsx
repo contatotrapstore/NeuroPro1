@@ -24,9 +24,28 @@ export default function PaymentPix() {
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
+    console.log('🎯 PaymentPix - Location state:', location.state);
+
     if (location.state) {
-      setPaymentData(location.state as PixPaymentData);
+      const pixData = location.state as PixPaymentData;
+      console.log('✅ PIX data received:', {
+        hasPaymentId: !!pixData.payment_id,
+        hasQrCode: !!pixData.qr_code,
+        hasCopyPaste: !!pixData.copy_paste,
+        amount: pixData.amount,
+        description: pixData.description
+      });
+
+      if (!pixData.qr_code || !pixData.copy_paste) {
+        console.error('❌ PIX data incomplete:', pixData);
+        toast.error('Dados do PIX incompletos. Tente novamente.');
+        navigate('/store');
+        return;
+      }
+
+      setPaymentData(pixData);
     } else {
+      console.error('❌ No payment data in location.state');
       navigate('/store');
       return;
     }

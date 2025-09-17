@@ -161,17 +161,28 @@ export default function Checkout() {
       const paymentResult = result.data;
 
       // Handle different payment methods
-      if (paymentMethod === 'PIX' && paymentResult.pix) {
-        // Redirect to PIX payment page
-        navigate('/payment/pix', {
-          state: {
-            payment_id: paymentResult.payment_id,
-            qr_code: paymentResult.pix.qr_code,
-            copy_paste: paymentResult.pix.copy_paste,
-            amount: paymentResult.amount,
-            description: paymentResult.description
-          }
+      if (paymentMethod === 'PIX') {
+        console.log('🎯 Processing PIX payment result:', {
+          hasPix: !!paymentResult.pix,
+          pixData: paymentResult.pix,
+          paymentId: paymentResult.payment_id
         });
+
+        if (paymentResult.pix && paymentResult.pix.qr_code && paymentResult.pix.copy_paste) {
+          // Redirect to PIX payment page
+          navigate('/payment/pix', {
+            state: {
+              payment_id: paymentResult.payment_id,
+              qr_code: paymentResult.pix.qr_code,
+              copy_paste: paymentResult.pix.copy_paste,
+              amount: paymentResult.amount,
+              description: paymentResult.description
+            }
+          });
+        } else {
+          console.error('❌ PIX data missing in response:', paymentResult);
+          throw new Error('Erro ao gerar QR Code PIX. Dados incompletos na resposta.');
+        }
       } else if (paymentMethod === 'BOLETO' && paymentResult.boleto) {
         // Redirect to boleto payment page
         navigate('/payment/boleto', {
