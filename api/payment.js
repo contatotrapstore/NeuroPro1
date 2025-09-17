@@ -428,11 +428,16 @@ module.exports = async function handler(req, res) {
           };
 
           if (payment_method === 'PIX') {
-            // Generate PIX QR Code with retry logic
+            // Generate PIX QR Code with retry logic and longer delays
             let pixData = null;
             let pixAttempts = 0;
             const maxPixAttempts = 3;
-            const pixRetryDelay = 5000; // 5 seconds - increased for API stability
+            const pixRetryDelay = 8000; // 8 seconds - increased for better API stability
+            const initialDelay = 3000; // 3 seconds initial delay to let payment settle
+
+            // Add initial delay to let payment settle in Asaas system
+            console.log(`⏳ Initial delay: Waiting ${initialDelay}ms for payment to settle in Asaas system...`);
+            await new Promise(resolve => setTimeout(resolve, initialDelay));
 
             while (pixAttempts < maxPixAttempts && !pixData) {
               pixAttempts++;
@@ -441,7 +446,7 @@ module.exports = async function handler(req, res) {
 
                 // Add delay for subsequent attempts
                 if (pixAttempts > 1) {
-                  console.log(`⏳ Waiting ${pixRetryDelay}ms before retry...`);
+                  console.log(`⏳ Retry delay: Waiting ${pixRetryDelay}ms before retry...`);
                   await new Promise(resolve => setTimeout(resolve, pixRetryDelay));
                 }
 

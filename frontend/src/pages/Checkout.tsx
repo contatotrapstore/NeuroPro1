@@ -181,14 +181,14 @@ export default function Checkout() {
             }
           });
         } else if (paymentResult.pix_fallback) {
-          // PIX fallback - show manual instructions
+          // PIX fallback - redirect to dedicated instructions page
           console.log('⚠️ PIX fallback mode activated');
-          navigate('/dashboard', {
+          navigate('/payment/pix-instructions', {
             state: {
-              message: `Pagamento criado com sucesso! ${paymentResult.pix_fallback.message}. ${paymentResult.pix_fallback.manual_instructions}`,
-              type: 'warning',
               payment_id: paymentResult.payment_id,
-              support_email: paymentResult.pix_fallback.support_email
+              message: paymentResult.pix_fallback.message,
+              support_email: paymentResult.pix_fallback.support_email,
+              error_details: paymentResult.pix_fallback.error_details
             }
           });
         } else {

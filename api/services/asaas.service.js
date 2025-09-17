@@ -257,7 +257,9 @@ class AsaasService {
         status: payment.status,
         billingType: payment.billingType,
         value: payment.value,
-        dueDate: payment.dueDate
+        dueDate: payment.dueDate,
+        customer: payment.customer,
+        object: payment.object
       });
 
       if (payment.billingType !== 'PIX') {
@@ -267,6 +269,12 @@ class AsaasService {
       if (!['PENDING', 'AWAITING_PAYMENT'].includes(payment.status)) {
         console.warn('⚠️ Payment status is not pending:', payment.status);
       }
+
+      // Check if this is a subscription payment (which might affect PIX generation)
+      if (payment.subscription) {
+        console.log('📋 This is a subscription payment:', payment.subscription);
+      }
+
     } catch (paymentError) {
       console.error('❌ Error checking payment before PIX generation:', paymentError);
       throw new Error(`Error validating payment: ${paymentError.message}`);
@@ -274,17 +282,32 @@ class AsaasService {
 
     // Now generate the PIX QR Code with enhanced error handling
     try {
+      console.log('🌐 Making PIX QR Code request to Asaas API...');
       const pixResult = await this.makeRequestWithRawResponse(`/payments/${paymentId}/pixQrCode`);
+
       console.log('✅ PIX QR Code generated successfully:', {
         hasEncodedImage: !!pixResult.encodedImage,
         hasPayload: !!pixResult.payload,
         hasExpirationDate: !!pixResult.expirationDate,
-        payloadLength: pixResult.payload?.length || 0
+        payloadLength: pixResult.payload?.length || 0,
+        encodedImageSize: pixResult.encodedImage?.length || 0,
+        expirationDate: pixResult.expirationDate
       });
+
+      // Validate the PIX data before returning
+      if (!pixResult.payload || !pixResult.encodedImage) {
+        throw new Error('PIX QR Code response missing required fields (payload or encodedImage)');
+      }
 
       return pixResult;
     } catch (pixError) {
-      console.error('❌ Error generating PIX QR Code:', pixError);
+      console.error('❌ Error generating PIX QR Code:', {
+        error: pixError.message,
+        stack: pixError.stack,
+        paymentId,
+        apiKey: this.apiKey?.substring(0, 15) + '...',
+        baseUrl: this.baseUrl
+      });
       throw new Error(`Failed to generate PIX QR Code: ${pixError.message}`);
     }
   }
