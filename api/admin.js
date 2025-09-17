@@ -254,6 +254,12 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Extract admin user IDs for filtering subscriptions
+      const adminUsers = allUsers.users?.filter(user =>
+        adminEmails.includes(user.email?.toLowerCase() || '')
+      ) || [];
+      const adminUserIds = adminUsers.map(user => user.id);
+
       // Count total users excluding admins
       const totalUsers = allUsers.users?.filter(user =>
         !adminEmails.includes(user.email?.toLowerCase() || '')
