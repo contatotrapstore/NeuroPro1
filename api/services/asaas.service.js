@@ -8,7 +8,7 @@ const crypto = require('crypto');
 class AsaasService {
   constructor() {
     this.apiKey = process.env.ASAAS_API_KEY;
-    this.baseUrl = 'https://www.asaas.com/api/v3';
+    this.baseUrl = 'https://api.asaas.com/v3';
     this.webhookSecret = process.env.ASAAS_WEBHOOK_SECRET;
 
     if (!this.apiKey) {
