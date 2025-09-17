@@ -363,22 +363,34 @@ module.exports = async function handler(req, res) {
     }
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'users') {
-      // GET /admin/users - List users from subscription data
+      // GET /admin/users - List ALL users (with and without subscriptions)
       const page = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
 
-      // Get all unique users from subscription details view with user data
-      const { data: allSubscriptions, error: subsError } = await supabase
-        .from('user_subscription_details')
-        .select('user_id, user_email, user_name, user_created_at, user_last_sign_in_at, user_email_confirmed_at, created_at, status, expires_at, package_type, assistant_id')
-        .order('created_at', { ascending: false });
+      // First, get ALL users from auth.users using Service Role Key
+      const { data: allUsers, error: usersError } = await supabase.auth.admin.listUsers();
 
-      if (subsError) {
-        console.error('Error fetching subscriptions for users:', subsError);
+      if (usersError) {
+        console.error('Error fetching all users:', usersError);
         return res.status(500).json({
           success: false,
           message: 'Erro ao buscar usuários',
+          error: usersError.message
+        });
+      }
+
+      // Then get subscription data to enrich user information
+      const { data: allSubscriptions, error: subsError } = await supabase
+        .from('user_subscriptions')
+        .select('user_id, created_at, status, expires_at, package_type, assistant_id')
+        .order('created_at', { ascending: false });
+
+      if (subsError) {
+        console.error('Error fetching subscriptions:', subsError);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar assinaturas',
           error: subsError.message
         });
       }
@@ -386,29 +398,25 @@ module.exports = async function handler(req, res) {
       // Admin emails that should be marked
       const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
 
-      // Create user map from subscription data (we only need users who have subscriptions)
+      // Create user map from ALL users (with and without subscriptions)
       const userMap = new Map();
 
-      // Initialize users from subscription data
-      if (allSubscriptions) {
-        allSubscriptions.forEach(sub => {
-          if (!sub.user_id) return;
-
-          if (!userMap.has(sub.user_id)) {
-            const isAdmin = adminEmails.includes(sub.user_email || '');
-            userMap.set(sub.user_id, {
-              id: sub.user_id,
-              email: sub.user_email,
-              name: sub.user_name || (sub.user_email ? sub.user_email.split('@')[0] : 'Usuário'),
-              created_at: sub.user_created_at || sub.created_at,
-              last_sign_in_at: sub.user_last_sign_in_at,
-              email_confirmed_at: sub.user_email_confirmed_at,
-              user_metadata: { name: sub.user_name },
-              active_subscriptions: 0,
-              active_packages: 0,
-              is_admin: isAdmin
-            });
-          }
+      // Initialize ALL users first from auth.users
+      if (allUsers.users) {
+        allUsers.users.forEach(user => {
+          const isAdmin = adminEmails.includes(user.email?.toLowerCase() || '');
+          userMap.set(user.id, {
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+            created_at: user.created_at,
+            last_sign_in_at: user.last_sign_in_at,
+            email_confirmed_at: user.email_confirmed_at,
+            user_metadata: user.user_metadata,
+            active_subscriptions: 0,
+            active_packages: 0,
+            is_admin: isAdmin
+          });
         });
       }
       
@@ -464,10 +472,11 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      // Convert map to array and paginate
-      const allUsers = Array.from(userMap.values());
-      const paginatedUsers = allUsers.slice(offset, offset + limit);
-      const totalUsers = allUsers.length;
+      // Convert map to array, sort by creation date (newest first), and paginate
+      const allUsersList = Array.from(userMap.values());
+      allUsersList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const paginatedUsers = allUsersList.slice(offset, offset + limit);
+      const totalUsers = allUsersList.length;
 
       return res.json({
         success: true,
