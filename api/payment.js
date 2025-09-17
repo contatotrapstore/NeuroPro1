@@ -263,7 +263,7 @@ module.exports = async function handler(req, res) {
                 const updateData = {
                   subscription_type: subscription_type,
                   amount: totalAmount,
-                  status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+                  status: 'pending', // All payments start as pending until webhook confirms
                   asaas_subscription_id: asaasResult.id,
                   expires_at: asaasService.calculateNextDueDate(subscription_type),
                   updated_at: new Date().toISOString()
@@ -308,7 +308,7 @@ module.exports = async function handler(req, res) {
                 subscription_type: subscription_type,
                 package_type: 'individual',
                 amount: totalAmount,
-                status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+                status: 'pending', // All payments start as pending until webhook confirms
                 asaas_subscription_id: asaasResult.id,
                 expires_at: asaasService.calculateNextDueDate(subscription_type)
               };
@@ -378,7 +378,7 @@ module.exports = async function handler(req, res) {
                 subscription_type: subscription_type,
                 assistant_ids: selected_assistants,
                 total_amount: totalAmount,
-                status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+                status: 'pending', // All payments start as pending until webhook confirms
                 asaas_subscription_id: asaasResult.id,
                 expires_at: asaasService.calculateNextDueDate(subscription_type)
               })
@@ -401,7 +401,7 @@ module.exports = async function handler(req, res) {
               package_type: package_type,
               package_id: userPackage.id,
               amount: totalAmount / selected_assistants.length,
-              status: payment_method === 'CREDIT_CARD' ? 'active' : 'pending',
+              status: 'pending', // All payments start as pending until webhook confirms
               asaas_subscription_id: asaasResult.id,
               expires_at: asaasService.calculateNextDueDate(subscription_type)
             }));

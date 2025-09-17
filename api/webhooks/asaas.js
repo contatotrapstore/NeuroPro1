@@ -24,12 +24,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Initialize services
+    // Initialize services with error handling
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Supabase configuration missing');
+      console.error('❌ Supabase configuration missing:', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey
+      });
       return res.status(500).json({
         error: 'Server configuration error'
       });
@@ -37,6 +40,8 @@ module.exports = async function handler(req, res) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const asaasService = new AsaasService();
+
+    console.log('✅ Webhook services initialized successfully');
 
     // Get raw body for signature validation
     const rawBody = JSON.stringify(req.body);
@@ -67,36 +72,56 @@ module.exports = async function handler(req, res) {
       subscriptionId: webhookData.subscription?.id
     });
 
-    // Process different webhook events
-    switch (webhookData.event) {
-      case 'PAYMENT_RECEIVED':
-      case 'PAYMENT_CONFIRMED':
-        await handlePaymentConfirmed(supabase, webhookData);
-        break;
+    // Process different webhook events with error handling
+    try {
+      switch (webhookData.event) {
+        case 'PAYMENT_RECEIVED':
+        case 'PAYMENT_CONFIRMED':
+          console.log('🎯 Processing payment confirmation event');
+          await handlePaymentConfirmed(supabase, webhookData);
+          break;
 
-      case 'PAYMENT_OVERDUE':
-        await handlePaymentOverdue(supabase, webhookData);
-        break;
+        case 'PAYMENT_OVERDUE':
+          console.log('⚠️ Processing payment overdue event');
+          await handlePaymentOverdue(supabase, webhookData);
+          break;
 
-      case 'PAYMENT_DELETED':
-      case 'PAYMENT_REFUNDED':
-        await handlePaymentCancelled(supabase, webhookData);
-        break;
+        case 'PAYMENT_DELETED':
+        case 'PAYMENT_REFUNDED':
+          console.log('❌ Processing payment cancelled event');
+          await handlePaymentCancelled(supabase, webhookData);
+          break;
 
-      case 'SUBSCRIPTION_RECEIVED':
-        await handleSubscriptionReceived(supabase, webhookData);
-        break;
+        case 'SUBSCRIPTION_RECEIVED':
+          console.log('📋 Processing subscription received event');
+          await handleSubscriptionReceived(supabase, webhookData);
+          break;
 
-      case 'SUBSCRIPTION_OVERDUE':
-        await handleSubscriptionOverdue(supabase, webhookData);
-        break;
+        case 'SUBSCRIPTION_OVERDUE':
+          console.log('⚠️ Processing subscription overdue event');
+          await handleSubscriptionOverdue(supabase, webhookData);
+          break;
 
-      case 'SUBSCRIPTION_CANCELLED':
-        await handleSubscriptionCancelled(supabase, webhookData);
-        break;
+        case 'SUBSCRIPTION_CANCELLED':
+          console.log('❌ Processing subscription cancelled event');
+          await handleSubscriptionCancelled(supabase, webhookData);
+          break;
 
-      default:
-        console.log('Unhandled webhook event:', webhookData.event);
+        default:
+          console.log('❓ Unhandled webhook event:', webhookData.event);
+      }
+
+      console.log('✅ Webhook event processed successfully');
+
+    } catch (eventError) {
+      console.error('❌ Error processing webhook event:', {
+        event: webhookData.event,
+        error: eventError.message,
+        stack: eventError.stack
+      });
+
+      // Continue execution but log the error
+      // Don't return error to Asaas to avoid webhook retries
     }
 
     // Always return success to acknowledge webhook
@@ -137,6 +162,11 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       // This might be a single payment - use payment ID
       subscriptionSearchId = payment.id;
       console.log('🔍 Searching by payment ID:', subscriptionSearchId);
+    }
+
+    if (!subscriptionSearchId) {
+      console.error('❌ No valid ID found for subscription search');
+      return;
     }
 
     // Update subscription status based on payment
