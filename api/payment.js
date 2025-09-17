@@ -428,12 +428,70 @@ module.exports = async function handler(req, res) {
           };
 
           if (payment_method === 'PIX') {
-            // Generate PIX QR Code with retry logic and longer delays
+            // 🚨 CRITICAL FIX: For subscriptions, we need payment ID, not subscription ID
+            let targetPaymentId = asaasResult.id;
+
+            if (isRecurring) {
+              console.log('🔍 SUBSCRIPTION PIX: Need to find payment ID from subscription ID:', asaasResult.id);
+
+              // For subscriptions, we need to get the first payment ID
+              let subscriptionPayments = null;
+              let paymentSearchAttempts = 0;
+              const maxPaymentSearchAttempts = 5;
+              const paymentSearchDelay = 3000; // 3 seconds between searches
+
+              while (paymentSearchAttempts < maxPaymentSearchAttempts && !subscriptionPayments) {
+                paymentSearchAttempts++;
+                try {
+                  console.log(`🔍 Searching for subscription payments (attempt ${paymentSearchAttempts}/${maxPaymentSearchAttempts})`);
+
+                  if (paymentSearchAttempts > 1) {
+                    console.log(`⏳ Waiting ${paymentSearchDelay}ms for subscription payment to be created...`);
+                    await new Promise(resolve => setTimeout(resolve, paymentSearchDelay));
+                  }
+
+                  const paymentsResponse = await asaasService.getSubscriptionPayments(asaasResult.id);
+
+                  if (paymentsResponse.data && paymentsResponse.data.length > 0) {
+                    // Found payments, get the first one (should be current payment)
+                    const firstPayment = paymentsResponse.data[0];
+                    targetPaymentId = firstPayment.id;
+
+                    console.log('✅ Found subscription payment:', {
+                      subscriptionId: asaasResult.id,
+                      paymentId: targetPaymentId,
+                      paymentStatus: firstPayment.status,
+                      billingType: firstPayment.billingType
+                    });
+
+                    subscriptionPayments = paymentsResponse.data;
+                    break;
+                  } else {
+                    console.log('⚠️ No payments found yet for subscription, will retry...');
+                  }
+
+                } catch (searchError) {
+                  console.error(`❌ Error searching subscription payments (attempt ${paymentSearchAttempts}):`, searchError.message);
+
+                  if (paymentSearchAttempts >= maxPaymentSearchAttempts) {
+                    throw new Error(`Failed to find payment for subscription after ${maxPaymentSearchAttempts} attempts: ${searchError.message}`);
+                  }
+                }
+              }
+
+              if (!subscriptionPayments) {
+                throw new Error('No payments found for subscription after maximum attempts');
+              }
+            } else {
+              console.log('💳 SINGLE PAYMENT PIX: Using payment ID directly:', targetPaymentId);
+            }
+
+            // Generate PIX QR Code with correct payment ID
             let pixData = null;
             let pixAttempts = 0;
             const maxPixAttempts = 3;
-            const pixRetryDelay = 8000; // 8 seconds - increased for better API stability
-            const initialDelay = 3000; // 3 seconds initial delay to let payment settle
+            const pixRetryDelay = 5000; // 5 seconds between PIX generation attempts
+            const initialDelay = 2000; // 2 seconds initial delay
 
             // Add initial delay to let payment settle in Asaas system
             console.log(`⏳ Initial delay: Waiting ${initialDelay}ms for payment to settle in Asaas system...`);
@@ -442,7 +500,7 @@ module.exports = async function handler(req, res) {
             while (pixAttempts < maxPixAttempts && !pixData) {
               pixAttempts++;
               try {
-                console.log(`🎯 Attempting PIX QR Code generation (attempt ${pixAttempts}/${maxPixAttempts}) for payment:`, asaasResult.id);
+                console.log(`🎯 Attempting PIX QR Code generation (attempt ${pixAttempts}/${maxPixAttempts}) for payment:`, targetPaymentId);
 
                 // Add delay for subsequent attempts
                 if (pixAttempts > 1) {
@@ -450,7 +508,7 @@ module.exports = async function handler(req, res) {
                   await new Promise(resolve => setTimeout(resolve, pixRetryDelay));
                 }
 
-                pixData = await asaasService.generatePixQrCode(asaasResult.id);
+                pixData = await asaasService.generatePixQrCode(targetPaymentId);
 
                 console.log('✅ PIX QR Code generated successfully:', {
                   hasEncodedImage: !!pixData.encodedImage,
@@ -470,7 +528,8 @@ module.exports = async function handler(req, res) {
               } catch (pixError) {
                 console.error(`❌ PIX generation attempt ${pixAttempts} failed:`, {
                   error: pixError.message,
-                  paymentId: asaasResult.id,
+                  targetPaymentId: targetPaymentId,
+                  subscriptionId: isRecurring ? asaasResult.id : null,
                   willRetry: pixAttempts < maxPixAttempts
                 });
 
@@ -481,7 +540,8 @@ module.exports = async function handler(req, res) {
 
                   responseData.pix_fallback = {
                     message: 'PIX QR Code temporariamente indisponível',
-                    payment_id: asaasResult.id,
+                    payment_id: targetPaymentId,
+                    subscription_id: isRecurring ? asaasResult.id : null,
                     manual_instructions: 'Entre em contato com o suporte para gerar o PIX manualmente',
                     support_email: 'suporte@neuroialab.com',
                     error_details: pixError.message

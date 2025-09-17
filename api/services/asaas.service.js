@@ -237,6 +237,25 @@ class AsaasService {
   }
 
   /**
+   * Get payments from a subscription
+   */
+  async getSubscriptionPayments(subscriptionId) {
+    console.log('🔍 Fetching payments for subscription:', subscriptionId);
+    const response = await this.makeRequest(`/subscriptions/${subscriptionId}/payments`);
+    console.log('📋 Subscription payments found:', {
+      count: response.data?.length || 0,
+      payments: response.data?.map(p => ({
+        id: p.id,
+        status: p.status,
+        billingType: p.billingType,
+        value: p.value,
+        dueDate: p.dueDate
+      })) || []
+    });
+    return response;
+  }
+
+  /**
    * Cancel subscription
    */
   async cancelSubscription(subscriptionId) {
