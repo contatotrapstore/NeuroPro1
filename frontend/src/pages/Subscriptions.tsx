@@ -91,15 +91,35 @@ export default function Subscriptions() {
       ]);
 
       if (subscriptionsResult.success) {
-        setSubscriptions(subscriptionsResult.data || []);
+        const subscriptions = subscriptionsResult.data || [];
+        console.log('✅ Subscriptions loaded:', subscriptions);
+
+        // Debug: Check for missing amount fields
+        subscriptions.forEach((sub, index) => {
+          if (!sub.amount && sub.amount !== 0) {
+            console.warn(`⚠️ Subscription ${index} missing amount:`, sub);
+          }
+        });
+
+        setSubscriptions(subscriptions);
       } else {
-        console.error('Erro ao carregar assinaturas:', subscriptionsResult.error);
+        console.error('❌ Erro ao carregar assinaturas:', subscriptionsResult.error);
       }
 
       if (packagesResult.success) {
-        setPackages(packagesResult.data || []);
+        const packages = packagesResult.data || [];
+        console.log('✅ Packages loaded:', packages);
+
+        // Debug: Check for missing total_amount fields
+        packages.forEach((pkg, index) => {
+          if (!pkg.total_amount && pkg.total_amount !== 0) {
+            console.warn(`⚠️ Package ${index} missing total_amount:`, pkg);
+          }
+        });
+
+        setPackages(packages);
       } else {
-        console.error('Erro ao carregar pacotes:', packagesResult.error);
+        console.error('❌ Erro ao carregar pacotes:', packagesResult.error);
       }
 
     } catch (error: any) {
@@ -154,7 +174,11 @@ export default function Subscriptions() {
     });
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | undefined | null) => {
+    if (price === undefined || price === null || isNaN(price)) {
+      console.warn('formatPrice called with invalid value:', price);
+      return 'R$ 0,00';
+    }
     return price.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -278,7 +302,7 @@ export default function Subscriptions() {
 
                         <div className="flex items-center justify-between">
                           <div className="text-lg font-semibold text-gray-900">
-                            {formatPrice(pkg.total_amount)}
+                            {formatPrice(pkg.total_amount || 0)}
                             <span className="text-sm font-normal text-gray-600">
                               /{pkg.subscription_type === 'monthly' ? 'mês' : 'semestre'}
                             </span>
@@ -357,7 +381,7 @@ export default function Subscriptions() {
 
                     <div className="flex items-center justify-between">
                       <div className="text-lg font-semibold text-gray-900">
-                        {formatPrice(subscription.amount)}
+                        {formatPrice(subscription.amount || 0)}
                         <span className="text-sm font-normal text-gray-600">
                           /{subscription.subscription_type === 'monthly' ? 'mês' : 'semestre'}
                         </span>
