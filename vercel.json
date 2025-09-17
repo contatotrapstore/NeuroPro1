@@ -5,6 +5,9 @@
   "functions": {
     "api/webhooks/asaas.js": {
       "maxDuration": 30
+    },
+    "api/webhooks/asaas-test.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

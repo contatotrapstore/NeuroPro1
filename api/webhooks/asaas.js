@@ -8,18 +8,34 @@ const AsaasService = require('../services/asaas.service');
 const { applyCors } = require('../utils/cors');
 
 module.exports = async function handler(req, res) {
-  console.log('🔔 Asaas Webhook received');
+  const timestamp = new Date().toISOString();
+  console.log('🔔 Asaas Webhook received at:', timestamp);
+  console.log('📋 Request Details:', {
+    method: req.method,
+    url: req.url,
+    headers: {
+      'content-type': req.headers['content-type'],
+      'user-agent': req.headers['user-agent'],
+      'asaas-signature': req.headers['asaas-signature'] ? 'present' : 'missing',
+      'x-asaas-signature': req.headers['x-asaas-signature'] ? 'present' : 'missing'
+    },
+    bodySize: req.body ? JSON.stringify(req.body).length : 0
+  });
 
   // Apply CORS
   const corsHandled = applyCors(req, res);
   if (corsHandled) {
+    console.log('✅ CORS preflight handled successfully');
     return; // Preflight request handled
   }
 
   // Only accept POST requests
   if (req.method !== 'POST') {
+    console.log('❌ Invalid method:', req.method);
     return res.status(405).json({
-      error: 'Method not allowed'
+      error: 'Method not allowed',
+      received: req.method,
+      expected: 'POST'
     });
   }
 
@@ -66,11 +82,26 @@ module.exports = async function handler(req, res) {
     }
 
     const webhookData = req.body;
-    console.log('Webhook data received:', {
+
+    // Validate webhook data
+    if (!webhookData || !webhookData.event) {
+      console.error('❌ Invalid webhook data received:', webhookData);
+      return res.status(400).json({
+        error: 'Invalid webhook data - missing event'
+      });
+    }
+
+    console.log('📦 Webhook data received:', {
       event: webhookData.event,
       paymentId: webhookData.payment?.id,
-      subscriptionId: webhookData.subscription?.id
+      subscriptionId: webhookData.subscription?.id,
+      hasPayment: !!webhookData.payment,
+      hasSubscription: !!webhookData.subscription,
+      timestamp: timestamp
     });
+
+    // Log full webhook data for debugging (remove in production)
+    console.log('🔍 Full webhook data:', JSON.stringify(webhookData, null, 2));
 
     // Process different webhook events with error handling
     try {
@@ -117,23 +148,39 @@ module.exports = async function handler(req, res) {
       console.error('❌ Error processing webhook event:', {
         event: webhookData.event,
         error: eventError.message,
-        stack: eventError.stack
+        stack: eventError.stack,
+        paymentId: webhookData.payment?.id,
+        subscriptionId: webhookData.subscription?.id,
+        timestamp: timestamp
       });
 
+      // Log additional debugging info
+      console.error('🔍 Event processing failed - webhook data:', JSON.stringify(webhookData, null, 2));
+
       // Continue execution but log the error
-      // Don't return error to Asaas to avoid webhook retries
+      // Don't return error to Asaas to avoid webhook retries for valid events
     }
 
     // Always return success to acknowledge webhook
+    console.log('✅ Webhook processing completed successfully at:', new Date().toISOString());
     return res.status(200).json({
       success: true,
-      message: 'Webhook processed successfully'
+      message: 'Webhook processed successfully',
+      timestamp: timestamp,
+      event: webhookData.event
     });
 
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    console.error('❌ Critical webhook processing error:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: timestamp,
+      url: req.url,
+      method: req.method
+    });
     return res.status(500).json({
-      error: 'Internal server error'
+      error: 'Internal server error',
+      timestamp: timestamp
     });
   }
 };
@@ -143,12 +190,23 @@ module.exports = async function handler(req, res) {
  */
 async function handlePaymentConfirmed(supabase, webhookData) {
   const payment = webhookData.payment;
-  console.log('Processing payment confirmation:', {
+  console.log('🎯 Processing payment confirmation:', {
     paymentId: payment.id,
     subscriptionId: payment.subscription,
     value: payment.value,
-    billingType: payment.billingType
+    billingType: payment.billingType,
+    status: payment.status,
+    timestamp: new Date().toISOString()
   });
+
+  // Extra validation for credit card payments
+  if (payment.billingType === 'CREDIT_CARD') {
+    console.log('💳 Credit card payment detected - applying extra validation');
+    if (payment.status !== 'CONFIRMED' && payment.status !== 'RECEIVED') {
+      console.warn('⚠️ Credit card payment status not confirmed:', payment.status);
+      return; // Don't activate subscription if payment not properly confirmed
+    }
+  }
 
   try {
     // For PIX subscriptions, we need to search correctly
