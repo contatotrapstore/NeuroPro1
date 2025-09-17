@@ -5,15 +5,52 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const AsaasService = require('./services/asaas.service');
-const { applyCors } = require('./utils/cors');
 
 module.exports = async function handler(req, res) {
-  console.log('🚀 Payment API v1.0 - Processing request');
+  console.log('🚀 Payment API v1.1 - Processing request with inline CORS');
 
-  // Apply CORS
-  const corsHandled = applyCors(req, res);
-  if (corsHandled) {
-    return; // Preflight request handled
+  // Apply CORS (inline fallback + centralized)
+  try {
+    // Try centralized CORS first
+    const { applyCors } = require('./utils/cors');
+    console.log('✅ Using centralized CORS function');
+    const corsHandled = applyCors(req, res);
+    if (corsHandled) {
+      return; // Preflight request handled
+    }
+  } catch (corsError) {
+    console.log('⚠️ Centralized CORS failed, using inline fallback:', corsError.message);
+
+    // Inline CORS fallback
+    const allowedOrigins = [
+      'https://www.neuroialab.com.br',
+      'https://neuroialab.com.br',
+      'https://neuroai-lab.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+
+    const origin = req.headers.origin;
+    console.log('🌐 CORS Inline Check:', { origin, allowedOrigins });
+
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS inline allowed for origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      console.log('⚠️ CORS inline fallback to wildcard for origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
+
+    if (req.method === 'OPTIONS') {
+      console.log('🔍 Handling inline CORS preflight request');
+      res.status(200).end();
+      return;
+    }
   }
 
   try {
