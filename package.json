@@ -48,10 +48,10 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.6.1"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.56.1",
+    "@supabase/supabase-js": "^2.57.4",
     "cors": "^2.8.5",
     "express": "^4.18.2"
   },

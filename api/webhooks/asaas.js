@@ -118,19 +118,43 @@ module.exports = async function handler(req, res) {
  */
 async function handlePaymentConfirmed(supabase, webhookData) {
   const payment = webhookData.payment;
-  console.log('Processing payment confirmation:', payment.id);
+  console.log('Processing payment confirmation:', {
+    paymentId: payment.id,
+    subscriptionId: payment.subscription,
+    value: payment.value,
+    billingType: payment.billingType
+  });
 
   try {
+    // For PIX subscriptions, we need to search correctly
+    let subscriptionSearchId = null;
+
+    if (payment.subscription) {
+      // This is a subscription payment - use subscription ID
+      subscriptionSearchId = payment.subscription;
+      console.log('🔍 Searching by subscription ID:', subscriptionSearchId);
+    } else {
+      // This might be a single payment - use payment ID
+      subscriptionSearchId = payment.id;
+      console.log('🔍 Searching by payment ID:', subscriptionSearchId);
+    }
+
     // Update subscription status based on payment
     const { data: subscriptions, error: subsError } = await supabase
       .from('user_subscriptions')
       .select('*')
-      .eq('asaas_subscription_id', payment.subscription || payment.id);
+      .eq('asaas_subscription_id', subscriptionSearchId);
 
     if (subsError) {
       console.error('Error finding subscriptions:', subsError);
       return;
     }
+
+    console.log('🔍 Found subscriptions:', {
+      count: subscriptions?.length || 0,
+      searchId: subscriptionSearchId,
+      foundIds: subscriptions?.map(s => s.id) || []
+    });
 
     if (subscriptions && subscriptions.length > 0) {
       // Update subscription status to active
@@ -140,20 +164,26 @@ async function handlePaymentConfirmed(supabase, webhookData) {
           status: 'active',
           updated_at: new Date().toISOString()
         })
-        .eq('asaas_subscription_id', payment.subscription || payment.id);
+        .eq('asaas_subscription_id', subscriptionSearchId);
 
       if (updateError) {
         console.error('Error updating subscription status:', updateError);
       } else {
-        console.log('Subscription activated:', subscriptions.length, 'records');
+        console.log('✅ Subscription activated:', subscriptions.length, 'records');
       }
+    } else {
+      console.warn('⚠️ No subscriptions found for payment:', {
+        paymentId: payment.id,
+        subscriptionId: payment.subscription,
+        searchId: subscriptionSearchId
+      });
     }
 
     // Update package status if applicable
     const { data: packages, error: packagesError } = await supabase
       .from('user_packages')
       .select('*')
-      .eq('asaas_subscription_id', payment.subscription || payment.id);
+      .eq('asaas_subscription_id', subscriptionSearchId);
 
     if (packages && packages.length > 0) {
       const { error: updatePackageError } = await supabase
@@ -162,13 +192,19 @@ async function handlePaymentConfirmed(supabase, webhookData) {
           status: 'active',
           updated_at: new Date().toISOString()
         })
-        .eq('asaas_subscription_id', payment.subscription || payment.id);
+        .eq('asaas_subscription_id', subscriptionSearchId);
 
       if (updatePackageError) {
         console.error('Error updating package status:', updatePackageError);
       } else {
-        console.log('Package activated:', packages.length, 'records');
+        console.log('✅ Package activated:', packages.length, 'records');
       }
+    } else {
+      console.warn('⚠️ No packages found for payment:', {
+        paymentId: payment.id,
+        subscriptionId: payment.subscription,
+        searchId: subscriptionSearchId
+      });
     }
 
     // TODO: Send confirmation email to user
