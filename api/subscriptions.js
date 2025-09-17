@@ -272,13 +272,17 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      // Create new subscription
-      const { assistantId, plan } = req.body;
+      // Create new subscription (legacy endpoint - use /payment/create for new payments)
+      const { assistantId, plan, assistant_id, subscription_type } = req.body;
 
-      if (!assistantId || !plan) {
+      // Support both old and new parameter names
+      const finalAssistantId = assistant_id || assistantId;
+      const finalSubscriptionType = subscription_type || plan;
+
+      if (!finalAssistantId || !finalSubscriptionType) {
         return res.status(400).json({
           success: false,
-          error: 'assistantId e plan são obrigatórios'
+          error: 'assistant_id e subscription_type são obrigatórios'
         });
       }
 
@@ -287,7 +291,7 @@ module.exports = async function handler(req, res) {
         .from('user_subscriptions')
         .select('id')
         .eq('user_id', userId)
-        .eq('assistant_id', assistantId)
+        .eq('assistant_id', finalAssistantId)
         .eq('status', 'active')
         .single();
 
@@ -301,9 +305,9 @@ module.exports = async function handler(req, res) {
       // Calculate expiration date
       const now = new Date();
       const expiresAt = new Date(now);
-      if (plan === 'monthly') {
+      if (finalSubscriptionType === 'monthly') {
         expiresAt.setMonth(now.getMonth() + 1);
-      } else if (plan === 'semester') {
+      } else if (finalSubscriptionType === 'semester') {
         expiresAt.setMonth(now.getMonth() + 6);
       }
 
@@ -311,8 +315,10 @@ module.exports = async function handler(req, res) {
         .from('user_subscriptions')
         .insert({
           user_id: userId,
-          assistant_id: assistantId,
-          plan,
+          assistant_id: finalAssistantId,
+          subscription_type: finalSubscriptionType,
+          package_type: 'individual',
+          amount: finalSubscriptionType === 'monthly' ? 39.90 : 199.90,
           status: 'active',
           expires_at: expiresAt.toISOString(),
           created_at: now.toISOString()

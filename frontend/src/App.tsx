@@ -16,6 +16,8 @@ import Profile from './pages/Profile';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import Checkout from './pages/Checkout';
+import PaymentPix from './pages/PaymentPix';
+import PaymentBoleto from './pages/PaymentBoleto';
 import './index.css';
 
 const App: React.FC = () => {
@@ -137,6 +139,22 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Checkout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/pix"
+            element={
+              <ProtectedRoute>
+                <PaymentPix />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/boleto"
+            element={
+              <ProtectedRoute>
+                <PaymentBoleto />
               </ProtectedRoute>
             }
           />
