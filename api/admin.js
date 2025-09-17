@@ -242,24 +242,22 @@ module.exports = async function handler(req, res) {
       // Admin emails that should be excluded from stats
       const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
 
-      // Get admin user IDs from subscription details view to exclude from stats
-      const { data: adminSubscriptions } = await supabase
-        .from('user_subscription_details')
-        .select('user_id')
-        .in('user_email', adminEmails);
+      // Get ALL users from auth.users to count total (not just those with subscriptions)
+      const { data: allUsers, error: allUsersError } = await supabase.auth.admin.listUsers();
 
-      const adminUserIds = adminSubscriptions?.map(sub => sub.user_id) || [];
+      if (allUsersError) {
+        console.error('Error fetching all users for stats:', allUsersError);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar estatísticas de usuários',
+          error: allUsersError.message
+        });
+      }
 
-      // Get unique users from subscriptions (excluding admins)
-      const { data: allUserSubscriptions, error: uniqueUsersError } = await supabase
-        .from('user_subscriptions')
-        .select('user_id')
-        .not('user_id', 'is', null);
-      
-      const nonAdminUsers = allUserSubscriptions?.filter(sub => 
-        !adminUserIds.includes(sub.user_id)
-      ) || [];
-      const totalUsers = [...new Set(nonAdminUsers.map(u => u.user_id))].length;
+      // Count total users excluding admins
+      const totalUsers = allUsers.users?.filter(user =>
+        !adminEmails.includes(user.email?.toLowerCase() || '')
+      ).length || 0;
 
       // Get active subscriptions (excluding admin subscriptions)
       const { data: allActiveSubscriptions, error: subsError } = await supabase
