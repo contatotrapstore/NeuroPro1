@@ -38,8 +38,8 @@ Adicione as seguintes variáveis no painel do Vercel:
 # Asaas Production API Key (já configurada)
 ASAAS_API_KEY=$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojc3MDZhMDQyLTY5YWQtNDk5OS04OTU1LWZkNjJjYzg4ZTMyZTo6JGFhY2hfNmFjMGJlMzAtNDMxOC00NTY2LWExZGUtYWRlNGI0ZDI1Nzhl
 
-# Webhook Secret (configurar no painel Asaas)
-ASAAS_WEBHOOK_SECRET=seu-webhook-secret-aqui
+# Webhook Secret (já configurado)
+ASAAS_WEBHOOK_SECRET=skjdaiosdajsdjaspjdiasjiadasijd
 ```
 
 ### 2. Configuração no Painel Asaas
@@ -57,7 +57,7 @@ ASAAS_WEBHOOK_SECRET=seu-webhook-secret-aqui
      - `SUBSCRIPTION_OVERDUE`
      - `SUBSCRIPTION_CANCELLED`
 
-3. **Gere o Webhook Secret** e adicione na variável `ASAAS_WEBHOOK_SECRET`
+3. **Webhook Secret**: `skjdaiosdajsdjaspjdiasjiadasijd` (já configurado)
 
 ### 3. Configuração do Banco de Dados
 
