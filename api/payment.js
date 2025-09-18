@@ -204,9 +204,9 @@ module.exports = async function handler(req, res) {
             description = `Pacote ${package_type === 'package_3' ? '3' : '6'} Assistentes - ${subscription_type === 'monthly' ? 'Mensal' : 'Semestral'}`;
           }
 
-          // 4. Create payment or subscription in Asaas
+          // 4. Create payment in Asaas (ONE-TIME PAYMENT - NO MORE SUBSCRIPTIONS)
           let asaasResult;
-          const isRecurring = true; // Always create subscription for recurring billing
+          const isRecurring = false; // Always create one-time payment for better approval rates
 
           const paymentData = {
             customerId: asaasCustomer.id,
@@ -263,36 +263,29 @@ module.exports = async function handler(req, res) {
             console.log('💳 CREDIT CARD - Adding remoteIp:', clientIp);
           }
 
-          if (isRecurring) {
-            // Create subscription for recurring payments
-            const subscriptionData = {
-              ...paymentData,
-              cycle: asaasService.mapSubscriptionCycle(subscription_type),
-              nextDueDate: new Date().toISOString().split('T')[0] // 🔥 IMMEDIATE CHARGE: Set due date to TODAY!
-            };
+          // Create one-time payment (no more subscriptions for better approval)
+          const singlePaymentData = {
+            ...paymentData,
+            dueDate: new Date().toISOString().split('T')[0] // Immediate payment
+          };
 
-            console.log('📅 CRITICAL FIX: Setting nextDueDate to TODAY for immediate charge:', {
-              nextDueDate: subscriptionData.nextDueDate,
-              subscriptionType: subscription_type,
-              paymentMethod: payment_method
-            });
+          console.log('💳 CREATING ONE-TIME PAYMENT (Better approval rates):', {
+            dueDate: singlePaymentData.dueDate,
+            subscriptionType: subscription_type,
+            paymentMethod: payment_method,
+            value: singlePaymentData.value
+          });
 
-            asaasResult = await asaasService.createSubscription(subscriptionData);
-            console.log('🔥 CREDIT CARD SUBSCRIPTION CREATED:', {
-              subscriptionId: asaasResult.id,
-              status: asaasResult.status,
-              nextDueDate: asaasResult.nextDueDate,
-              billingType: asaasResult.billingType,
-              value: asaasResult.value,
-              customer: asaasResult.customer,
-              cycle: asaasResult.cycle,
-              paymentMethod: payment_method
-            });
-          } else {
-            // Create one-time payment
-            asaasResult = await asaasService.createPayment(paymentData);
-            console.log('Asaas payment created:', asaasResult.id);
-          }
+          asaasResult = await asaasService.createPayment(singlePaymentData);
+          console.log('✅ ONE-TIME PAYMENT CREATED:', {
+            paymentId: asaasResult.id,
+            status: asaasResult.status,
+            dueDate: asaasResult.dueDate,
+            billingType: asaasResult.billingType,
+            value: asaasResult.value,
+            customer: asaasResult.customer,
+            paymentMethod: payment_method
+          });
 
           // 5. Create subscription/package record in database
           let dbResult;
@@ -327,12 +320,20 @@ module.exports = async function handler(req, res) {
               if (['pending', 'cancelled', 'expired'].includes(existingSubscription.status)) {
                 console.log('🔄 Updating existing subscription instead of creating new');
 
+                // Calculate expiration date (30 days from today for monthly, 180 days for semester)
+                const expirationDate = new Date();
+                if (subscription_type === 'monthly') {
+                  expirationDate.setDate(expirationDate.getDate() + 30);
+                } else {
+                  expirationDate.setDate(expirationDate.getDate() + 180); // 6 months = 180 days
+                }
+
                 const updateData = {
                   subscription_type: subscription_type,
                   amount: totalAmount,
                   status: 'pending', // All payments start as pending until webhook confirms
-                  asaas_subscription_id: asaasResult.id,
-                  expires_at: asaasService.calculateNextDueDate(subscription_type),
+                  asaas_subscription_id: asaasResult.id, // Store payment_id in this field
+                  expires_at: expirationDate.toISOString(),
                   updated_at: new Date().toISOString()
                 };
 
@@ -368,6 +369,14 @@ module.exports = async function handler(req, res) {
             } else {
               console.log('➕ No existing subscription found, creating new');
 
+              // Calculate expiration date (30 days from today for monthly, 180 days for semester)
+              const expirationDate = new Date();
+              if (subscription_type === 'monthly') {
+                expirationDate.setDate(expirationDate.getDate() + 30);
+              } else {
+                expirationDate.setDate(expirationDate.getDate() + 180); // 6 months = 180 days
+              }
+
               // Prepare subscription data with detailed logging
               const subscriptionData = {
                 user_id: userId,
@@ -376,8 +385,8 @@ module.exports = async function handler(req, res) {
                 package_type: 'individual',
                 amount: totalAmount,
                 status: 'pending', // All payments start as pending until webhook confirms
-                asaas_subscription_id: asaasResult.id,
-                expires_at: asaasService.calculateNextDueDate(subscription_type)
+                asaas_subscription_id: asaasResult.id, // Store payment_id in this field
+                expires_at: expirationDate.toISOString()
               };
 
             console.log('💾 Creating subscription in database:', {
@@ -436,6 +445,14 @@ module.exports = async function handler(req, res) {
             dbResult = subscription;
             }
           } else {
+            // Calculate expiration date for package (30 days from today for monthly, 180 days for semester)
+            const packageExpirationDate = new Date();
+            if (subscription_type === 'monthly') {
+              packageExpirationDate.setDate(packageExpirationDate.getDate() + 30);
+            } else {
+              packageExpirationDate.setDate(packageExpirationDate.getDate() + 180); // 6 months = 180 days
+            }
+
             // Create package
             const { data: userPackage, error: packageError } = await supabase
               .from('user_packages')
@@ -446,8 +463,8 @@ module.exports = async function handler(req, res) {
                 assistant_ids: selected_assistants,
                 total_amount: totalAmount,
                 status: 'pending', // All payments start as pending until webhook confirms
-                asaas_subscription_id: asaasResult.id,
-                expires_at: asaasService.calculateNextDueDate(subscription_type)
+                asaas_subscription_id: asaasResult.id, // Store payment_id in this field
+                expires_at: packageExpirationDate.toISOString()
               })
               .select()
               .single();
@@ -469,8 +486,8 @@ module.exports = async function handler(req, res) {
               package_id: userPackage.id,
               amount: totalAmount / selected_assistants.length,
               status: 'pending', // All payments start as pending until webhook confirms
-              asaas_subscription_id: asaasResult.id,
-              expires_at: asaasService.calculateNextDueDate(subscription_type)
+              asaas_subscription_id: asaasResult.id, // Store payment_id in this field
+              expires_at: packageExpirationDate.toISOString() // Same expiration as package
             }));
 
             const { error: subscriptionsError } = await supabase
@@ -495,63 +512,14 @@ module.exports = async function handler(req, res) {
           };
 
           if (payment_method === 'PIX') {
-            // 🚨 CRITICAL FIX: For subscriptions, we need payment ID, not subscription ID
-            let targetPaymentId = asaasResult.id;
+            // 💳 ONE-TIME PAYMENT PIX: Use payment ID directly (much simpler!)
+            const targetPaymentId = asaasResult.id;
 
-            if (isRecurring) {
-              console.log('🔍 SUBSCRIPTION PIX: Need to find payment ID from subscription ID:', asaasResult.id);
-
-              // For subscriptions, we need to get the first payment ID
-              let subscriptionPayments = null;
-              let paymentSearchAttempts = 0;
-              const maxPaymentSearchAttempts = 5;
-              const paymentSearchDelay = 3000; // 3 seconds between searches
-
-              while (paymentSearchAttempts < maxPaymentSearchAttempts && !subscriptionPayments) {
-                paymentSearchAttempts++;
-                try {
-                  console.log(`🔍 Searching for subscription payments (attempt ${paymentSearchAttempts}/${maxPaymentSearchAttempts})`);
-
-                  if (paymentSearchAttempts > 1) {
-                    console.log(`⏳ Waiting ${paymentSearchDelay}ms for subscription payment to be created...`);
-                    await new Promise(resolve => setTimeout(resolve, paymentSearchDelay));
-                  }
-
-                  const paymentsResponse = await asaasService.getSubscriptionPayments(asaasResult.id);
-
-                  if (paymentsResponse.data && paymentsResponse.data.length > 0) {
-                    // Found payments, get the first one (should be current payment)
-                    const firstPayment = paymentsResponse.data[0];
-                    targetPaymentId = firstPayment.id;
-
-                    console.log('✅ Found subscription payment:', {
-                      subscriptionId: asaasResult.id,
-                      paymentId: targetPaymentId,
-                      paymentStatus: firstPayment.status,
-                      billingType: firstPayment.billingType
-                    });
-
-                    subscriptionPayments = paymentsResponse.data;
-                    break;
-                  } else {
-                    console.log('⚠️ No payments found yet for subscription, will retry...');
-                  }
-
-                } catch (searchError) {
-                  console.error(`❌ Error searching subscription payments (attempt ${paymentSearchAttempts}):`, searchError.message);
-
-                  if (paymentSearchAttempts >= maxPaymentSearchAttempts) {
-                    throw new Error(`Failed to find payment for subscription after ${maxPaymentSearchAttempts} attempts: ${searchError.message}`);
-                  }
-                }
-              }
-
-              if (!subscriptionPayments) {
-                throw new Error('No payments found for subscription after maximum attempts');
-              }
-            } else {
-              console.log('💳 SINGLE PAYMENT PIX: Using payment ID directly:', targetPaymentId);
-            }
+            console.log('💳 ONE-TIME PAYMENT PIX: Using payment ID directly:', {
+              paymentId: targetPaymentId,
+              status: asaasResult.status,
+              billingType: asaasResult.billingType
+            });
 
             // Generate PIX QR Code with correct payment ID
             let pixData = null;
@@ -608,7 +576,7 @@ module.exports = async function handler(req, res) {
                   responseData.pix_fallback = {
                     message: 'PIX QR Code temporariamente indisponível',
                     payment_id: targetPaymentId,
-                    subscription_id: isRecurring ? asaasResult.id : null,
+                    subscription_id: null, // No more subscriptions
                     manual_instructions: 'Entre em contato com o suporte para gerar o PIX manualmente',
                     support_email: 'suporte@neuroialab.com',
                     error_details: pixError.message
@@ -659,65 +627,20 @@ module.exports = async function handler(req, res) {
         const asaasId = pathParts[pathParts.length - 1];
 
         try {
-          console.log('🔍 Checking status for ID:', asaasId);
+          console.log('🔍 Checking status for payment ID:', asaasId);
 
-          let paymentData = null;
-          let idType = 'unknown';
+          // Since we now only use one-time payments, this is simpler
+          const paymentData = await asaasService.getPayment(asaasId);
 
-          // Try to determine if this is a payment or subscription ID
-          if (asaasId.startsWith('pay_')) {
-            // This is a direct payment ID
-            idType = 'payment';
-            console.log('💳 Detected payment ID, fetching directly');
-            paymentData = await asaasService.getPayment(asaasId);
-          } else if (asaasId.startsWith('sub_')) {
-            // This is a subscription ID - need to get the first payment
-            idType = 'subscription';
-            console.log('📋 Detected subscription ID, fetching payments from subscription');
-
-            const subscriptionPayments = await asaasService.getSubscriptionPayments(asaasId);
-
-            if (subscriptionPayments.data && subscriptionPayments.data.length > 0) {
-              // Get the first (most recent) payment from the subscription
-              const firstPayment = subscriptionPayments.data[0];
-              paymentData = firstPayment;
-              console.log('✅ Found payment from subscription:', {
-                paymentId: firstPayment.id,
-                status: firstPayment.status,
-                subscriptionId: asaasId
-              });
-            } else {
-              throw new Error('No payments found for subscription');
-            }
-          } else {
-            // Unknown ID format, try both methods
-            console.log('❓ Unknown ID format, trying payment first');
-            try {
-              paymentData = await asaasService.getPayment(asaasId);
-              idType = 'payment';
-            } catch (paymentError) {
-              console.log('❌ Failed as payment, trying as subscription');
-              const subscriptionPayments = await asaasService.getSubscriptionPayments(asaasId);
-              if (subscriptionPayments.data && subscriptionPayments.data.length > 0) {
-                paymentData = subscriptionPayments.data[0];
-                idType = 'subscription';
-              } else {
-                throw new Error(`Unable to find payment or subscription with ID: ${asaasId}`);
-              }
-            }
-          }
+          console.log('✅ Payment status retrieved:', {
+            paymentId: asaasId,
+            status: paymentData.status,
+            value: paymentData.value
+          });
 
           if (!paymentData) {
             throw new Error('Payment data not found');
           }
-
-          console.log('✅ Payment status retrieved:', {
-            originalId: asaasId,
-            idType: idType,
-            paymentId: paymentData.id,
-            status: paymentData.status,
-            value: paymentData.value
-          });
 
           return res.json({
             success: true,
@@ -729,7 +652,7 @@ module.exports = async function handler(req, res) {
               payment_date: paymentData.paymentDate,
               description: paymentData.description,
               original_id: asaasId,
-              id_type: idType
+              id_type: 'payment' // Always payment now
             }
           });
         } catch (error) {

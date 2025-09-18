@@ -141,21 +141,54 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check user subscription
+      // Check user subscription with detailed expiration info
       const { data: subscriptions, error: subError } = await userClient
         .from('user_subscriptions')
-        .select('*')
+        .select('*, assistants(name)')
         .eq('user_id', userId)
         .eq('assistant_id', assistant_id)
-        .eq('status', 'active')
-        .gte('expires_at', new Date().toISOString());
+        .eq('status', 'active');
 
-      if (subError || !subscriptions || subscriptions.length === 0) {
-        return res.status(403).json({
+      if (subError) {
+        console.error('Error checking subscription:', subError);
+        return res.status(500).json({
           success: false,
-          message: 'Você não possui acesso a este assistente. Faça uma assinatura para usar este assistente.'
+          message: 'Erro ao verificar assinatura.'
         });
       }
+
+      if (!subscriptions || subscriptions.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'Você não possui assinatura ativa para este assistente.',
+          error_code: 'NO_SUBSCRIPTION',
+          action_required: 'subscribe',
+          assistant_id: assistant_id
+        });
+      }
+
+      // Check if subscription expired
+      const subscription = subscriptions[0];
+      const now = new Date();
+      const expiresAt = new Date(subscription.expires_at);
+
+      if (expiresAt < now) {
+        // Calculate days expired
+        const daysExpired = Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24));
+
+        return res.status(403).json({
+          success: false,
+          message: `Sua assinatura do ${subscription.assistants?.name || 'assistente'} expirou há ${daysExpired} ${daysExpired === 1 ? 'dia' : 'dias'}. Renove para continuar usando.`,
+          error_code: 'SUBSCRIPTION_EXPIRED',
+          expired_at: subscription.expires_at,
+          days_expired: daysExpired,
+          action_required: 'renew',
+          assistant_id: assistant_id,
+          subscription_id: subscription.id
+        });
+      }
+
+      console.log(`✅ Creating conversation - subscription valid for ${subscription.assistants?.name}`);
 
       // Initialize OpenAI if API key is available
       let threadId = 'mock-thread-' + Date.now(); // fallback
@@ -258,20 +291,59 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check subscription access
+      // Check subscription access with detailed expiration info
       const { data: subscriptions, error: subError } = await userClient
         .from('user_subscriptions')
-        .select('*')
+        .select('*, assistants(name)')
         .eq('user_id', userId)
         .eq('assistant_id', conversation.assistant_id)
-        .eq('status', 'active')
-        .gte('expires_at', new Date().toISOString());
+        .eq('status', 'active');
 
-      if (subError || !subscriptions || subscriptions.length === 0) {
+      if (subError) {
+        console.error('Error checking subscription:', subError);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao verificar assinatura.'
+        });
+      }
+
+      if (!subscriptions || subscriptions.length === 0) {
         return res.status(403).json({
           success: false,
-          message: 'Sua assinatura para este assistente expirou ou foi cancelada.'
+          message: 'Você não possui assinatura ativa para este assistente.',
+          error_code: 'NO_SUBSCRIPTION',
+          action_required: 'subscribe'
         });
+      }
+
+      // Check if subscription expired
+      const subscription = subscriptions[0];
+      const now = new Date();
+      const expiresAt = new Date(subscription.expires_at);
+
+      if (expiresAt < now) {
+        // Calculate days expired
+        const daysExpired = Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24));
+
+        return res.status(403).json({
+          success: false,
+          message: `Sua assinatura do ${subscription.assistants?.name || 'assistente'} expirou há ${daysExpired} ${daysExpired === 1 ? 'dia' : 'dias'}. Renove para continuar usando.`,
+          error_code: 'SUBSCRIPTION_EXPIRED',
+          expired_at: subscription.expires_at,
+          days_expired: daysExpired,
+          action_required: 'renew',
+          assistant_id: conversation.assistant_id,
+          subscription_id: subscription.id
+        });
+      }
+
+      // Calculate days remaining for info
+      const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+      console.log(`✅ Subscription valid for ${subscription.assistants?.name}: ${daysRemaining} days remaining`);
+
+      // Add warning if less than 3 days remaining
+      if (daysRemaining <= 3) {
+        console.log(`⚠️ Subscription expiring soon: ${daysRemaining} days remaining`);
       }
 
       // Save user message

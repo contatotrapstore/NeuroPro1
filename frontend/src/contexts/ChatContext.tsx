@@ -27,6 +27,15 @@ interface Conversation {
   };
 }
 
+interface ChatError {
+  type?: 'SUBSCRIPTION_EXPIRED' | 'NO_SUBSCRIPTION' | 'GENERIC';
+  message: string;
+  assistantId?: string;
+  subscriptionId?: string;
+  daysExpired?: number;
+  expiredAt?: string;
+}
+
 interface ChatState {
   conversations: Conversation[];
   currentConversation: Conversation | null;
@@ -34,7 +43,7 @@ interface ChatState {
   isLoading: boolean;
   isLoadingMessages: boolean;
   isTransitioning: boolean;
-  error: string | null;
+  error: string | ChatError | null;
   isTyping: boolean;
 }
 
@@ -42,7 +51,7 @@ type ChatAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_LOADING_MESSAGES'; payload: boolean }
   | { type: 'SET_TRANSITIONING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_ERROR'; payload: string | ChatError | null }
   | { type: 'SET_CONVERSATIONS'; payload: Conversation[] }
   | { type: 'SET_CURRENT_CONVERSATION'; payload: Conversation | null }
   | { type: 'SET_MESSAGES'; payload: Message[] }
@@ -370,6 +379,40 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Erro ao enviar mensagem:', error);
+
+        // Verificar se é erro de expiração da API
+        if (error.response?.status === 403) {
+          const errorData = error.response.data;
+
+          if (errorData?.error_code === 'SUBSCRIPTION_EXPIRED') {
+            // Erro específico de assinatura expirada
+            dispatch({
+              type: 'SET_ERROR',
+              payload: {
+                type: 'SUBSCRIPTION_EXPIRED',
+                message: errorData.message,
+                assistantId: errorData.assistant_id,
+                subscriptionId: errorData.subscription_id,
+                daysExpired: errorData.days_expired,
+                expiredAt: errorData.expired_at
+              }
+            });
+            return;
+          } else if (errorData?.error_code === 'NO_SUBSCRIPTION') {
+            // Erro de não ter assinatura
+            dispatch({
+              type: 'SET_ERROR',
+              payload: {
+                type: 'NO_SUBSCRIPTION',
+                message: errorData.message,
+                assistantId: errorData.assistant_id
+              }
+            });
+            return;
+          }
+        }
+
+        // Erro genérico
         dispatch({ type: 'SET_ERROR', payload: error.message });
       }
     } finally {

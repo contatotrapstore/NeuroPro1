@@ -6,6 +6,7 @@ import { MessageInput } from './MessageInput';
 import { ConversationList } from './ConversationList';
 import { AssistantSelector } from './AssistantSelector';
 import { AssistantIcon } from '../ui/AssistantIcon';
+import { RenewalModal } from '../ui/RenewalModal';
 import Logo from '../../assets/Logo.png';
 
 export function ChatInterface() {
@@ -175,18 +176,48 @@ export function ChatInterface() {
         </div>
       )}
 
-      {/* Error Toast */}
-      {state.error && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50">
+      {/* Renewal Modal for Subscription Expired */}
+      {state.error && typeof state.error === 'object' && state.error.type === 'SUBSCRIPTION_EXPIRED' && (
+        <RenewalModal
+          isOpen={true}
+          onClose={clearError}
+          assistantName={state.currentConversation?.assistants?.name}
+          assistantId={state.error.assistantId}
+          subscriptionId={state.error.subscriptionId}
+          daysExpired={state.error.daysExpired}
+          expiredAt={state.error.expiredAt}
+        />
+      )}
+
+      {/* Error Toast for other errors */}
+      {state.error && (typeof state.error === 'string' || (typeof state.error === 'object' && state.error.type !== 'SUBSCRIPTION_EXPIRED')) && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-md">
           <div className="flex items-center justify-between">
-            <span>{state.error}</span>
+            <span className="flex-1">
+              {typeof state.error === 'string' ? state.error : state.error.message}
+            </span>
             <button
               onClick={clearError}
-              className="ml-4 text-white hover:text-red-200"
+              className="ml-4 text-white hover:text-red-200 flex-shrink-0"
             >
               ×
             </button>
           </div>
+          {/* Show subscription button for NO_SUBSCRIPTION error */}
+          {typeof state.error === 'object' && state.error.type === 'NO_SUBSCRIPTION' && (
+            <div className="mt-2 pt-2 border-t border-red-400">
+              <button
+                onClick={() => {
+                  const error = state.error as any;
+                  navigate(error.assistantId ? `/checkout/individual/${error.assistantId}` : '/store');
+                  clearError();
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+              >
+                Fazer Assinatura
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

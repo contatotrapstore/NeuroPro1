@@ -241,17 +241,13 @@ async function handlePaymentConfirmed(supabase, webhookData) {
   }
 
   try {
-    // For PIX subscriptions, we need to search correctly
-    let subscriptionSearchId = null;
+    // For ONE-TIME PAYMENTS, we always use payment ID (much simpler!)
+    let subscriptionSearchId = payment.id;
+    console.log('🔍 Searching by payment ID (one-time payment):', subscriptionSearchId);
 
+    // Legacy support: if payment.subscription exists, try that too
     if (payment.subscription) {
-      // This is a subscription payment - use subscription ID
-      subscriptionSearchId = payment.subscription;
-      console.log('🔍 Searching by subscription ID:', subscriptionSearchId);
-    } else {
-      // This might be a single payment - use payment ID
-      subscriptionSearchId = payment.id;
-      console.log('🔍 Searching by payment ID:', subscriptionSearchId);
+      console.log('🔍 Also checking legacy subscription ID:', payment.subscription);
     }
 
     if (!subscriptionSearchId) {
@@ -265,11 +261,32 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       return;
     }
 
-    // Update subscription status based on payment
-    const { data: subscriptions, error: subsError } = await supabase
+    // Update subscription status based on payment (try payment ID first, then subscription ID)
+    let subscriptions = [];
+    let subsError = null;
+
+    // First try with payment ID (for one-time payments)
+    const { data: paymentSubscriptions, error: paymentSubsError } = await supabase
       .from('user_subscriptions')
       .select('*')
-      .eq('asaas_subscription_id', subscriptionSearchId);
+      .eq('asaas_subscription_id', payment.id);
+
+    if (!paymentSubsError && paymentSubscriptions && paymentSubscriptions.length > 0) {
+      subscriptions = paymentSubscriptions;
+      console.log('✅ Found subscriptions by payment ID:', payment.id);
+    } else if (payment.subscription) {
+      // Fallback: try with subscription ID (for legacy subscriptions)
+      const { data: legacySubscriptions, error: legacySubsError } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('asaas_subscription_id', payment.subscription);
+
+      subscriptions = legacySubscriptions || [];
+      subsError = legacySubsError;
+      console.log('✅ Found subscriptions by subscription ID:', payment.subscription);
+    } else {
+      subsError = paymentSubsError;
+    }
 
     if (subsError) {
       console.error('Error finding subscriptions:', subsError);
@@ -278,7 +295,8 @@ async function handlePaymentConfirmed(supabase, webhookData) {
 
     console.log('🔍 Found subscriptions:', {
       count: subscriptions?.length || 0,
-      searchId: subscriptionSearchId,
+      foundByPaymentId: !!paymentSubscriptions?.length,
+      foundBySubscriptionId: !!(payment.subscription && legacySubscriptions?.length),
       foundIds: subscriptions?.map(s => s.id) || []
     });
 
@@ -291,14 +309,15 @@ async function handlePaymentConfirmed(supabase, webhookData) {
 
       console.log(`📋 Updating subscription status from ${subscriptions[0].status} to ${newStatus}`);
 
-      // Update subscription status
+      // Update subscription status using the correct ID
+      const updateId = subscriptions[0].asaas_subscription_id; // Use the ID from the found subscription
       const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
           status: newStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('asaas_subscription_id', subscriptionSearchId);
+        .eq('asaas_subscription_id', updateId);
 
       if (updateError) {
         console.error('Error updating subscription status:', updateError);
@@ -313,11 +332,28 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       });
     }
 
-    // Update package status if applicable
-    const { data: packages, error: packagesError } = await supabase
+    // Update package status if applicable (try payment ID first, then subscription ID)
+    let packages = [];
+
+    // First try with payment ID
+    const { data: paymentPackages } = await supabase
       .from('user_packages')
       .select('*')
-      .eq('asaas_subscription_id', subscriptionSearchId);
+      .eq('asaas_subscription_id', payment.id);
+
+    if (paymentPackages && paymentPackages.length > 0) {
+      packages = paymentPackages;
+      console.log('✅ Found packages by payment ID:', payment.id);
+    } else if (payment.subscription) {
+      // Fallback: try with subscription ID
+      const { data: legacyPackages } = await supabase
+        .from('user_packages')
+        .select('*')
+        .eq('asaas_subscription_id', payment.subscription);
+
+      packages = legacyPackages || [];
+      console.log('✅ Found packages by subscription ID:', payment.subscription);
+    }
 
     if (packages && packages.length > 0) {
       // Use same status logic for packages
@@ -328,13 +364,15 @@ async function handlePaymentConfirmed(supabase, webhookData) {
 
       console.log(`📦 Updating package status from ${packages[0].status} to ${newPackageStatus}`);
 
+      // Update using the correct ID from the found package
+      const packageUpdateId = packages[0].asaas_subscription_id;
       const { error: updatePackageError } = await supabase
         .from('user_packages')
         .update({
           status: newPackageStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('asaas_subscription_id', subscriptionSearchId);
+        .eq('asaas_subscription_id', packageUpdateId);
 
       if (updatePackageError) {
         console.error('Error updating package status:', updatePackageError);
