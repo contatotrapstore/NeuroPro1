@@ -417,8 +417,8 @@ export const CustomerDataStep: React.FC<{
 
 // Payment Step Component  
 export const PaymentStep: React.FC<{
-  paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
-  setPaymentMethod: (method: 'CREDIT_CARD' | 'PIX' | 'BOLETO') => void;
+  paymentMethod: 'CREDIT_CARD' | 'PIX';
+  setPaymentMethod: (method: 'CREDIT_CARD' | 'PIX') => void;
   cardData: CardData;
   onCardInputChange: (field: keyof CardData, value: string) => void;
 }> = ({ paymentMethod, setPaymentMethod, cardData, onCardInputChange }) => {
@@ -447,8 +447,7 @@ export const PaymentStep: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { method: 'CREDIT_CARD', icon: 'creditCard', label: 'Cartão de Crédito', desc: 'Parcelado em até 12x' },
-            { method: 'PIX', icon: 'zap', label: 'PIX', desc: 'Pagamento instantâneo' },
-            { method: 'BOLETO', icon: 'fileText', label: 'Boleto', desc: 'Vencimento em 3 dias' }
+            { method: 'PIX', icon: 'zap', label: 'PIX', desc: 'Pagamento instantâneo' }
           ].map((option) => (
             <motion.button
               key={option.method}
@@ -598,47 +597,6 @@ export const PaymentStep: React.FC<{
           </motion.div>
         )}
 
-        {/* Boleto Instructions */}
-        {paymentMethod === 'BOLETO' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-6 glass-card rounded-xl border border-neuro-warning/20 bg-neuro-warning/5"
-          >
-            <div className="flex items-start space-x-4">
-              <motion.div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
-                style={{
-                  background: `linear-gradient(135deg, #F59E0B 0%, #D97706 100%)`
-                }}
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Icon name="fileText" className="w-6 h-6" />
-              </motion.div>
-              <div>
-                <Text weight="semibold" color="default" className="mb-2">
-                  Pagamento via Boleto
-                </Text>
-                <Text size="sm" color="muted" className="mb-4">
-                  O boleto será enviado por email e tem vencimento em 3 dias úteis.
-                </Text>
-                <div className="space-y-2">
-                  {[
-                    'Boleto enviado por email',
-                    'Vencimento em 3 dias úteis',
-                    'Confirmação em até 2 dias úteis'
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <Icon name="clock" className="w-4 h-4 text-neuro-warning" />
-                      <Text size="sm" color="muted">{item}</Text>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </CardContent>
     </Card>
   );

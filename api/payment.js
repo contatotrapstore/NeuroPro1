@@ -562,12 +562,6 @@ module.exports = async function handler(req, res) {
                 }
               }
             }
-          } else if (payment_method === 'BOLETO') {
-            responseData.boleto = {
-              barcode: asaasResult.bankSlipUrl,
-              pdf_url: asaasResult.bankSlipUrl,
-              due_date: asaasResult.dueDate
-            };
           }
 
           // Log detailed response for debugging

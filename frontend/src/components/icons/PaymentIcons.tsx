@@ -38,27 +38,6 @@ export const PixIcon: React.FC<IconProps> = ({ className = '', color = '#32BCAD'
   </svg>
 );
 
-// Boleto - Brazilian bank slip with barcode
-export const BoletoIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
-    {/* Document outline */}
-    <rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth="2" fill="none"/>
-    
-    {/* Header section */}
-    <path d="M3 8H21" stroke={color} strokeWidth="1.5"/>
-    
-    {/* Barcode lines */}
-    <path d="M5 11V13M7 10V14M9 11V13M11 10V14M13 11V13M15 10V14M17 11V13M19 10V14" 
-          stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-    
-    {/* Info lines */}
-    <path d="M5 16H12M5 18H15" stroke={color} strokeWidth="1" strokeLinecap="round"/>
-    
-    {/* Bank symbol */}
-    <circle cx="17" cy="6" r="1.5" stroke={color} strokeWidth="1" fill="none"/>
-    <path d="M16 6H18" stroke={color} strokeWidth="0.8"/>
-  </svg>
-);
 
 // Credit Card - Professional credit card icon
 export const CreditCardIcon: React.FC<IconProps> = ({ className = '', color = 'currentColor', size = 24 }) => (
@@ -148,7 +127,6 @@ export const paymentIconMap = {
   'credit-card': CreditCardIcon,
   'debit-card': DebitCardIcon,
   'pix': PixIcon,
-  'boleto': BoletoIcon,
   'bank-transfer': BankTransferIcon,
   'digital-wallet': DigitalWalletIcon,
 } as const;

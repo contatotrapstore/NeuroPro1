@@ -487,7 +487,7 @@ export class ApiService {
     package_type?: 'package_3' | 'package_6';
     subscription_type: 'monthly' | 'semester';
     selected_assistants?: string[];
-    payment_method: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+    payment_method: 'CREDIT_CARD' | 'PIX';
     customer_data: any;
     card_data?: any;
   }): Promise<ApiResponse<any>> {

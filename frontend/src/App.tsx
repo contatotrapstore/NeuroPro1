@@ -17,7 +17,6 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import Checkout from './pages/Checkout';
 import PaymentPix from './pages/PaymentPix';
-import PaymentBoleto from './pages/PaymentBoleto';
 import PixInstructions from './pages/PixInstructions';
 import { PaymentConfirmation } from './pages/PaymentConfirmation';
 import './index.css';
@@ -149,14 +148,6 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <PaymentPix />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/payment/boleto"
-            element={
-              <ProtectedRoute>
-                <PaymentBoleto />
               </ProtectedRoute>
             }
           />
