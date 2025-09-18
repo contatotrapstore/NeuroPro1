@@ -52,8 +52,16 @@
       "dest": "/payment.js"
     },
     {
+      "src": "/webhook-asaas",
+      "dest": "/webhook-asaas.js"
+    },
+    {
+      "src": "/webhook-asaas-test",
+      "dest": "/webhook-asaas-test.js"
+    },
+    {
       "src": "/webhooks/asaas",
-      "dest": "/webhooks/asaas.js"
+      "dest": "/webhook-asaas.js"
     }
   ]
 }

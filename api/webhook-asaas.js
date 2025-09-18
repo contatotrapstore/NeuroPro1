@@ -103,6 +103,18 @@ module.exports = async function handler(req, res) {
     // Log full webhook data for debugging (remove in production)
     console.log('🔍 Full webhook data:', JSON.stringify(webhookData, null, 2));
 
+    // Special handling for known problematic payment
+    if (webhookData.payment?.id === 'pay_bguudk6oev9nqmpw') {
+      console.log('🚨 Processing known PIX payment that was causing issues');
+      console.log('💳 Payment details:', {
+        id: webhookData.payment.id,
+        status: webhookData.payment.status,
+        billingType: webhookData.payment.billingType,
+        subscription: webhookData.payment.subscription,
+        externalReference: webhookData.payment.externalReference
+      });
+    }
+
     // Process different webhook events with error handling
     try {
       switch (webhookData.event) {
@@ -224,6 +236,12 @@ async function handlePaymentConfirmed(supabase, webhookData) {
 
     if (!subscriptionSearchId) {
       console.error('❌ No valid ID found for subscription search');
+      console.error('🔍 Payment data:', {
+        paymentId: payment.id,
+        subscriptionId: payment.subscription,
+        externalReference: payment.externalReference,
+        status: payment.status
+      });
       return;
     }
 
