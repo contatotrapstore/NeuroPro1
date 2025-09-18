@@ -233,8 +233,14 @@ module.exports = async function handler(req, res) {
             const subscriptionData = {
               ...paymentData,
               cycle: asaasService.mapSubscriptionCycle(subscription_type),
-              nextDueDate: asaasService.calculateNextDueDate(subscription_type)
+              nextDueDate: new Date().toISOString().split('T')[0] // 🔥 IMMEDIATE CHARGE: Set due date to TODAY!
             };
+
+            console.log('📅 CRITICAL FIX: Setting nextDueDate to TODAY for immediate charge:', {
+              nextDueDate: subscriptionData.nextDueDate,
+              subscriptionType: subscription_type,
+              paymentMethod: payment_method
+            });
 
             asaasResult = await asaasService.createSubscription(subscriptionData);
             console.log('🔥 CREDIT CARD SUBSCRIPTION CREATED:', {
