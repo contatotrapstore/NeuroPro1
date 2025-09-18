@@ -1,0 +1,559 @@
+openapi: 3.0.3
+info:
+  title: NeuroIA Lab API
+  description: API para plataforma de assistentes de IA especializados em saúde mental
+  version: 3.1.0
+  contact:
+    name: NeuroIA Lab Dev Team
+    email: dev@neuroialab.com.br
+    url: https://neuroialab.com.br
+  license:
+    name: Proprietary
+    url: https://neuroialab.com.br/license
+
+servers:
+  - url: https://neuro-pro-backend-phi.vercel.app
+    description: Produção
+  - url: http://localhost:3000
+    description: Desenvolvimento
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Assistant:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        full_description:
+          type: string
+        icon:
+          type: string
+        color_theme:
+          type: string
+        area:
+          type: string
+          enum: [Psicologia, Psicopedagogia, Fonoaudiologia, Neuromodulação, Terapia Ocupacional]
+        monthly_price:
+          type: number
+          format: float
+        semester_price:
+          type: number
+          format: float
+        is_active:
+          type: boolean
+        features:
+          type: array
+          items:
+            type: string
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        assistant_id:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        created_at:
+          type: string
+          format: date-time
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        assistant_id:
+          type: string
+        status:
+          type: string
+          enum: [active, expired, cancelled]
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+        timestamp:
+          type: string
+          format: date-time
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login do usuário
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          token:
+                            type: string
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Registro de novo usuário
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /assistants:
+    get:
+      tags:
+        - Assistants
+      summary: Listar todos os assistentes
+      responses:
+        '200':
+          description: Lista de assistentes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Assistant'
+
+  /assistants/{id}:
+    get:
+      tags:
+        - Assistants
+      summary: Obter assistente específico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dados do assistente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Assistant'
+        '404':
+          description: Assistente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /assistants/area/{area}:
+    get:
+      tags:
+        - Assistants
+      summary: Listar assistentes por área
+      parameters:
+        - name: area
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Psicologia, Psicopedagogia, Fonoaudiologia, Neuromodulação, Terapia Ocupacional]
+      responses:
+        '200':
+          description: Lista de assistentes da área
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Assistant'
+
+  /conversations:
+    get:
+      tags:
+        - Conversations
+      summary: Listar conversas do usuário
+      responses:
+        '200':
+          description: Lista de conversas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Conversation'
+
+    post:
+      tags:
+        - Conversations
+      summary: Criar nova conversa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - assistant_id
+                - title
+              properties:
+                assistant_id:
+                  type: string
+                title:
+                  type: string
+      responses:
+        '201':
+          description: Conversa criada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Conversation'
+
+  /conversations/{id}:
+    get:
+      tags:
+        - Conversations
+      summary: Obter conversa específica
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dados da conversa
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Conversation'
+
+    delete:
+      tags:
+        - Conversations
+      summary: Deletar conversa
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conversa deletada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /messages/send:
+    post:
+      tags:
+        - Messages
+      summary: Enviar mensagem para assistente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conversation_id
+                - assistant_id
+                - message
+              properties:
+                conversation_id:
+                  type: string
+                  format: uuid
+                assistant_id:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Mensagem enviada e resposta recebida
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_message:
+                            $ref: '#/components/schemas/Message'
+                          assistant_response:
+                            $ref: '#/components/schemas/Message'
+
+  /messages/{conversationId}:
+    get:
+      tags:
+        - Messages
+      summary: Obter mensagens da conversa
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de mensagens
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+
+  /subscriptions/user:
+    get:
+      tags:
+        - Subscriptions
+      summary: Obter assinaturas do usuário
+      responses:
+        '200':
+          description: Lista de assinaturas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Subscription'
+
+  /subscriptions/create:
+    post:
+      tags:
+        - Subscriptions
+      summary: Criar nova assinatura
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - assistant_ids
+                - billing_type
+              properties:
+                assistant_ids:
+                  type: array
+                  items:
+                    type: string
+                billing_type:
+                  type: string
+                  enum: [MONTHLY, SEMESTER]
+      responses:
+        '201':
+          description: Assinatura criada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          subscription:
+                            $ref: '#/components/schemas/Subscription'
+                          payment_url:
+                            type: string
+
+tags:
+  - name: Authentication
+    description: Endpoints de autenticação
+  - name: Assistants
+    description: Gestão de assistentes de IA
+  - name: Conversations
+    description: Gestão de conversas
+  - name: Messages
+    description: Envio e recebimento de mensagens
+  - name: Subscriptions
+    description: Gestão de assinaturas

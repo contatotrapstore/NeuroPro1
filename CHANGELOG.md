@@ -1,5 +1,41 @@
 # Changelog - NeuroIA Lab
 
+## [v3.1.0] - 2025-01-18
+
+### 🎯 Expansão para Novas Áreas de Saúde Mental
+
+#### ⚡ Novas Áreas Especializadas
+- **Neuromodulação**: Assistentes especializados em estimulação cerebral e neurofeedback
+- **Terapia Ocupacional**: Assistentes para reabilitação funcional e adaptações
+- **Público-alvo expandido**: De psicólogos para 5 áreas da saúde mental
+
+#### 🛠️ Implementação Técnica
+- **Frontend**: Tipos TypeScript atualizados com as 5 áreas especializadas
+- **Database**: Migração aplicada com nova constraint CHECK para áreas
+- **UI Components**: Todos os componentes atualizados (AssistantEditor, Store, Dashboard)
+- **Filtros**: Sistema de filtros por área implementado em toda a plataforma
+
+#### 📚 Documentação Completa Reorganizada
+- **API Documentation**: OpenAPI 3.0 spec completa com todos os endpoints
+- **User Manual**: Guia completo para profissionais de saúde mental
+- **Architecture**: Documentação técnica detalhada do sistema
+- **Database Schema**: Mapeamento completo do banco com diagramas ER
+- **Getting Started**: Guia de primeiros passos por área profissional
+
+#### 🏗️ Melhorias de Arquitetura
+- **Constraint Validation**: Sistema robusto de validação de áreas
+- **Performance Index**: Índice otimizado para busca por área
+- **Migration System**: Aplicação automática de migrações via Supabase
+- **Type Safety**: TypeScript types sincronizados frontend/backend
+
+#### 📊 Impacto
+- **Áreas disponíveis**: 5 (antes: 3)
+- **Mercado potencial**: Expandido para Neuromodulação e TO
+- **Documentação**: 13 arquivos organizados em estrutura profissional
+- **Manutenibilidade**: Código organizado e bem documentado
+
+---
+
 ## [v3.0.1] - 2025-01-17
 
 ### ⚠️ Sistema de Pagamentos - Cartão Temporariamente Desabilitado

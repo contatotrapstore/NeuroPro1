@@ -1,8 +1,8 @@
 # NeuroIA Lab
 
-Uma plataforma SaaS especializada em psicologia que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica.
+Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica, incluindo as novas áreas de **Neuromodulação** e **Terapia Ocupacional**.
 
-**🚀 Versão Atual**: v3.0.0 - Sistema de Pagamentos Totalmente Funcional
+**🚀 Versão Atual**: v3.1.0 - Expansão para Novas Áreas de Saúde Mental
 
 ## ✅ Status do Sistema
 - 🟢 **Frontend**: 100% funcional
@@ -21,15 +21,47 @@ Uma plataforma SaaS especializada em psicologia que oferece acesso a 19 assisten
 A NeuroIA Lab democratiza o acesso a assistentes de IA especializados em psicologia para apoiar profissionais da área em suas práticas clínicas e administrativas.
 
 ### Público-alvo
-- Psicólogos
-- Estudantes de psicologia
-- Clínicas e profissionais da saúde mental
+- **Psicólogos** e **Psicopedagogos**
+- **Fonoaudiólogos** especializados
+- **Profissionais de Neuromodulação**
+- **Terapeutas Ocupacionais**
+- **Estudantes** das áreas de saúde mental
+- **Clínicas** e centros de reabilitação
 
 ### Modelo de Negócio
 - **Assinatura Individual**: R$ 39,90/mês ou R$ 199,00/semestre por assistente
 - **Pacotes Personalizáveis**:
   - 3 Assistentes: R$ 99,90/mês ou R$ 499,00/semestre
   - 6 Assistentes: R$ 179,90/mês ou R$ 899,00/semestre
+
+## 🎯 Áreas Especializadas
+
+A NeuroIA Lab atende **5 áreas distintas** da saúde mental e reabilitação:
+
+### 🧠 **Psicologia** (Área Principal)
+- Assistentes para todas as abordagens terapêuticas
+- Elaboração de laudos e avaliações
+- Treinamento e simulação clínica
+
+### 📚 **Psicopedagogia**
+- Assistentes especializados em dificuldades de aprendizagem
+- Avaliação e intervenção psicopedagógica
+- Estratégias educacionais personalizadas
+
+### 🗣️ **Fonoaudiologia**
+- Assistentes para distúrbios da comunicação
+- Avaliação e terapia da linguagem
+- Reabilitação audiológica
+
+### ⚡ **Neuromodulação** (NOVO!)
+- Assistentes especializados em estimulação cerebral
+- Protocolos de neurofeedback
+- Terapias de neuroestimulação
+
+### 🖐️ **Terapia Ocupacional** (NOVO!)
+- Assistentes para reabilitação funcional
+- Adaptações e tecnologia assistiva
+- Integração sensorial e atividades de vida diária
 
 ## 🤖 19 Assistentes Especializados
 
@@ -184,12 +216,25 @@ O projeto está pré-configurado para deploy no Vercel:
 
 ## 📄 Documentação
 
-A documentação completa está organizada em:
-- `docs/admin/ADMIN_GUIDE.md` - Guia completo do painel administrativo
-- `docs/supabase-password-reset-config.md` - Configuração de redefinição de senha
-- `docs/migrations/` - Documentação de migrações SQL
-- `CHANGELOG.md` - Histórico detalhado de mudanças
-- `docs/CLAUDE.md` - Guia para desenvolvimento com Claude Code
+### 🎯 **Acesso Rápido**
+- **[📚 Índice Mestre](docs/INDEX.md)** - Central de toda a documentação
+- **[👨‍⚕️ Manual do Usuário](docs/user/README.md)** - Guia para profissionais de saúde
+- **[🚀 Primeiros Passos](docs/user/getting-started.md)** - Setup em 5 minutos
+- **[💻 API Documentation](docs/api/README.md)** - Referência completa da API
+
+### 🏗️ **Documentação Técnica**
+- **[🏛️ System Architecture](docs/architecture/README.md)** - Arquitetura do sistema
+- **[🗄️ Database Schema](docs/architecture/database-schema.md)** - Modelo de dados
+- **[⚙️ Admin Guide](docs/admin/ADMIN_GUIDE.md)** - Painel administrativo
+- **[🔧 Deploy Instructions](DEPLOY_INSTRUCTIONS.md)** - Deploy no Vercel
+- **[📋 CHANGELOG](CHANGELOG.md)** - Histórico de versões
+
+### 📚 **Por Área de Especialização**
+- **🧠 Psicologia**: 14 assistentes especializados
+- **📚 Psicopedagogia**: Dificuldades de aprendizagem
+- **🗣️ Fonoaudiologia**: Distúrbios da comunicação
+- **⚡ Neuromodulação**: Estimulação cerebral (NOVO!)
+- **🖐️ Terapia Ocupacional**: Reabilitação funcional (NOVO!)
 
 ## 🔐 Segurança
 
