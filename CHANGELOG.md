@@ -1,5 +1,39 @@
 # Changelog - NeuroIA Lab
 
+## [v3.0.1] - 2025-01-17
+
+### ⚠️ Sistema de Pagamentos - Cartão Temporariamente Desabilitado
+
+#### Problema Identificado
+- **Cartão de Crédito**: Transações criadas mas não processadas
+- **Status**: Ficam "aguardando pagamento" no Asaas
+- **Impacto**: Valor não é debitado do cartão, assinatura não é ativada
+
+#### Correções Implementadas
+- **🔧 Formatação de Dados**: Mês com 2 dígitos, ano com 4 dígitos
+- **🔧 remoteIp**: Adicionado IP do cliente (obrigatório para cartão)
+- **🔧 nextDueDate**: Configurado para cobrança imediata
+- **🔧 Debug Logs**: Implementados logs detalhados para investigação
+- **🔧 Error Handling**: Mensagens específicas por ambiente
+
+#### Solução Temporária
+- **Frontend**: Opção cartão oculta no checkout
+- **PIX Padrão**: Único método de pagamento disponível
+- **Backend Preservado**: Código mantido para reativação futura
+
+#### Status Atual
+- **PIX**: ✅ 100% funcional
+- **Cartão**: ⚠️ Temporariamente indisponível
+- **Documentação**: Ver `PAYMENT_STATUS_2025.md` para detalhes completos
+
+### 🧹 Limpeza e Organização
+- **Arquivos removidos**: 20+ arquivos .md de debug temporários
+- **Scripts removidos**: Pasta `/scripts` com utilitários já executados
+- **Estrutura**: Database reorganizado com pasta `/scripts`
+- **Deploy**: Corrigido erro do vercel.json (webhook-asaas-test.js)
+
+---
+
 ## [v2.3.2] - 2025-09-16
 
 ### 🔐 Sistema de Reset de Senha Totalmente Reformulado

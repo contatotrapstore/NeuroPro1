@@ -10,9 +10,11 @@ Uma plataforma SaaS especializada em psicologia que oferece acesso a 19 assisten
 - 🟢 **Autenticação**: 100% funcional
 - 🟢 **Chat/Assistentes**: 100% funcional
 - 🟢 **Pagamentos PIX**: 100% funcional
-- 🟢 **Pagamentos Cartão**: 100% funcional
+- 🟡 **Pagamentos Cartão**: Temporariamente desabilitado (em correção)
 - 🟢 **Webhooks Asaas**: 100% funcional
 - 🟢 **Deploy Vercel**: 100% funcional
+
+> **⚠️ Nota**: Cartão de crédito temporariamente indisponível devido a problema de autorização. PIX funcionando perfeitamente. Ver `PAYMENT_STATUS_2025.md` para detalhes.
 
 ## 🧠 Sobre o Projeto
 
