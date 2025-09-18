@@ -80,7 +80,14 @@ export function PaymentConfirmation() {
       }
     } catch (error: any) {
       console.error('Erro ao verificar pagamento:', error);
-      setError(error.message);
+      const errorMessage = error.message || 'Erro ao verificar status do pagamento';
+
+      // If this is a repeated failure, show more detailed error
+      if (checkCount > 3) {
+        setError(`${errorMessage}. Tentativa ${checkCount}/24. Verifique sua conexão ou tente recarregar a página.`);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -242,12 +249,26 @@ export function PaymentConfirmation() {
 
           {/* Action Buttons */}
           <div className="flex justify-center space-x-4">
+            {/* Manual retry button when there's an error */}
+            {error && (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setError(null);
+                  checkPaymentStatus();
+                }}
+                leftIcon={<RefreshCw className="w-4 h-4" />}
+              >
+                Verificar Agora
+              </Button>
+            )}
+
             {(paymentStatus === 'OVERDUE' || paymentStatus === 'REFUNDED') && (
               <Button
                 variant="primary"
                 onClick={() => navigate('/store')}
               >
-                Tentar Novamente
+                Nova Compra
               </Button>
             )}
 

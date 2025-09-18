@@ -598,27 +598,92 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       // GET /payment/status/:id - Get payment status
       if (pathParts[pathParts.length - 2] === 'status') {
-        const paymentId = pathParts[pathParts.length - 1];
+        const asaasId = pathParts[pathParts.length - 1];
 
         try {
-          const asaasPayment = await asaasService.getPayment(paymentId);
+          console.log('🔍 Checking status for ID:', asaasId);
+
+          let paymentData = null;
+          let idType = 'unknown';
+
+          // Try to determine if this is a payment or subscription ID
+          if (asaasId.startsWith('pay_')) {
+            // This is a direct payment ID
+            idType = 'payment';
+            console.log('💳 Detected payment ID, fetching directly');
+            paymentData = await asaasService.getPayment(asaasId);
+          } else if (asaasId.startsWith('sub_')) {
+            // This is a subscription ID - need to get the first payment
+            idType = 'subscription';
+            console.log('📋 Detected subscription ID, fetching payments from subscription');
+
+            const subscriptionPayments = await asaasService.getSubscriptionPayments(asaasId);
+
+            if (subscriptionPayments.data && subscriptionPayments.data.length > 0) {
+              // Get the first (most recent) payment from the subscription
+              const firstPayment = subscriptionPayments.data[0];
+              paymentData = firstPayment;
+              console.log('✅ Found payment from subscription:', {
+                paymentId: firstPayment.id,
+                status: firstPayment.status,
+                subscriptionId: asaasId
+              });
+            } else {
+              throw new Error('No payments found for subscription');
+            }
+          } else {
+            // Unknown ID format, try both methods
+            console.log('❓ Unknown ID format, trying payment first');
+            try {
+              paymentData = await asaasService.getPayment(asaasId);
+              idType = 'payment';
+            } catch (paymentError) {
+              console.log('❌ Failed as payment, trying as subscription');
+              const subscriptionPayments = await asaasService.getSubscriptionPayments(asaasId);
+              if (subscriptionPayments.data && subscriptionPayments.data.length > 0) {
+                paymentData = subscriptionPayments.data[0];
+                idType = 'subscription';
+              } else {
+                throw new Error(`Unable to find payment or subscription with ID: ${asaasId}`);
+              }
+            }
+          }
+
+          if (!paymentData) {
+            throw new Error('Payment data not found');
+          }
+
+          console.log('✅ Payment status retrieved:', {
+            originalId: asaasId,
+            idType: idType,
+            paymentId: paymentData.id,
+            status: paymentData.status,
+            value: paymentData.value
+          });
 
           return res.json({
             success: true,
             data: {
-              id: asaasPayment.id,
-              status: asaasPayment.status,
-              value: asaasPayment.value,
-              due_date: asaasPayment.dueDate,
-              payment_date: asaasPayment.paymentDate,
-              description: asaasPayment.description
+              id: paymentData.id,
+              status: paymentData.status,
+              value: paymentData.value,
+              due_date: paymentData.dueDate,
+              payment_date: paymentData.paymentDate,
+              description: paymentData.description,
+              original_id: asaasId,
+              id_type: idType
             }
           });
         } catch (error) {
-          console.error('Error fetching payment status:', error);
+          console.error('Error fetching payment status:', {
+            asaasId: asaasId,
+            error: error.message,
+            stack: error.stack
+          });
           return res.status(500).json({
             success: false,
-            error: 'Erro ao consultar status do pagamento'
+            error: 'Erro ao consultar status do pagamento',
+            details: error.message
           });
         }
       }
