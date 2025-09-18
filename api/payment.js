@@ -220,7 +220,16 @@ module.exports = async function handler(req, res) {
             };
 
             asaasResult = await asaasService.createSubscription(subscriptionData);
-            console.log('Asaas subscription created:', asaasResult.id);
+            console.log('🔥 CREDIT CARD SUBSCRIPTION CREATED:', {
+              subscriptionId: asaasResult.id,
+              status: asaasResult.status,
+              nextDueDate: asaasResult.nextDueDate,
+              billingType: asaasResult.billingType,
+              value: asaasResult.value,
+              customer: asaasResult.customer,
+              cycle: asaasResult.cycle,
+              paymentMethod: payment_method
+            });
           } else {
             // Create one-time payment
             asaasResult = await asaasService.createPayment(paymentData);
@@ -559,6 +568,21 @@ module.exports = async function handler(req, res) {
               pdf_url: asaasResult.bankSlipUrl,
               due_date: asaasResult.dueDate
             };
+          }
+
+          // Log detailed response for debugging
+          if (payment_method === 'CREDIT_CARD') {
+            console.log('🎯 CREDIT CARD PAYMENT RESPONSE:', {
+              success: true,
+              payment_id: responseData.payment_id,
+              subscription_id: responseData.subscription_id,
+              status: responseData.status,
+              amount: responseData.amount,
+              payment_method: responseData.payment_method,
+              asaasSubscriptionId: asaasResult.id,
+              asaasStatus: asaasResult.status,
+              message: 'Pagamento criado com sucesso'
+            });
           }
 
           return res.status(201).json({

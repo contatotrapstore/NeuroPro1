@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { PageLoader, LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorState } from '../components/ui/ErrorState';
 import { CreditCard, User, MapPin, Calendar, Lock, ArrowLeft } from 'lucide-react';
-import { PixIcon, BoletoIcon, CreditCardIcon } from '../components/icons/PaymentIcons';
+import { PixIcon, CreditCardIcon } from '../components/icons/PaymentIcons';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
 import { ApiService } from '../services/api.service';
 
@@ -195,20 +195,19 @@ export default function Checkout() {
           console.error('❌ PIX data missing in response:', paymentResult);
           throw new Error('Erro ao gerar QR Code PIX. Dados incompletos na resposta.');
         }
-      } else if (paymentMethod === 'BOLETO' && paymentResult.boleto) {
-        // Redirect to boleto payment page
-        navigate('/payment/boleto', {
+      } else if (paymentMethod === 'CREDIT_CARD') {
+        // Credit card - redirect to payment confirmation page (NOT dashboard)
+        navigate('/payment/confirmation', {
           state: {
             payment_id: paymentResult.payment_id,
-            barcode: paymentResult.boleto.barcode,
-            pdf_url: paymentResult.boleto.pdf_url,
-            due_date: paymentResult.boleto.due_date,
+            subscription_id: paymentResult.subscription_id,
             amount: paymentResult.amount,
-            description: paymentResult.description
+            description: paymentResult.description,
+            payment_method: 'CREDIT_CARD'
           }
         });
       } else {
-        // Credit card or immediate payment - redirect to success
+        // Other payment methods - redirect to success
         navigate('/dashboard', {
           state: {
             message: 'Pagamento processado com sucesso! Sua assinatura está ativa.',
@@ -295,11 +294,10 @@ export default function Checkout() {
                   <h2 className="text-xl font-semibold text-neuro-gray-900 mb-4">
                     Método de Pagamento
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { value: 'CREDIT_CARD', label: 'Cartão de Crédito', icon: CreditCardIcon },
-                      { value: 'PIX', label: 'PIX', icon: PixIcon },
-                      { value: 'BOLETO', label: 'Boleto', icon: BoletoIcon }
+                      { value: 'PIX', label: 'PIX', icon: PixIcon }
                     ].map(({ value, label, icon: Icon }) => (
                       <label
                         key={value}

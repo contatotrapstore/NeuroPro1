@@ -19,6 +19,7 @@ import Checkout from './pages/Checkout';
 import PaymentPix from './pages/PaymentPix';
 import PaymentBoleto from './pages/PaymentBoleto';
 import PixInstructions from './pages/PixInstructions';
+import { PaymentConfirmation } from './pages/PaymentConfirmation';
 import './index.css';
 
 const App: React.FC = () => {
@@ -164,6 +165,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <PixInstructions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/confirmation"
+            element={
+              <ProtectedRoute>
+                <PaymentConfirmation />
               </ProtectedRoute>
             }
           />

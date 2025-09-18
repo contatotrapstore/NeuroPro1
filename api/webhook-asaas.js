@@ -215,12 +215,28 @@ async function handlePaymentConfirmed(supabase, webhookData) {
     timestamp: new Date().toISOString()
   });
 
-  // Extra validation for credit card payments
+  // Log credit card payment for debugging
   if (payment.billingType === 'CREDIT_CARD') {
-    console.log('💳 Credit card payment detected - applying extra validation');
-    if (payment.status !== 'CONFIRMED' && payment.status !== 'RECEIVED') {
-      console.warn('⚠️ Credit card payment status not confirmed:', payment.status);
-      return; // Don't activate subscription if payment not properly confirmed
+    console.log('💳 Credit card payment detected:', {
+      paymentId: payment.id,
+      status: payment.status,
+      subscriptionId: payment.subscription,
+      value: payment.value,
+      billingType: payment.billingType
+    });
+
+    // For credit card, we should process CONFIRMED, RECEIVED, and even PENDING
+    // because Asaas may send PENDING first then CONFIRMED later
+    if (!['CONFIRMED', 'RECEIVED', 'PENDING'].includes(payment.status)) {
+      console.warn('⚠️ Credit card payment status not processable:', payment.status);
+      return; // Don't activate subscription for failed/cancelled payments
+    }
+
+    // Only activate subscription for confirmed payments
+    if (payment.status === 'PENDING') {
+      console.log('📋 Credit card payment is PENDING - updating status but not activating yet');
+    } else {
+      console.log('✅ Credit card payment confirmed - will activate subscription');
     }
   }
 
@@ -267,11 +283,19 @@ async function handlePaymentConfirmed(supabase, webhookData) {
     });
 
     if (subscriptions && subscriptions.length > 0) {
-      // Update subscription status to active
+      // Determine the new status based on payment status
+      let newStatus = 'pending'; // Default for PENDING payments
+      if (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') {
+        newStatus = 'active';
+      }
+
+      console.log(`📋 Updating subscription status from ${subscriptions[0].status} to ${newStatus}`);
+
+      // Update subscription status
       const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
-          status: 'active',
+          status: newStatus,
           updated_at: new Date().toISOString()
         })
         .eq('asaas_subscription_id', subscriptionSearchId);
@@ -279,7 +303,7 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       if (updateError) {
         console.error('Error updating subscription status:', updateError);
       } else {
-        console.log('✅ Subscription activated:', subscriptions.length, 'records');
+        console.log(`✅ Subscription status updated to ${newStatus}:`, subscriptions.length, 'records');
       }
     } else {
       console.warn('⚠️ No subscriptions found for payment:', {
@@ -296,10 +320,18 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       .eq('asaas_subscription_id', subscriptionSearchId);
 
     if (packages && packages.length > 0) {
+      // Use same status logic for packages
+      let newPackageStatus = 'pending';
+      if (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') {
+        newPackageStatus = 'active';
+      }
+
+      console.log(`📦 Updating package status from ${packages[0].status} to ${newPackageStatus}`);
+
       const { error: updatePackageError } = await supabase
         .from('user_packages')
         .update({
-          status: 'active',
+          status: newPackageStatus,
           updated_at: new Date().toISOString()
         })
         .eq('asaas_subscription_id', subscriptionSearchId);
@@ -307,7 +339,7 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       if (updatePackageError) {
         console.error('Error updating package status:', updatePackageError);
       } else {
-        console.log('✅ Package activated:', packages.length, 'records');
+        console.log(`✅ Package status updated to ${newPackageStatus}:`, packages.length, 'records');
       }
     } else {
       console.warn('⚠️ No packages found for payment:', {
