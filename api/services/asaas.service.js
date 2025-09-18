@@ -65,6 +65,29 @@ class AsaasService {
           headers: options.headers
         });
 
+        // 🚨 ENHANCED ERROR LOGGING for Credit Card Issues
+        if (response.status === 400 && result.errors) {
+          console.error('🔴 CREDIT CARD VALIDATION ERROR:', {
+            errors: result.errors,
+            errorCode: result.errors?.[0]?.code,
+            errorDescription: result.errors?.[0]?.description,
+            apiEnvironment: this.apiKey?.startsWith('$aact_prod_') ? 'PRODUCTION' : 'SANDBOX',
+            requestData: data
+          });
+
+          // Special handling for credit card errors
+          if (result.errors?.[0]?.code === 'invalid_creditCard') {
+            const environment = this.apiKey?.startsWith('$aact_prod_') ? 'PRODUCTION' : 'SANDBOX';
+            throw new Error(
+              `Transação não autorizada (${environment}). ` +
+              `${environment === 'PRODUCTION' ?
+                'Use um cartão real válido em produção.' :
+                'Use um cartão de teste em sandbox: 5162306219378829'} ` +
+              `Detalhes: ${result.errors?.[0]?.description}`
+            );
+          }
+        }
+
         if (response.status === 401) {
           throw new Error(`API Key inválida ou expirada. Verifique: 1) Se está configurada no Vercel, 2) Se tem o formato correto ($aact_prod_ ou $aact_hmlg_), 3) Se não expirou no painel Asaas`);
         }

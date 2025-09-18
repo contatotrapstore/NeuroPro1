@@ -222,7 +222,42 @@ module.exports = async function handler(req, res) {
           };
 
           if (payment_method === 'CREDIT_CARD') {
-            paymentData.creditCard = card_data;
+            // 🔍 ENHANCED DEBUG: Log all credit card data before processing
+            console.log('🚨 CREDIT CARD DEBUG - Raw card_data received:', {
+              hasCardData: !!card_data,
+              cardDataKeys: card_data ? Object.keys(card_data) : [],
+              holderName: card_data?.holderName,
+              numberLength: card_data?.number?.length,
+              numberStart: card_data?.number?.substring(0, 4),
+              expiryMonth: card_data?.expiryMonth,
+              expiryMonthType: typeof card_data?.expiryMonth,
+              expiryYear: card_data?.expiryYear,
+              expiryYearType: typeof card_data?.expiryYear,
+              ccvLength: card_data?.ccv?.length,
+              clientIp: clientIp
+            });
+
+            // 🔧 CRITICAL FIX: Ensure proper format for Asaas API
+            const formattedCardData = {
+              holderName: card_data.holderName,
+              number: card_data.number.replace(/\D/g, ''), // Remove all non-digits
+              expiryMonth: String(card_data.expiryMonth).padStart(2, '0'), // Ensure 2 digits: 01-12
+              expiryYear: String(card_data.expiryYear).length === 2
+                ? `20${card_data.expiryYear}` // Convert 24 -> 2024
+                : String(card_data.expiryYear), // Keep 2024 as is
+              ccv: String(card_data.ccv)
+            };
+
+            console.log('✅ FORMATTED CARD DATA for Asaas:', {
+              holderName: formattedCardData.holderName,
+              numberLength: formattedCardData.number.length,
+              numberStart: formattedCardData.number.substring(0, 4),
+              expiryMonth: formattedCardData.expiryMonth,
+              expiryYear: formattedCardData.expiryYear,
+              ccvLength: formattedCardData.ccv.length
+            });
+
+            paymentData.creditCard = formattedCardData;
             // 🔥 CRITICAL: Add client IP - REQUIRED by Asaas for credit card processing!
             paymentData.remoteIp = clientIp;
             console.log('💳 CREDIT CARD - Adding remoteIp:', clientIp);
