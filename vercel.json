@@ -3,14 +3,22 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/webhooks/asaas.js": {
+    "api/webhook-asaas.js": {
       "maxDuration": 30
     },
-    "api/webhooks/asaas-test.js": {
+    "api/webhook-asaas-test.js": {
       "maxDuration": 10
     }
   },
   "rewrites": [
+    {
+      "source": "/api/webhooks/asaas",
+      "destination": "/api/webhook-asaas"
+    },
+    {
+      "source": "/api/webhooks/asaas-test",
+      "destination": "/api/webhook-asaas-test"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
