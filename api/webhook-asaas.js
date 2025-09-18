@@ -4,8 +4,8 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const AsaasService = require('../services/asaas.service');
-const { applyCors } = require('../utils/cors');
+const AsaasService = require('./services/asaas.service');
+const { applyCors } = require('./utils/cors');
 
 module.exports = async function handler(req, res) {
   const timestamp = new Date().toISOString();
