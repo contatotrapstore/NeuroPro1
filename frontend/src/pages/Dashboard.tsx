@@ -204,16 +204,28 @@ export default function Dashboard() {
       icon: 'brain'
     },
     'Psicopedagogia': {
-      name: 'Psicopedagogia', 
+      name: 'Psicopedagogia',
       color: '#1E40AF',
       bgColor: '#1E40AF',
       icon: 'book'
     },
     'Fonoaudiologia': {
       name: 'Fonoaudiologia',
-      color: '#7C3AED', 
+      color: '#7C3AED',
       bgColor: '#7C3AED',
       icon: 'mic'
+    },
+    'Neuromodulação': {
+      name: 'Neuromodulação',
+      color: '#DC2626',
+      bgColor: '#DC2626',
+      icon: 'activity'
+    },
+    'Terapia Ocupacional': {
+      name: 'Terapia Ocupacional',
+      color: '#0891B2',
+      bgColor: '#0891B2',
+      icon: 'hand'
     }
   };
 

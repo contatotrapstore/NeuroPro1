@@ -27,7 +27,7 @@ export interface Assistant {
   icon_url?: string;
   icon_type?: 'svg' | 'image' | 'emoji';
   color_theme: string;
-  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
+  area: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia' | 'Neuromodulação' | 'Terapia Ocupacional';
   monthly_price: number;
   semester_price: number;
   is_active: boolean;

@@ -507,6 +507,8 @@ export default function Store() {
                         <option value="Psicologia">Psicologia</option>
                         <option value="Psicopedagogia">Psicopedagogia</option>
                         <option value="Fonoaudiologia">Fonoaudiologia</option>
+                        <option value="Neuromodulação">Neuromodulação</option>
+                        <option value="Terapia Ocupacional">Terapia Ocupacional</option>
                       </select>
                       <Icon name="chevronDown" className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neuro-gray-400 pointer-events-none" />
                     </div>
