@@ -1,10 +1,8 @@
 {
   "version": 2,
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
   "functions": {
-    "api/*.js": {
-      "runtime": "@vercel/node@3.0.0",
-      "maxDuration": 30
-    },
     "api/webhook-asaas.js": {
       "maxDuration": 30
     },
@@ -14,12 +12,8 @@
   },
   "rewrites": [
     {
-      "source": "/api/webhooks/asaas",
-      "destination": "/api/webhook-asaas"
-    },
-    {
-      "source": "/api/webhooks/asaas-test",
-      "destination": "/api/webhook-asaas-test"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     }
   ],
   "headers": [
