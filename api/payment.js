@@ -11,6 +11,20 @@ module.exports = async function handler(req, res) {
   console.log('🚀 Payment API v1.2 - IMMEDIATE CORS');
   console.log('📋 Request:', { method: req.method, origin: req.headers.origin, url: req.url });
 
+  // 🔥 CRITICAL: Capture client IP for Asaas credit card processing (REQUIRED!)
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                   req.headers['x-real-ip'] ||
+                   req.connection?.remoteAddress ||
+                   req.socket?.remoteAddress ||
+                   '127.0.0.1'; // fallback
+
+  console.log('🌐 Client IP captured:', {
+    ip: clientIp,
+    xForwardedFor: req.headers['x-forwarded-for'],
+    xRealIp: req.headers['x-real-ip'],
+    source: req.headers['x-forwarded-for'] ? 'x-forwarded-for' : 'fallback'
+  });
+
   // FORCE CORS HEADERS IMMEDIATELY - NO CONDITIONS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -209,6 +223,9 @@ module.exports = async function handler(req, res) {
 
           if (payment_method === 'CREDIT_CARD') {
             paymentData.creditCard = card_data;
+            // 🔥 CRITICAL: Add client IP - REQUIRED by Asaas for credit card processing!
+            paymentData.remoteIp = clientIp;
+            console.log('💳 CREDIT CARD - Adding remoteIp:', clientIp);
           }
 
           if (isRecurring) {

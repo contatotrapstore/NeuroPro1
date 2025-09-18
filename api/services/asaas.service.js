@@ -149,6 +149,12 @@ class AsaasService {
 
     // Add credit card data if applicable
     if (paymentData.billingType === 'CREDIT_CARD' && paymentData.creditCard) {
+      // 🔥 CRITICAL: remoteIp is REQUIRED for credit card processing in Asaas!
+      if (!paymentData.remoteIp) {
+        throw new Error('remoteIp is required for credit card payments');
+      }
+
+      payload.remoteIp = paymentData.remoteIp;
       payload.creditCard = {
         holderName: paymentData.creditCard.holderName,
         number: paymentData.creditCard.number.replace(/\s/g, ''),
@@ -164,6 +170,13 @@ class AsaasService {
         addressNumber: paymentData.customerAddressNumber,
         phone: paymentData.customerPhone
       };
+
+      console.log('💳 CREDIT CARD PAYMENT PAYLOAD:', {
+        hasRemoteIp: !!payload.remoteIp,
+        remoteIp: payload.remoteIp,
+        hasCreditCard: !!payload.creditCard,
+        hasHolderInfo: !!payload.creditCardHolderInfo
+      });
     }
 
     console.log('Creating Asaas payment:', {
@@ -195,6 +208,12 @@ class AsaasService {
 
     // Add credit card data if applicable
     if (subscriptionData.billingType === 'CREDIT_CARD' && subscriptionData.creditCard) {
+      // 🔥 CRITICAL: remoteIp is REQUIRED for credit card processing in Asaas!
+      if (!subscriptionData.remoteIp) {
+        throw new Error('remoteIp is required for credit card payments');
+      }
+
+      payload.remoteIp = subscriptionData.remoteIp;
       payload.creditCard = {
         holderName: subscriptionData.creditCard.holderName,
         number: subscriptionData.creditCard.number.replace(/\s/g, ''),
@@ -210,6 +229,15 @@ class AsaasService {
         addressNumber: subscriptionData.customerAddressNumber,
         phone: subscriptionData.customerPhone
       };
+
+      console.log('💳 CREDIT CARD SUBSCRIPTION PAYLOAD:', {
+        hasRemoteIp: !!payload.remoteIp,
+        remoteIp: payload.remoteIp,
+        hasCreditCard: !!payload.creditCard,
+        hasHolderInfo: !!payload.creditCardHolderInfo,
+        customerId: payload.customer,
+        value: payload.value
+      });
     }
 
     console.log('Creating Asaas subscription:', {
