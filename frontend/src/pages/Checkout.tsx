@@ -60,7 +60,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
+  const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('PIX'); // Default to PIX since credit card is disabled
 
   // Form data
   const [customerData, setCustomerData] = useState<CustomerData>({
@@ -296,7 +296,7 @@ export default function Checkout() {
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
-                      { value: 'CREDIT_CARD', label: 'Cartão de Crédito', icon: CreditCardIcon },
+                      // { value: 'CREDIT_CARD', label: 'Cartão de Crédito', icon: CreditCardIcon }, // Temporarily disabled
                       { value: 'PIX', label: 'PIX', icon: PixIcon }
                     ].map(({ value, label, icon: Icon }) => (
                       <label
