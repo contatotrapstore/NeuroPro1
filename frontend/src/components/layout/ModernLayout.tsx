@@ -169,6 +169,7 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
 
           {/* Quick Actions */}
           <div className="mt-8 pt-6 border-t border-gray-100">
+            {/* TEMPORARIAMENTE DESABILITADO - Problemas com MCP Supabase
             <Link
               to="/store?packages=true"
               className="flex items-center p-3 card-hover border-2 border-amber-200 bg-amber-50 rounded-xl group"
@@ -188,6 +189,7 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
                 Oferta
               </span>
             </Link>
+            */}
           </div>
         </nav>
 

@@ -440,7 +440,7 @@ export default function Store() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.8, duration: 0.6 }}
             >
-              <Button 
+              <Button
                 size="lg"
                 leftIcon={<Icon name="zap" className="w-5 h-5 text-white group-hover:rotate-12 transition-transform" />}
                 className="group relative overflow-hidden bg-gradient-to-r from-neuro-primary to-green-600 hover:from-green-600 hover:to-neuro-primary text-white shadow-2xl hover:shadow-neuro-primary/25 transform hover:-translate-y-1 transition-all duration-300"
@@ -449,9 +449,10 @@ export default function Store() {
                 <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 <span className="font-semibold">Explorar Assistentes</span>
               </Button>
-              
-              <Button 
-                size="lg" 
+
+              {/* TEMPORARIAMENTE DESABILITADO - Problemas com MCP Supabase
+              <Button
+                size="lg"
                 variant="outline"
                 leftIcon={<Icon name="gift" className="w-5 h-5 group-hover:scale-110 transition-transform" />}
                 className="group border-2 border-neuro-primary/30 text-neuro-primary hover:bg-neuro-primary hover:text-white backdrop-blur-sm shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
@@ -459,6 +460,7 @@ export default function Store() {
               >
                 <span className="font-semibold">Ver Pacotes</span>
               </Button>
+              */}
             </motion.div>
           </motion.div>
         </motion.div>

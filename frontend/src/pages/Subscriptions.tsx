@@ -239,12 +239,14 @@ export default function Subscriptions() {
             >
               Explorar Loja
             </Link>
+            {/* TEMPORARIAMENTE DESABILITADO - Problemas com MCP Supabase
             <Link
               to="/store?packages=true"
               className="px-6 py-3 border border-neuro-primary text-neuro-primary rounded-lg hover:bg-neuro-primary hover:text-white transition-colors font-medium"
             >
               Ver Pacotes
             </Link>
+            */}
           </div>
         </div>
       ) : (
