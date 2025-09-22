@@ -15,7 +15,9 @@ import {
   Check,
   Plus,
   Minus,
-  KeyRound
+  KeyRound,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { NeuroLabIconMedium } from '../components/icons/NeuroLabLogo';
 import { adminService } from '../services/admin.service';
@@ -50,6 +52,11 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(20);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userAssistants, setUserAssistants] = useState<Array<{
@@ -69,6 +76,39 @@ export default function AdminDashboard() {
     }
   }, [user?.id, dataLoaded]); // Evitar recarregamentos múltiplos
 
+  const loadUsers = async (page: number, limit: number) => {
+    setUsersLoading(true);
+    try {
+      const usersResult = await adminService.getUsers(page, limit);
+      if (usersResult.success && usersResult.data) {
+        // Verificar se data é array, se não, extrair do objeto
+        const userData = Array.isArray(usersResult.data)
+          ? usersResult.data
+          : (usersResult.data.users || []);
+        // Se é array direto, usar o total das stats ou assumir que tem mais se chegou no limite
+        const total = Array.isArray(usersResult.data)
+          ? (userData.length === limit ? stats.totalUsers || userData.length * 2 : userData.length)
+          : (usersResult.data.total || userData.length);
+
+        const usersWithStatus = userData.map(user => ({
+          ...user,
+          status: user.email_confirmed_at ? 'active' : 'inactive' as 'active' | 'inactive',
+          subscriptions: user.active_subscriptions,
+          lastLogin: user.last_sign_in_at || 'Nunca'
+        }));
+
+        setUsers(usersWithStatus);
+        setTotalUsers(total);
+        setTotalPages(Math.ceil(total / limit));
+        setCurrentPage(page);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   const loadDashboardData = async () => {
     setLoading(true);
     try {
@@ -81,22 +121,8 @@ export default function AdminDashboard() {
         });
       }
 
-      // Carregar usuários reais
-      const usersResult = await adminService.getUsers(1, 20);
-      if (usersResult.success && usersResult.data) {
-        // Verificar se data é array, se não, extrair do objeto
-        const userData = Array.isArray(usersResult.data) 
-          ? usersResult.data 
-          : (usersResult.data.users || []);
-          
-        const usersWithStatus = userData.map(user => ({
-          ...user,
-          status: user.email_confirmed_at ? 'active' : 'inactive' as 'active' | 'inactive',
-          subscriptions: user.active_subscriptions,
-          lastLogin: user.last_sign_in_at || 'Nunca'
-        }));
-        setUsers(usersWithStatus);
-      }
+      // Carregar usuários iniciais
+      await loadUsers(1, usersPerPage);
 
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
@@ -114,6 +140,17 @@ export default function AdminDashboard() {
       setLoading(false);
       setDataLoaded(true);
     }
+  };
+
+  const handlePageChange = async (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      await loadUsers(newPage, usersPerPage);
+    }
+  };
+
+  const handleUsersPerPageChange = async (newLimit: number) => {
+    setUsersPerPage(newLimit);
+    await loadUsers(1, newLimit);
   };
 
   const handleLogout = async () => {
@@ -378,12 +415,30 @@ export default function AdminDashboard() {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-xl shadow-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Gerenciar Usuários</h3>
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Gerenciar Usuários</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Exibindo {users.length > 0 ? ((currentPage - 1) * usersPerPage + 1) : 0} - {Math.min(currentPage * usersPerPage, totalUsers)} de {totalUsers} usuários
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <label className="text-sm text-gray-600">Usuários por página:</label>
+                <select
+                  value={usersPerPage}
+                  onChange={(e) => handleUsersPerPageChange(Number(e.target.value))}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  disabled={usersLoading}
+                >
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -394,7 +449,22 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
+                  {usersLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mr-3"></div>
+                          <span className="text-gray-600">Carregando usuários...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : users.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        Nenhum usuário encontrado.
+                      </td>
+                    </tr>
+                  ) : users.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -482,6 +552,62 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Página {currentPage} de {totalPages}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || usersLoading}
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={16} className="mr-1" />
+                    Anterior
+                  </button>
+
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = i + 1;
+                      if (totalPages <= 5) {
+                        return pageNum;
+                      } else if (currentPage <= 3) {
+                        return pageNum;
+                      } else if (currentPage >= totalPages - 2) {
+                        return totalPages - 4 + i;
+                      } else {
+                        return currentPage - 2 + i;
+                      }
+                    }).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        disabled={usersLoading}
+                        className={`px-3 py-2 text-sm font-medium border rounded-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                          currentPage === pageNum
+                            ? 'bg-red-600 text-white border-red-600'
+                            : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || usersLoading}
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Próxima
+                    <ChevronRight size={16} className="ml-1" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
