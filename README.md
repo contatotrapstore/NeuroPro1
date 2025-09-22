@@ -2,13 +2,14 @@
 
 Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica, incluindo as novas áreas de **Neuromodulação** e **Terapia Ocupacional**.
 
-**🚀 Versão Atual**: v3.1.0 - Expansão para Novas Áreas de Saúde Mental
+**🚀 Versão Atual**: v3.2.0 - Sistema de Pacotes Completo e Funcional
 
 ## ✅ Status do Sistema
 - 🟢 **Frontend**: 100% funcional
 - 🟢 **Backend**: 100% funcional
 - 🟢 **Autenticação**: 100% funcional
 - 🟢 **Chat/Assistentes**: 100% funcional
+- 🟢 **Sistema de Pacotes**: 100% funcional ✨ NOVO
 - 🟢 **Pagamentos PIX**: 100% funcional
 - 🟡 **Pagamentos Cartão**: Temporariamente desabilitado (em correção)
 - 🟢 **Webhooks Asaas**: 100% funcional
@@ -30,9 +31,11 @@ A NeuroIA Lab democratiza o acesso a assistentes de IA especializados em psicolo
 
 ### Modelo de Negócio
 - **Assinatura Individual**: R$ 39,90/mês ou R$ 199,00/semestre por assistente
-- **Pacotes Personalizáveis**:
-  - 3 Assistentes: R$ 99,90/mês ou R$ 499,00/semestre
-  - 6 Assistentes: R$ 179,90/mês ou R$ 899,00/semestre
+- **Pacotes Personalizáveis** ✨ **NOVO**:
+  - **3 Assistentes**: R$ 99,90/mês ou R$ 499,00/semestre (economia de 17%)
+  - **6 Assistentes**: R$ 179,90/mês ou R$ 899,00/semestre (economia de 25%)
+  - **Sistema Inteligente**: Validação automática de seleção e duplicatas
+  - **Flexibilidade Total**: Escolha qualquer combinação de assistentes
 
 ## 🎯 Áreas Especializadas
 

@@ -37,6 +37,77 @@ Each assistant has a unique OpenAI API ID (asst_*) and specializes in:
 18. **TheraCasal** (theracasal) - Couple Therapy Assistant
 19. **Simulador de Paciente de Psicanálise** (asst_9vDTodTAQIJV1mu2xPzXpBs8) - Psychoanalysis Patient Simulator with Clinical Feedback
 
+## 🛠️ Manutenção e Troubleshooting
+
+### Reset de Senha de Usuário
+Quando um usuário reporta problemas de login (erro "Invalid login credentials"):
+
+```sql
+-- 1. Verificar se o usuário existe
+SELECT id, email, email_confirmed_at, last_sign_in_at
+FROM auth.users
+WHERE email = 'usuario@email.com';
+
+-- 2. Resetar senha (substituir 'NovaSenhaTemp123!' pela senha desejada)
+UPDATE auth.users
+SET
+  encrypted_password = crypt('NovaSenhaTemp123!', gen_salt('bf')),
+  updated_at = NOW()
+WHERE email = 'usuario@email.com';
+
+-- 3. Limpar cache de autenticação
+DELETE FROM auth.sessions WHERE user_id = (
+  SELECT id FROM auth.users WHERE email = 'usuario@email.com'
+);
+
+DELETE FROM auth.refresh_tokens WHERE user_id = (
+  SELECT id FROM auth.users WHERE email = 'usuario@email.com'
+);
+
+-- 4. Reconfirmar email
+UPDATE auth.users
+SET email_confirmed_at = NOW(), updated_at = NOW()
+WHERE email = 'usuario@email.com';
+```
+
+### Queries Úteis de Monitoramento
+
+```sql
+-- Verificar pacotes ativos
+SELECT
+  package_type,
+  COUNT(*) as total_packages,
+  AVG(total_amount) as avg_revenue
+FROM user_packages
+WHERE status = 'active'
+GROUP BY package_type;
+
+-- Assistentes mais populares
+SELECT
+  unnest(assistant_ids) as assistant_id,
+  COUNT(*) as usage_count
+FROM user_packages
+WHERE status = 'active'
+GROUP BY assistant_id
+ORDER BY usage_count DESC;
+
+-- Usuários com problemas de login recente
+SELECT
+  email,
+  last_sign_in_at,
+  created_at,
+  email_confirmed_at IS NOT NULL as email_confirmed
+FROM auth.users
+WHERE last_sign_in_at < NOW() - INTERVAL '7 days'
+  OR email_confirmed_at IS NULL
+ORDER BY last_sign_in_at DESC;
+```
+
+### Comandos MCP Supabase Úteis
+- `mcp__supabase-mcp__execute_sql` - Executar queries SQL
+- `mcp__supabase-mcp__get_advisors` - Verificar problemas de segurança/performance
+- `mcp__supabase-mcp__apply_migration` - Aplicar migrations
+
 ## Technology Stack
 
 ### Frontend

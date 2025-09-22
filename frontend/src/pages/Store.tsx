@@ -49,11 +49,10 @@ export default function Store() {
     const timeoutId = setTimeout(() => {
       loadAssistants();
       
-      // Check if coming from a specific assistant
+      // Check if coming from a specific assistant for future highlighting
       const assistantId = searchParams.get('assistant');
       if (assistantId) {
-        // Could highlight specific assistant here
-        console.log('Navigated to assistant:', assistantId);
+        // Future feature: highlight specific assistant
       }
     }, 150);
     
@@ -450,7 +449,6 @@ export default function Store() {
                 <span className="font-semibold">Explorar Assistentes</span>
               </Button>
 
-              {/* TEMPORARIAMENTE DESABILITADO - Problemas com MCP Supabase
               <Button
                 size="lg"
                 variant="outline"
@@ -460,7 +458,6 @@ export default function Store() {
               >
                 <span className="font-semibold">Ver Pacotes</span>
               </Button>
-              */}
             </motion.div>
           </motion.div>
         </motion.div>
