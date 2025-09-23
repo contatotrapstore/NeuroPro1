@@ -202,9 +202,8 @@ O projeto está pré-configurado para deploy no Vercel:
 ```
 /
 ├── frontend/          # Aplicação React
-├── backend/           # API Node.js
-├── .trae/            # Documentação técnica
-├── CLAUDE.md         # Guia para Claude Code
+├── api/               # API Node.js serverless functions
+├── docs/              # Documentação técnica
 └── package.json      # Configuração do monorepo
 ```
 

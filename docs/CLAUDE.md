@@ -402,13 +402,13 @@ After comprehensive cleanup and reorganization:
 │   │   └── types/         # TypeScript definitions
 ├── database/               # Supabase migrations
 │   └── migrations/        # SQL migration files
-├── .trae/                  # Legacy documentation (archived)
+# Removed .trae directory as it contained obsolete documentation
 └── [config files]         # Essential project configuration
 ```
 
 ## Documentation References
 
-Complete technical documentation is now centralized in the `/docs` folder. Legacy documentation is available in `.trae/documents/` for reference:
+Complete technical documentation is now centralized in the `/docs` folder. Legacy documentation has been removed as the project is complete:
 - Product Requirements Document (PRD)
 - Technical Architecture specification
 - AI Assistants detailed specifications  
