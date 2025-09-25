@@ -145,13 +145,38 @@ module.exports = async function handler(req, res) {
       try {
         console.log('📊 Fetching institution users:', institutionId);
 
-        // TODO: Use RPC function when available
-        // const { data: usersData, error: rpcError } = await supabase
-        //   .rpc('get_institution_users_with_details', {
-        //     institution_id_param: institutionId
-        //   });
+        // Try to use RPC function first
+        try {
+          const { data: usersData, error: rpcError } = await supabase
+            .rpc('get_institution_users_with_details', {
+              institution_id_param: institutionId
+            });
 
-        // Buscar usuários da instituição
+          if (!rpcError && usersData) {
+            console.log('✅ Institution users fetched via RPC with real data:', {
+              count: usersData.length,
+              sample: usersData[0] ? {
+                email: usersData[0].email,
+                name: usersData[0].name,
+                hasRealEmail: !usersData[0].email?.includes('@abpsi.org.br')
+              } : null
+            });
+
+            return res.status(200).json({
+              success: true,
+              data: {
+                users: usersData,
+                count: usersData.length
+              }
+            });
+          }
+
+          console.log('⚠️ RPC function not available, falling back to basic data');
+        } catch (rpcFallbackError) {
+          console.log('⚠️ RPC function failed, falling back to basic data:', rpcFallbackError.message);
+        }
+
+        // Fallback: Buscar usuários da instituição
         const { data: institutionUsers, error: usersError } = await supabase
           .from('institution_users')
           .select(`
@@ -177,13 +202,13 @@ module.exports = async function handler(req, res) {
           count: institutionUsers ? institutionUsers.length : 0
         });
 
-        // Para agora, usar dados básicos - TODO: implementar busca de emails reais
+        // Fallback: usar dados básicos com IDs parciais mais informativos
         const usersWithBasicData = institutionUsers.map(user => ({
           ...user,
-          email: `user-${user.user_id.slice(0, 8)}@abpsi.org.br`,
-          name: user.role === 'admin' ? 'Administrador' :
-                user.role === 'subadmin' ? 'Sub-administrador' :
-                'Usuário'
+          email: `${user.user_id.slice(0, 8)}@abpsi.org.br`,
+          name: `${user.role === 'admin' ? 'Administrador' :
+                    user.role === 'subadmin' ? 'Sub-administrador' :
+                    'Usuário'} (${user.user_id.slice(0, 8)})`
         }));
 
         return res.status(200).json({
