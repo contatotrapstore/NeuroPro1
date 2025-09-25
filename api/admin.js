@@ -289,12 +289,13 @@ module.exports = async function handler(req, res) {
         console.log('✅ Successfully used auth.admin.listUsers method');
 
       } catch (error) {
-        console.log('🔄 Using fallback method to count users from database tables');
+        console.log('🔄 Using fallback method to count users from database tables with real data');
 
-        // Fallback: Get unique user IDs from subscriptions and conversations
-        const [subscriptionsResult, conversationsResult] = await Promise.all([
+        // Fallback: Get unique user IDs from subscriptions, conversations, and real profiles
+        const [subscriptionsResult, conversationsResult, profilesResult] = await Promise.all([
           supabase.from('user_subscriptions').select('user_id').not('user_id', 'is', null),
-          supabase.from('conversations').select('user_id').not('user_id', 'is', null)
+          supabase.from('conversations').select('user_id').not('user_id', 'is', null),
+          supabase.from('user_profiles').select('*') // Buscar dados reais dos perfis
         ]);
 
         // Combine all user IDs
@@ -303,12 +304,25 @@ module.exports = async function handler(req, res) {
 
         allUserIds = new Set([...subscriptionUserIds, ...conversationUserIds]);
 
-        // For fallback, we can't easily identify admin users by email, so we estimate
-        // This is a limitation but better than having the endpoint fail completely
-        totalUsers = allUserIds.size;
-        adminUserIds = []; // We'll filter admin subscriptions differently in fallback mode
+        // Now we can identify admin users by email from real profiles data
+        const realProfiles = profilesResult.data || [];
+        const adminUsers = realProfiles.filter(profile =>
+          adminEmails.includes(profile.email?.toLowerCase() || '')
+        );
+        adminUserIds = adminUsers.map(user => user.id);
 
-        console.log(`📊 Fallback method found ${totalUsers} unique users from database tables`);
+        // Count total users excluding admins (using real profile data)
+        const realUserIds = new Set(realProfiles.map(p => p.id));
+        const nonAdminProfiles = realProfiles.filter(profile =>
+          !adminEmails.includes(profile.email?.toLowerCase() || '')
+        );
+
+        // Use intersection of users found in activities and real profiles
+        const activeUserIds = [...allUserIds].filter(id => realUserIds.has(id));
+        const nonAdminActiveUsers = activeUserIds.filter(id => !adminUserIds.includes(id));
+        totalUsers = nonAdminActiveUsers.length;
+
+        console.log(`📊 Fallback method found ${totalUsers} real users (${realProfiles.length} total profiles, ${adminUserIds.length} admins excluded)`);
       }
 
       // Get active subscriptions (excluding admin subscriptions)
@@ -440,32 +454,65 @@ module.exports = async function handler(req, res) {
         console.log('✅ Successfully used auth.admin.listUsers for /admin/users endpoint');
 
       } catch (error) {
-        console.log('🔄 Using fallback method for /admin/users endpoint');
+        console.log('🔄 Using fallback method for /admin/users endpoint with real data');
 
-        // Fallback: Build user list from subscription and conversation data
-        const [subscriptionsResult, conversationsResult] = await Promise.all([
+        // Fallback: Build user list from subscription, conversation data AND real profiles
+        const [subscriptionsResult, conversationsResult, profilesResult] = await Promise.all([
           supabase.from('user_subscriptions').select('user_id, created_at').not('user_id', 'is', null),
-          supabase.from('conversations').select('user_id, created_at').not('user_id', 'is', null)
+          supabase.from('conversations').select('user_id, created_at').not('user_id', 'is', null),
+          supabase.from('user_profiles').select('*') // Buscar dados reais dos perfis
         ]);
 
-        // Create user objects from available data
+        // Create map of real profiles
+        const profilesMap = {};
+        const realProfiles = profilesResult.data || [];
+        realProfiles.forEach(profile => {
+          profilesMap[profile.id] = profile;
+        });
+
+        // Get active user IDs from subscriptions and conversations
         const userIds = new Set([
           ...(subscriptionsResult.data?.map(s => s.user_id) || []),
           ...(conversationsResult.data?.map(c => c.user_id) || [])
         ]);
 
+        // Build user list using REAL profile data when available
         allUsers = {
-          users: Array.from(userIds).map(userId => ({
-            id: userId,
-            email: `user-${userId.slice(-8)}@unknown.com`, // Fallback email
-            created_at: new Date().toISOString(),
-            last_sign_in_at: null,
-            email_confirmed_at: null,
-            user_metadata: {}
-          }))
+          users: Array.from(userIds).map(userId => {
+            const profile = profilesMap[userId];
+
+            if (profile) {
+              // Use REAL data from profile
+              return {
+                id: profile.id,
+                email: profile.email,
+                created_at: profile.created_at,
+                last_sign_in_at: profile.last_sign_in_at,
+                email_confirmed_at: profile.email_confirmed_at,
+                user_metadata: profile.user_metadata || {},
+                full_name: profile.full_name,
+                updated_at: profile.updated_at
+              };
+            } else {
+              // Only use fallback if profile doesn't exist
+              const firstActivity = subscriptionsResult.data?.find(s => s.user_id === userId) ||
+                                  conversationsResult.data?.find(c => c.user_id === userId);
+
+              return {
+                id: userId,
+                email: `user-${userId.slice(-8)}@neuroialab.com.br`, // Better fallback domain
+                created_at: firstActivity?.created_at || new Date().toISOString(),
+                last_sign_in_at: null,
+                email_confirmed_at: null,
+                user_metadata: {}
+              };
+            }
+          })
         };
 
-        console.log(`📊 Fallback method created ${allUsers.users.length} user records`);
+        const realDataCount = allUsers.users.filter(u => profilesMap[u.id]).length;
+        const fallbackCount = allUsers.users.length - realDataCount;
+        console.log(`📊 Fallback method: ${realDataCount} users with REAL data, ${fallbackCount} with fallback data (${allUsers.users.length} total)`);
       }
 
       if (usersError) {
