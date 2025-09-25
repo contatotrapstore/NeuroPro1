@@ -37,7 +37,20 @@ module.exports = async function handler(req, res) {
   try {
     // Import modules INSIDE try/catch to prevent import failures
     const { createClient } = require('@supabase/supabase-js');
-    const { ADMIN_EMAILS, isAdminUser } = require('./config/admin');
+
+    // Admin configuration inline
+    const ADMIN_EMAILS = [
+      'gouveiarx@gmail.com',
+      'psitales@gmail.com',
+      'psitales.sales@gmail.com'
+    ];
+
+    const isAdminUser = (email, userMetadata = {}) => {
+      if (!email) return false;
+      const isAdminEmail = ADMIN_EMAILS.includes(email.toLowerCase());
+      const hasAdminRole = userMetadata?.role === 'admin';
+      return isAdminEmail || hasAdminRole;
+    };
 
     console.log('✅ Modules imported successfully');
     // Initialize Supabase
