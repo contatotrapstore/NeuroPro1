@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, Bot, Eye, Plus, Search, Filter } from 'lucide-react';
+import { Building2, Users, Bot, Eye, Search, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthHeaders } from '../../utils/auth';
 
@@ -136,10 +136,6 @@ export const InstitutionsManager: React.FC = () => {
               </p>
             </div>
 
-            <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Instituição
-            </button>
           </div>
 
           {/* Filters */}

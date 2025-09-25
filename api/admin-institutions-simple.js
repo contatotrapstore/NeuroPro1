@@ -202,23 +202,107 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'dashboard') {
-      // Dashboard overview data
-      return res.status(200).json({
-        success: true,
-        data: {
-          overview: {
-            total_institutions: 1,
-            active_institutions: 1,
-            inactive_institutions: 0,
-            total_institutional_users: 1,
-            newest_institution: 'Academia Brasileira de Psicanálise'
-          },
-          institutions_stats: [],
-          top_assistants_by_institution: {},
-          monthly_trends: {},
-          activity_metrics: {}
+      // Dashboard overview data - buscar dados reais do banco
+      try {
+        // Buscar estatísticas gerais das instituições
+        const { data: institutions, error: instError } = await supabase
+          .from('institutions')
+          .select('id, name, slug, is_active, created_at');
+
+        if (instError) {
+          console.error('Error fetching institutions for dashboard:', instError);
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar dados do dashboard'
+          });
         }
-      });
+
+        const totalInstitutions = institutions?.length || 0;
+        const activeInstitutions = institutions?.filter(i => i.is_active).length || 0;
+        const inactiveInstitutions = totalInstitutions - activeInstitutions;
+
+        // Buscar instituição mais recente
+        const newestInstitution = institutions?.length > 0 ?
+          institutions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.name :
+          null;
+
+        // Buscar total de usuários institucionais
+        const { count: totalUsers } = await supabase
+          .from('institution_users')
+          .select('id', { count: 'exact' })
+          .eq('is_active', true);
+
+        // Buscar estatísticas por instituição
+        const institutionsStats = [];
+        if (institutions && institutions.length > 0) {
+          for (const institution of institutions.filter(i => i.is_active)) {
+            const { count: userCount } = await supabase
+              .from('institution_users')
+              .select('id', { count: 'exact' })
+              .eq('institution_id', institution.id)
+              .eq('is_active', true);
+
+            const { count: studentCount } = await supabase
+              .from('institution_users')
+              .select('id', { count: 'exact' })
+              .eq('institution_id', institution.id)
+              .eq('role', 'student')
+              .eq('is_active', true);
+
+            const { count: professorCount } = await supabase
+              .from('institution_users')
+              .select('id', { count: 'exact' })
+              .eq('institution_id', institution.id)
+              .eq('role', 'professor')
+              .eq('is_active', true);
+
+            const { count: adminCount } = await supabase
+              .from('institution_admins')
+              .select('id', { count: 'exact' })
+              .eq('institution_id', institution.id)
+              .eq('is_active', true);
+
+            institutionsStats.push({
+              institution_name: institution.name,
+              institution_slug: institution.slug,
+              total_users: userCount || 0,
+              students: studentCount || 0,
+              professors: professorCount || 0,
+              admins: adminCount || 0
+            });
+          }
+        }
+
+        return res.status(200).json({
+          success: true,
+          data: {
+            overview: {
+              total_institutions: totalInstitutions,
+              active_institutions: activeInstitutions,
+              inactive_institutions: inactiveInstitutions,
+              total_institutional_users: totalUsers || 0,
+              newest_institution: newestInstitution
+            },
+            institutions_stats: institutionsStats,
+            top_assistants_by_institution: {},
+            monthly_trends: {
+              users_growth: 0,
+              conversations_growth: 0,
+              institutions_growth: 0
+            },
+            activity_metrics: {
+              conversations_per_period: [],
+              top_institutions_by_usage: []
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Dashboard error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro interno ao buscar dados do dashboard'
+        });
+      }
     }
 
     // Default listing with pagination and stats
