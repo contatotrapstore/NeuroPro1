@@ -233,8 +233,16 @@ async function handleAuthAction(req, res, supabase, institutionSlug) {
       }
 
       try {
-        // Create user-specific client to validate token
-        const userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+        // Create user-specific client to validate token (needs service key for user validation)
+        const serviceKey = supabaseServiceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+        if (!serviceKey) {
+          return res.status(500).json({
+            success: false,
+            error: 'Token validation requires service key'
+          });
+        }
+
+        const userClient = createClient(supabaseUrl, serviceKey, {
           auth: {
             autoRefreshToken: false,
             persistSession: false
@@ -250,9 +258,11 @@ async function handleAuthAction(req, res, supabase, institutionSlug) {
         const { data: { user }, error: userError } = await userClient.auth.getUser();
 
         if (userError || !user) {
+          console.error('Token validation failed:', userError);
           return res.status(401).json({
             success: false,
-            error: 'Token inválido ou expirado'
+            error: 'Token inválido ou expirado',
+            details: userError?.message
           });
         }
 
