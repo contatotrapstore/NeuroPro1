@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Users, Bot, TrendingUp, Calendar, BarChart3, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface DashboardStats {
   overview: {
@@ -57,12 +58,10 @@ export const InstitutionsDashboard: React.FC = () => {
         time_range: timeRange
       });
 
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/admin-institutions-simple?${params}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
-        }
+        headers
       });
 
       const result = await response.json();

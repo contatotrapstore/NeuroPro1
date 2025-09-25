@@ -63,40 +63,38 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Serverless auth approach - decode JWT manually
-    console.log('🔍 Decodificando JWT para obter user_id...');
-    
-    let userId;
-    try {
-      // Decode JWT payload (base64)
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      userId = payload.sub; // 'sub' claim contains user ID
-      
-      console.log('👤 JWT payload completo:', payload);
-      console.log('👤 JWT decoded successfully:', {
-        userId: userId,
-        email: payload.email || 'not-in-token',
-        exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no-expiry',
-        aud: payload.aud || 'no-audience',
-        iss: payload.iss || 'no-issuer'
-      });
-      
-      // Check if token is expired
-      if (payload.exp && payload.exp < Date.now() / 1000) {
-        console.error('❌ Token expirado');
-        return res.status(401).json({
-          success: false,
-          error: 'Token expirado'
-        });
+    // Create user-specific client to validate token
+    console.log('🔍 Validating token with Supabase auth...');
+
+    const userClient = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       }
-      
-    } catch (error) {
-      console.error('❌ Erro ao decodificar JWT:', error.message);
+    });
+
+    // Get user from token using Supabase auth
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+
+    if (userError || !user) {
+      console.error('❌ Token validation failed:', userError?.message);
       return res.status(401).json({
         success: false,
-        error: 'Token inválido'
+        error: 'Token inválido ou expirado'
       });
     }
+
+    const userId = user.id;
+
+    console.log('👤 Token validated successfully:', {
+      userId: userId,
+      email: user.email || 'not-available'
+    });
 
     if (!userId) {
       console.error('❌ User ID não encontrado no token');
@@ -106,14 +104,8 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Extract email from JWT for admin check
-    let userEmail;
-    try {
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      userEmail = payload.email;
-    } catch (error) {
-      console.error('❌ Erro ao extrair email do token:', error.message);
-    }
+    // Extract email from user object for admin check
+    const userEmail = user.email;
 
     if (req.method === 'GET') {
       // Check if user is admin - return all assistants as active subscriptions

@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface Institution {
   id: string;
@@ -81,7 +82,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
       // Carregar instituições
       const institutionsResponse = await fetch('/api/admin-institutions-simple?action=list', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
+          ...(await getAuthHeaders())
         }
       });
       const institutionsData = await institutionsResponse.json();
@@ -89,7 +90,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
       // Carregar assistentes disponíveis
       const assistantsResponse = await fetch('/api/admin-assistants-simple?action=list', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
+          ...(await getAuthHeaders())
         }
       });
       const assistantsData = await assistantsResponse.json();
@@ -116,7 +117,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
     try {
       const response = await fetch(`/api/admin-institution-assistants-simple?institution_id=${selectedInstitution.id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
+          ...(await getAuthHeaders())
         }
       });
       const result = await response.json();
@@ -209,10 +210,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
 
       const response = await fetch(`/api/admin-institution-assistants-simple?institution_id=${selectedInstitution.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
-        },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ assistants: enabledAssistants })
       });
 

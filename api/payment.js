@@ -69,24 +69,30 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Decode JWT to get user ID
-    let userId;
-    try {
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      userId = payload.sub;
-
-      if (payload.exp && payload.exp < Date.now() / 1000) {
-        return res.status(401).json({
-          success: false,
-          error: 'Token expirado'
-        });
+    // Create user-specific client to validate token
+    const userClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       }
-    } catch (error) {
+    });
+
+    // Get user from token using Supabase auth
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+
+    if (userError || !user) {
       return res.status(401).json({
         success: false,
-        error: 'Token inválido'
+        error: 'Token inválido ou expirado'
       });
     }
+
+    const userId = user.id;
 
     // Parse URL for routing
     const url = new URL(req.url, `http://${req.headers.host}`);

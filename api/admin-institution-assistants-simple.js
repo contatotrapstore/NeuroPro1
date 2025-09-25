@@ -110,17 +110,31 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    let userId, userEmail;
-    try {
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      userId = payload.sub;
-      userEmail = payload.email;
-    } catch (error) {
+    // Create user-specific client to validate token
+    const userClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+
+    // Get user from token using Supabase auth
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+
+    if (userError || !user) {
       return res.status(401).json({
         success: false,
-        error: 'Token inválido'
+        error: 'Token inválido ou expirado'
       });
     }
+
+    const userId = user.id;
+    const userEmail = user.email;
 
     // Verificar se é admin master
     if (!isAdminUser(userEmail)) {

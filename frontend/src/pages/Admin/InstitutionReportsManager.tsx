@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface Institution {
   id: string;
@@ -97,7 +98,7 @@ export const InstitutionReportsManager: React.FC = () => {
     try {
       const response = await fetch('/api/admin-institutions-simple?action=list', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
+          ...(await getAuthHeaders())
         }
       });
       const result = await response.json();
@@ -142,10 +143,7 @@ export const InstitutionReportsManager: React.FC = () => {
     try {
       const response = await fetch('/api/admin/reports/institutions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
-        },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({
           institution_ids: selectedInstitutions,
           report_type: reportType,
@@ -180,10 +178,7 @@ export const InstitutionReportsManager: React.FC = () => {
     try {
       const response = await fetch('/api/admin/reports/export', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
-        },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({
           data: reportData,
           format,

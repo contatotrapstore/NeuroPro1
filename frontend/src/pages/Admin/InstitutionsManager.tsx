@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Users, Bot, Eye, Plus, Search, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface Institution {
   id: string;
@@ -42,12 +43,10 @@ export const InstitutionsManager: React.FC = () => {
         params.append('status_filter', statusFilter);
       }
 
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/admin-institutions-simple?${params}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
-        }
+        headers
       });
 
       const result = await response.json();
