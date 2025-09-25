@@ -140,12 +140,15 @@ module.exports = async function handler(req, res) {
 async function handleGetInstitution(req, res, supabase, institutionSlug) {
   try {
     // Verificar se instituição existe e está ativa
+    console.log(`🔍 Looking for institution with slug: ${institutionSlug}`);
     const { data: institution, error: institutionError } = await supabase
       .from('institutions')
-      .select('id, name, slug, logo_url, primary_color, secondary_color, is_active, settings')
+      .select('id, name, slug, logo_url, primary_color, secondary_color, is_active')
       .eq('slug', institutionSlug)
       .eq('is_active', true)
       .single();
+
+    console.log('🏛️ Institution query result:', { institution, error: institutionError });
 
     if (institutionError || !institution) {
       console.error('Institution not found:', institutionError);
@@ -157,18 +160,15 @@ async function handleGetInstitution(req, res, supabase, institutionSlug) {
 
     console.log(`✅ Institution found: ${institution.name}`);
 
-    // Parse settings if it's a string
-    let settings = {};
-    try {
-      if (typeof institution.settings === 'string') {
-        settings = JSON.parse(institution.settings);
-      } else if (institution.settings) {
-        settings = institution.settings;
+    // Create settings object from available institution data
+    let settings = {
+      welcome_message: institution.custom_message || `Bem-vindo à ${institution.name}`,
+      subtitle: 'Formação, Supervisão e Prática',
+      theme: {
+        primary_color: institution.primary_color,
+        secondary_color: institution.secondary_color
       }
-    } catch (e) {
-      console.warn('Failed to parse institution settings:', e);
-      settings = {};
-    }
+    };
 
     return res.status(200).json({
       success: true,
@@ -181,16 +181,7 @@ async function handleGetInstitution(req, res, supabase, institutionSlug) {
           primary_color: institution.primary_color,
           secondary_color: institution.secondary_color,
           welcome_message: settings.welcome_message,
-          settings: {
-            welcome_message: settings.welcome_message,
-            subtitle: settings.subtitle,
-            theme: {
-              primary_color: institution.primary_color,
-              secondary_color: institution.secondary_color,
-              ...settings.theme
-            },
-            ...settings
-          }
+          settings: settings
         }
       }
     });
