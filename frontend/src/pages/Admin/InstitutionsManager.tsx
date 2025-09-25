@@ -42,7 +42,7 @@ export const InstitutionsManager: React.FC = () => {
         params.append('status_filter', statusFilter);
       }
 
-      const response = await fetch(`/api/admin-institutions?${params}`, {
+      const response = await fetch(`/api/admin-institutions-simple?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

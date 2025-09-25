@@ -79,7 +79,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
     setLoading(true);
     try {
       // Carregar instituições
-      const institutionsResponse = await fetch('/api/admin-institutions?action=list', {
+      const institutionsResponse = await fetch('/api/admin-institutions-simple?action=list', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
         }
@@ -87,7 +87,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
       const institutionsData = await institutionsResponse.json();
 
       // Carregar assistentes disponíveis
-      const assistantsResponse = await fetch('/api/admin-assistants', {
+      const assistantsResponse = await fetch('/api/admin-assistants-simple?action=list', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
         }
@@ -114,7 +114,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
     if (!selectedInstitution) return;
 
     try {
-      const response = await fetch(`/api/admin-institution-assistants?institution_id=${selectedInstitution.id}`, {
+      const response = await fetch(`/api/admin-institution-assistants-simple?institution_id=${selectedInstitution.id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
         }
@@ -207,7 +207,7 @@ export const InstitutionAssistantsManager: React.FC = () => {
     try {
       const enabledAssistants = institutionAssistants.filter(ia => ia.is_enabled);
 
-      const response = await fetch(`/api/admin-institution-assistants?institution_id=${selectedInstitution.id}`, {
+      const response = await fetch(`/api/admin-institution-assistants-simple?institution_id=${selectedInstitution.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
