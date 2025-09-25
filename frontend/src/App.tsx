@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { InstitutionProvider } from './contexts/InstitutionContext';
 import ModernLayout from './components/layout/ModernLayout';
 import { InstitutionLayout } from './components/layout/InstitutionLayout';
+import InstitutionModernLayout from './components/layout/InstitutionModernLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import PublicRoute from './components/layout/PublicRoute';
 import AdminProtectedRoute from './components/layout/AdminProtectedRoute';
@@ -21,7 +22,16 @@ import Checkout from './pages/Checkout';
 import PaymentPix from './pages/PaymentPix';
 import PixInstructions from './pages/PixInstructions';
 import { PaymentConfirmation } from './pages/PaymentConfirmation';
-import { InstitutionHome, InstitutionLogin, InstitutionChat, InstitutionAdmin, InstitutionSubscription } from './pages/Institution';
+import {
+  InstitutionHome,
+  InstitutionLogin,
+  InstitutionChat,
+  InstitutionAdmin,
+  InstitutionSubscription,
+  InstitutionDashboard,
+  InstitutionStore,
+  InstitutionSubscriptions
+} from './pages/Institution';
 import './index.css';
 
 const App: React.FC = () => {
@@ -174,12 +184,19 @@ const App: React.FC = () => {
 
           {/* Institution Routes */}
           <Route path="/i/:slug/login" element={<InstitutionLogin />} />
-          <Route path="/i/:slug" element={<InstitutionLayout />}>
-            <Route index element={<InstitutionHome />} />
+          <Route path="/i/:slug" element={<InstitutionModernLayout />}>
+            <Route index element={<InstitutionDashboard />} />
+            <Route path="dashboard" element={<InstitutionDashboard />} />
             <Route path="chat" element={<InstitutionChat />} />
             <Route path="chat/:assistantId" element={<InstitutionChat />} />
+            <Route path="store" element={<InstitutionStore />} />
+            <Route path="subscriptions" element={<InstitutionSubscriptions />} />
+            <Route path="library" element={<div className="p-8"><h1 className="text-2xl font-bold">Biblioteca - Em desenvolvimento</h1></div>} />
+            <Route path="reports" element={<div className="p-8"><h1 className="text-2xl font-bold">Relatórios - Em desenvolvimento</h1></div>} />
+            <Route path="profile" element={<div className="p-8"><h1 className="text-2xl font-bold">Perfil - Em desenvolvimento</h1></div>} />
             <Route path="admin" element={<InstitutionAdmin />} />
             <Route path="subscription" element={<InstitutionSubscription />} />
+            <Route path="home" element={<InstitutionHome />} />
           </Route>
 
           {/* Default Redirects */}
