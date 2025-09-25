@@ -89,7 +89,7 @@ module.exports = async function handler(req, res) {
       return handleGetPackages(req, res, supabase);
     } else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'user') {
       // GET /packages/user - Get user's packages
-      return handleGetUserPackages(req, res, supabase);
+      return handleGetUserPackages(req, res, supabase, supabaseUrl, supabaseKey);
     } else if (req.method === 'POST') {
       return handleCreatePackage(req, res, supabase);
     } else {
@@ -307,7 +307,7 @@ async function handleCreatePackage(req, res, supabase) {
 }
 
 // Handle GET /packages/user - Get user's packages
-async function handleGetUserPackages(req, res, supabase) {
+async function handleGetUserPackages(req, res, supabase, supabaseUrl, supabaseKey) {
   try {
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
