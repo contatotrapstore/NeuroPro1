@@ -143,36 +143,54 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       // List users for institution
       try {
-        console.log('📊 Fetching institution users using RPC:', institutionId);
+        console.log('📊 Fetching institution users:', institutionId);
 
-        // Use secure RPC function to get institution users with real auth.users data
-        const { data: usersData, error: rpcError } = await supabase
-          .rpc('get_institution_users_with_details', {
-            institution_id_param: institutionId
-          });
+        // TODO: Use RPC function when available
+        // const { data: usersData, error: rpcError } = await supabase
+        //   .rpc('get_institution_users_with_details', {
+        //     institution_id_param: institutionId
+        //   });
 
-        if (rpcError) {
-          console.error('Error fetching institution users via RPC:', rpcError);
+        // Buscar usuários da instituição
+        const { data: institutionUsers, error: usersError } = await supabase
+          .from('institution_users')
+          .select(`
+            id,
+            user_id,
+            role,
+            is_active,
+            enrolled_at,
+            last_access
+          `)
+          .eq('institution_id', institutionId)
+          .order('enrolled_at', { ascending: false });
+
+        if (usersError) {
+          console.error('Error fetching institution users:', usersError);
           return res.status(500).json({
             success: false,
             error: 'Erro ao buscar usuários da instituição'
           });
         }
 
-        console.log('✅ Institution users fetched via RPC:', {
-          count: usersData ? usersData.length : 0,
-          sample: usersData && usersData[0] ? {
-            email: usersData[0].email,
-            name: usersData[0].name,
-            hasRealEmail: !usersData[0].email?.includes('@instituicao.com')
-          } : null
+        console.log('✅ Institution users fetched:', {
+          count: institutionUsers ? institutionUsers.length : 0
         });
+
+        // Para agora, usar dados básicos - TODO: implementar busca de emails reais
+        const usersWithBasicData = institutionUsers.map(user => ({
+          ...user,
+          email: `user-${user.user_id.slice(0, 8)}@abpsi.org.br`,
+          name: user.role === 'admin' ? 'Administrador' :
+                user.role === 'subadmin' ? 'Sub-administrador' :
+                'Usuário'
+        }));
 
         return res.status(200).json({
           success: true,
           data: {
-            users: usersData || [],
-            count: usersData ? usersData.length : 0
+            users: usersWithBasicData,
+            count: usersWithBasicData.length
           }
         });
 
