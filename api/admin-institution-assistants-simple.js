@@ -208,6 +208,8 @@ module.exports = async function handler(req, res) {
 // ============================================
 async function handleGetAssistants(req, res, supabase, institutionId) {
   try {
+    console.log(`🔍 Getting assistants for institution: ${institutionId}`);
+
     // Get all assistants configured for this institution
     const { data: institutionAssistants, error: assistantsError } = await supabase
       .from('institution_assistants')
@@ -238,12 +240,14 @@ async function handleGetAssistants(req, res, supabase, institutionId) {
       .order('display_order', { ascending: true });
 
     if (assistantsError) {
-      console.error('Error fetching institution assistants:', assistantsError);
+      console.error('❌ Error fetching institution assistants:', assistantsError);
       return res.status(500).json({
         success: false,
         error: 'Erro ao buscar assistentes da instituição'
       });
     }
+
+    console.log(`✅ Found ${institutionAssistants?.length || 0} assistants for institution`);
 
     return res.status(200).json({
       success: true,

@@ -95,24 +95,31 @@ export const InstitutionReportsManager: React.FC = () => {
 
   const loadInstitutions = async () => {
     setLoading(true);
+    console.log('🔄 InstitutionReportsManager: Loading institutions...');
+
     try {
-      const response = await fetch('/api/admin-institutions-simple?action=list', {
-        headers: {
-          ...(await getAuthHeaders())
-        }
-      });
+      const headers = await getAuthHeaders();
+      console.log('🔑 Auth headers:', headers);
+
+      const response = await fetch('/api/admin-institutions-simple?action=list', { headers });
+      console.log('📡 Response status:', response.status);
+
       const result = await response.json();
+      console.log('📊 Institutions result:', result);
 
       if (result.success) {
+        console.log('✅ Loaded institutions:', result.data.institutions?.length || 0);
         setInstitutions(result.data.institutions || []);
       } else {
-        toast.error('Erro ao carregar instituições');
+        console.error('❌ Failed to load institutions:', result.error);
+        toast.error(`Erro ao carregar instituições: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error loading institutions:', error);
-      toast.error('Erro ao conectar com o servidor');
+      console.error('💥 Error loading institutions:', error);
+      toast.error(`Erro ao conectar com o servidor: ${error.message}`);
     } finally {
       setLoading(false);
+      console.log('✅ InstitutionReportsManager: Institution loading complete');
     }
   };
 

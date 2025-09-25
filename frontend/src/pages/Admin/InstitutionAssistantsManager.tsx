@@ -78,51 +78,74 @@ export const InstitutionAssistantsManager: React.FC = () => {
 
   const loadInitialData = async () => {
     setLoading(true);
+    console.log('🔄 InstitutionAssistantsManager: Loading initial data...');
+
     try {
+      const headers = await getAuthHeaders();
+      console.log('🔑 Auth headers:', headers);
+
       // Carregar instituições
+      console.log('📊 Fetching institutions list...');
       const institutionsResponse = await fetch('/api/admin-institutions-simple?action=list', {
-        headers: {
-          ...(await getAuthHeaders())
-        }
+        headers
       });
+      console.log('📡 Institutions response status:', institutionsResponse.status);
       const institutionsData = await institutionsResponse.json();
+      console.log('📊 Institutions data:', institutionsData);
 
       // Carregar assistentes disponíveis
+      console.log('🤖 Fetching assistants list...');
       const assistantsResponse = await fetch('/api/admin-assistants-simple?action=list', {
-        headers: {
-          ...(await getAuthHeaders())
-        }
+        headers
       });
+      console.log('📡 Assistants response status:', assistantsResponse.status);
       const assistantsData = await assistantsResponse.json();
+      console.log('🤖 Assistants data:', assistantsData);
 
       if (institutionsData.success) {
+        console.log('✅ Loaded institutions:', institutionsData.data.institutions?.length || 0);
         setInstitutions(institutionsData.data.institutions || []);
+      } else {
+        console.error('❌ Failed to load institutions:', institutionsData.error);
+        toast.error(`Erro ao carregar instituições: ${institutionsData.error}`);
       }
 
       if (assistantsData.success) {
+        console.log('✅ Loaded assistants:', assistantsData.data?.length || 0);
         setAssistants(assistantsData.data || []);
+      } else {
+        console.error('❌ Failed to load assistants:', assistantsData.error);
+        toast.error(`Erro ao carregar assistentes: ${assistantsData.error}`);
       }
 
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Erro ao carregar dados');
+      console.error('💥 Error loading data:', error);
+      toast.error(`Erro ao carregar dados: ${error.message}`);
     } finally {
       setLoading(false);
+      console.log('✅ InstitutionAssistantsManager: Initial data loading complete');
     }
   };
 
   const loadInstitutionAssistants = async () => {
     if (!selectedInstitution) return;
 
+    console.log(`🏛️ Loading assistants for institution: ${selectedInstitution.name} (${selectedInstitution.id})`);
+
     try {
-      const response = await fetch(`/api/admin-institution-assistants-simple?institution_id=${selectedInstitution.id}`, {
-        headers: {
-          ...(await getAuthHeaders())
-        }
-      });
+      const headers = await getAuthHeaders();
+      const url = `/api/admin-institution-assistants-simple?institution_id=${selectedInstitution.id}`;
+      console.log('📡 Fetching:', url);
+
+      const response = await fetch(url, { headers });
+      console.log('📡 Response status:', response.status);
+
       const result = await response.json();
+      console.log('📊 Institution assistants result:', result);
 
       if (result.success) {
+        console.log('✅ Found configured assistants:', result.data?.length || 0);
+
         // Combinar dados dos assistentes disponíveis
         const institutionAssistantsList: InstitutionAssistant[] = assistants.map(assistant => {
           const existingConfig = result.data?.find((ia: any) => ia.assistant_id === assistant.id);
@@ -148,14 +171,16 @@ export const InstitutionAssistantsManager: React.FC = () => {
           return (a.assistant?.name || '').localeCompare(b.assistant?.name || '');
         });
 
+        console.log('🎯 Final assistants list:', institutionAssistantsList.length, 'items');
         setInstitutionAssistants(institutionAssistantsList);
         setHasChanges(false);
       } else {
-        toast.error('Erro ao carregar assistentes da instituição');
+        console.error('❌ Failed to load institution assistants:', result.error);
+        toast.error(`Erro ao carregar assistentes da instituição: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error loading institution assistants:', error);
-      toast.error('Erro ao conectar com o servidor');
+      console.error('💥 Error loading institution assistants:', error);
+      toast.error(`Erro ao conectar com o servidor: ${error.message}`);
     }
   };
 

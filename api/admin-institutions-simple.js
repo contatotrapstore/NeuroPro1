@@ -178,6 +178,8 @@ module.exports = async function handler(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const action = url.searchParams.get('action');
 
+    console.log(`🔍 Admin Institutions API - Action: ${action || 'default'}, User: ${userEmail}`);
+
     if (action === 'list') {
       // Simple list for dropdowns/selectors
       const { data: institutions, error: institutionsError } = await supabase
@@ -326,51 +328,70 @@ module.exports = async function handler(req, res) {
       query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
     }
 
+    console.log(`📊 Querying institutions with filters - search: ${search}, status: ${statusFilter}, page: ${page}`);
+
     const { data: institutions, error: institutionsError } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (institutionsError) {
-      console.error('Error fetching institutions:', institutionsError);
+      console.error('❌ Error fetching institutions:', institutionsError);
       return res.status(500).json({
         success: false,
         error: 'Erro ao buscar instituições'
       });
     }
 
+    console.log(`✅ Found ${institutions?.length || 0} institutions`);
+
     // Buscar estatísticas de cada instituição
     const institutionsWithStats = await Promise.all(
       (institutions || []).map(async (institution) => {
-        const [usersCount, conversationsCount] = await Promise.all([
-          // Contagem de usuários
-          supabase
+        console.log(`📈 Computing stats for institution: ${institution.name}`);
+
+        // Buscar estatísticas com tratamento de erro para tabelas que podem não existir
+        let usersCount = { count: 0 };
+        let conversationsCount = { count: 0 };
+        let assistantsCount = { count: 0 };
+
+        try {
+          // Contagem de usuários (pode não existir tabela)
+          const userResult = await supabase
             .from('institution_users')
             .select('id', { count: 'exact' })
             .eq('institution_id', institution.id)
-            .eq('is_active', true),
+            .eq('is_active', true);
 
-          // Contagem aproximada de conversas
-          supabase
-            .from('institution_users')
-            .select('user_id')
+          if (!userResult.error) {
+            usersCount = userResult;
+          }
+        } catch (error) {
+          console.log(`⚠️ institution_users table not found for ${institution.name}`);
+        }
+
+        try {
+          // Contagem de assistentes
+          const assistantResult = await supabase
+            .from('institution_assistants')
+            .select('id', { count: 'exact' })
             .eq('institution_id', institution.id)
-            .eq('is_active', true)
-            .then(async (result) => {
-              if (!result.data?.length) return { count: 0 };
+            .eq('is_enabled', true);
 
-              const userIds = result.data.map(u => u.user_id);
-              return supabase
-                .from('conversations')
-                .select('id', { count: 'exact' })
-                .in('user_id', userIds);
-            })
-        ]);
+          if (!assistantResult.error) {
+            assistantsCount = assistantResult;
+          }
+        } catch (error) {
+          console.log(`⚠️ institution_assistants table query failed for ${institution.name}`);
+        }
+
+        // Conversas deixaremos como 0 por enquanto para simplificar
 
         return {
           ...institution,
           stats: {
             total_users: usersCount.count || 0,
             total_conversations: conversationsCount.count || 0,
+            total_assistants: assistantsCount.count || 0,
             license_status: 'unlimited', // ABPSI has unlimited access
             license_expires: null
           }

@@ -43,24 +43,33 @@ export const InstitutionsManager: React.FC = () => {
         params.append('status_filter', statusFilter);
       }
 
+      console.log('🔍 Loading institutions with params:', params.toString());
+
       const headers = await getAuthHeaders();
+      console.log('🔑 Auth headers:', headers);
+
       const response = await fetch(`/api/admin-institutions-simple?${params}`, {
         method: 'GET',
         headers
       });
 
+      console.log('📡 Response status:', response.status);
+
       const result = await response.json();
+      console.log('📊 API Response:', result);
 
       if (result.success) {
+        console.log('✅ Institutions loaded:', result.data.institutions?.length || 0);
         setInstitutions(result.data.institutions || []);
-        setTotalPages(result.data.pagination?.pages || 1);
+        setTotalPages(result.data.pagination?.total_pages || 1);
         setCurrentPage(page);
       } else {
-        toast.error('Erro ao carregar instituições');
+        console.error('❌ API Error:', result.error);
+        toast.error(`Erro ao carregar instituições: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error loading institutions:', error);
-      toast.error('Erro ao conectar com o servidor');
+      console.error('💥 Network/Parse Error:', error);
+      toast.error(`Erro ao conectar com o servidor: ${error.message}`);
     } finally {
       setLoading(false);
     }
