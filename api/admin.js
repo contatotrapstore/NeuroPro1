@@ -281,14 +281,16 @@ module.exports = async function handler(req, res) {
         data: {
           totalUsers: stats.neuro_users || 0, // Usuários Neuro (excluindo admins e ABPSI)
           abpsiUsers: stats.abpsi_users || 0, // Usuários ABPSI separados
-          activeSubscriptions: stats.active_subscriptions || 0, // Assinaturas reais (1 por usuário)
-          realPayingUsers: stats.real_paying_users || 0, // Usuários que realmente pagam
-          monthlyRevenue: stats.monthly_revenue || 0, // Receita mensal corrigida
+          activeSubscriptions: stats.user_active_subscriptions || 0, // 172 assinaturas de usuários (sem admins)
+          totalActiveSubscriptions: stats.total_active_subscriptions || 0, // 258 total (com admins)
+          realPayingUsers: stats.real_paying_users || 0, // 22 usuários únicos pagantes
+          monthlyRevenue: stats.monthly_revenue || 0, // R$ 6.862,80 receita real
           totalConversations: totalConversations || 0,
           recentConversations: recentConversations || 0,
+          adminSubscriptions: stats.admin_subscriptions || 0, // 86 assinaturas de admin
           timestamp: stats.timestamp
         },
-        message: 'Estatísticas recuperadas com sucesso (corrigidas)'
+        message: 'Estatísticas recuperadas com sucesso'
       });
     }
 
