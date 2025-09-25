@@ -141,51 +141,23 @@ module.exports = async function handler(req, res) {
 // ============================================
 async function handleGetInstitution(req, res, supabase, institutionSlug) {
   try {
-    // Verificar se instituição existe e está ativa
-    console.log(`🔍 Looking for institution with slug: ${institutionSlug}`);
-    const { data: institution, error: institutionError } = await supabase
-      .from('institutions')
-      .select('id, name, slug, logo_url, primary_color, secondary_color, is_active')
-      .eq('slug', institutionSlug)
-      .eq('is_active', true)
-      .single();
+    console.log(`🔍 Getting public info for institution: ${institutionSlug}`);
 
-    console.log('🏛️ Institution query result:', { institution, error: institutionError });
-
-    if (institutionError || !institution) {
-      console.error('Institution not found:', institutionError);
-      return res.status(404).json({
-        success: false,
-        error: 'Instituição não encontrada ou inativa'
+    // Usar RPC para obter dados públicos
+    const { data: rpcResult, error: rpcError } = await supabase
+      .rpc('get_institution_public_info', {
+        p_institution_slug: institutionSlug
       });
+
+    console.log('🏛️ RPC Result:', { success: rpcResult?.success, error: rpcError });
+
+    if (!rpcError && rpcResult?.success) {
+      return res.status(200).json(rpcResult);
     }
 
-    console.log(`✅ Institution found: ${institution.name}`);
-
-    // Create settings object from available institution data
-    let settings = {
-      welcome_message: institution.custom_message || `Bem-vindo à ${institution.name}`,
-      subtitle: 'Formação, Supervisão e Prática',
-      theme: {
-        primary_color: institution.primary_color,
-        secondary_color: institution.secondary_color
-      }
-    };
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        institution: {
-          id: institution.id,
-          name: institution.name,
-          slug: institution.slug,
-          logo_url: institution.logo_url,
-          primary_color: institution.primary_color,
-          secondary_color: institution.secondary_color,
-          welcome_message: settings.welcome_message,
-          settings: settings
-        }
-      }
+    return res.status(404).json({
+      success: false,
+      error: rpcResult?.error || 'Instituição não encontrada'
     });
 
   } catch (error) {
@@ -248,147 +220,54 @@ async function handleAuthAction(req, res, supabase, institutionSlug, supabaseUrl
       }
 
       try {
-        // Try service key first, fallback to anon key approach if not available
-        const serviceKey = supabaseServiceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+        console.log('🔐 Verifying institution access via RPC...');
 
-        let user;
-        let userError;
-
-        if (serviceKey) {
-          // Use service key for full token validation
-          const userClient = createClient(supabaseUrl, serviceKey, {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false
-            },
-            global: {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
+        // Criar client com o token do usuário
+        const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
             }
-          });
-
-          const result = await userClient.auth.getUser();
-          user = result.data.user;
-          userError = result.error;
-        } else {
-          // Fallback: use anon key client and try to get user from token directly
-          console.log('⚠️ Using anon key fallback for token validation');
-          const anonClient = createClient(supabaseUrl, supabaseAnonKey);
-
-          try {
-            // Parse JWT token manually to get user ID (basic validation)
-            const tokenParts = token.split('.');
-            if (tokenParts.length !== 3) {
-              throw new Error('Invalid token format');
-            }
-
-            const payload = JSON.parse(atob(tokenParts[1]));
-            if (!payload.sub || !payload.exp || payload.exp < Date.now() / 1000) {
-              throw new Error('Token expired or invalid');
-            }
-
-            // Create minimal user object
-            user = { id: payload.sub, email: payload.email };
-            userError = null;
-          } catch (err) {
-            user = null;
-            userError = { message: 'Invalid token: ' + err.message };
           }
+        });
+
+        // Chamar função RPC para verificar acesso
+        const { data: rpcResult, error: rpcError } = await userClient
+          .rpc('verify_institution_access', {
+            p_institution_slug: institutionSlug
+          });
+
+        console.log('📊 RPC Result:', {
+          success: rpcResult?.success,
+          error: rpcError?.message || rpcResult?.error,
+          hasData: !!rpcResult?.data
+        });
+
+        if (!rpcError && rpcResult?.success) {
+          return res.status(200).json(rpcResult);
         }
 
-        if (userError || !user) {
-          console.error('Token validation failed:', {
-            error: userError,
-            hasUser: !!user,
-            tokenSource: tokenFromHeader ? 'header' : 'body',
-            serviceKeyAvailable: !!serviceKey
-          });
-          return res.status(401).json({
-            success: false,
-            error: 'Token inválido ou expirado',
-            details: userError?.message,
-            debug_info: {
-              token_source: tokenFromHeader ? 'Authorization header' : 'Request body',
-              service_key_available: !!serviceKey,
-              error_type: userError?.code || 'unknown'
-            }
-          });
-        }
-
-        const userId = user.id;
-
-        // Verificar se usuário pertence à instituição
-        const { data: institutionUser, error: institutionUserError } = await supabase
-          .from('institution_users')
-          .select(`
-            role,
-            is_active,
-            enrolled_at,
-            institutions!inner(id, name, slug, logo_url, primary_color, settings)
-          `)
-          .eq('user_id', userId)
-          .eq('institution_id', institution.id)
-          .eq('is_active', true)
-          .single();
-
-        if (institutionUserError || !institutionUser) {
-          return res.status(403).json({
-            success: false,
-            error: 'Usuário não tem acesso a esta instituição'
-          });
-        }
-
-        // Obter assistentes disponíveis
-        const { data: availableAssistants } = await supabase
-          .from('institution_assistants')
-          .select(`
-            assistant_id,
-            custom_name,
-            custom_description,
-            is_default,
-            display_order,
-            assistants!inner(name, description, icon, color_theme, openai_assistant_id)
-          `)
-          .eq('institution_id', institution.id)
-          .eq('is_enabled', true)
-          .order('display_order', { ascending: true });
-
-        return res.status(200).json({
-          success: true,
-          data: {
-            user_access: {
-              role: institutionUser.role,
-              is_admin: institutionUser.role === 'subadmin',
-              permissions: institutionUser.role === 'subadmin' ? {
-                manage_users: true,
-                view_reports: true,
-                manage_assistants: false,
-                manage_settings: false,
-                view_conversations: true,
-                export_data: true
-              } : {},
-              joined_at: institutionUser.enrolled_at
-            },
-            institution: institutionUser.institutions,
-            available_assistants: availableAssistants?.map(ia => ({
-              id: ia.assistant_id,
-              name: ia.custom_name || ia.assistants.name,
-              description: ia.custom_description || ia.assistants.description,
-              icon: ia.assistants.icon,
-              color_theme: ia.assistants.color_theme,
-              openai_assistant_id: ia.assistants.openai_assistant_id,
-              is_primary: ia.is_default,
-              display_order: ia.display_order
-            })) || []
+        // Se RPC falhou, retornar erro
+        return res.status(403).json({
+          success: false,
+          error: rpcResult?.error || rpcError?.message || 'Acesso negado',
+          debug_info: {
+            rpc_error: rpcError?.message,
+            rpc_result_error: rpcResult?.error,
+            token_source: tokenFromHeader ? 'Authorization header' : 'Request body'
           }
         });
 
       } catch (error) {
-        console.error('Error verifying access:', error);
+        console.error('❌ RPC verification failed:', error);
         return res.status(401).json({
           success: false,
-          error: 'Token inválido'
+          error: 'Falha na verificação de acesso',
+          details: error.message
         });
       }
     }
