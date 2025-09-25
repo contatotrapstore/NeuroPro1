@@ -1,0 +1,607 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Building2,
+  Users,
+  Bot,
+  Settings,
+  BarChart3,
+  Eye,
+  EyeOff,
+  UserPlus,
+  UserMinus,
+  Save,
+  RefreshCw,
+  Star,
+  StarOff,
+  ChevronRight
+} from 'lucide-react';
+import { getAuthHeaders } from '../../utils/auth';
+import toast from 'react-hot-toast';
+
+interface Institution {
+  id: string;
+  name: string;
+  slug: string;
+  primary_color: string;
+  secondary_color?: string;
+  logo_url?: string;
+  is_active: boolean;
+  created_at: string;
+  stats: {
+    total_users: number;
+    total_conversations: number;
+    total_assistants: number;
+    license_status: string;
+    license_expires?: string;
+  };
+}
+
+interface InstitutionUser {
+  id: string;
+  user_id: string;
+  email: string;
+  role: 'admin' | 'subadmin' | 'user';
+  is_active: boolean;
+  enrolled_at: string;
+  last_access?: string;
+}
+
+interface InstitutionAssistant {
+  id: string;
+  assistant_id: string;
+  name: string;
+  custom_name?: string;
+  description?: string;
+  is_enabled: boolean;
+  is_default: boolean;
+  display_order: number;
+}
+
+interface InstitutionDetailModalProps {
+  institution: Institution | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+type TabType = 'overview' | 'users' | 'assistants' | 'reports';
+
+export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
+  institution,
+  isOpen,
+  onClose
+}) => {
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [users, setUsers] = useState<InstitutionUser[]>([]);
+  const [assistants, setAssistants] = useState<InstitutionAssistant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [userLoading, setUserLoading] = useState(false);
+  const [assistantLoading, setAssistantLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && institution) {
+      setActiveTab('overview');
+      loadInstitutionData();
+    }
+  }, [isOpen, institution]);
+
+  const loadInstitutionData = async () => {
+    if (!institution) return;
+
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadUsers(),
+        loadAssistants()
+      ]);
+    } catch (error) {
+      console.error('Error loading institution data:', error);
+      toast.error('Erro ao carregar dados da instituição');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    if (!institution) return;
+
+    setUserLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/admin-institution-users?institution_id=${institution.id}`, {
+        headers
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setUsers(result.data.users || []);
+      } else {
+        console.error('Error loading users:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const loadAssistants = async () => {
+    if (!institution) return;
+
+    setAssistantLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/admin-institution-assistants?institution_id=${institution.id}`, {
+        headers
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setAssistants(result.data.assistants || []);
+      } else {
+        console.error('Error loading assistants:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading assistants:', error);
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
+  const toggleUserActive = async (userId: string, currentActive: boolean) => {
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch('/api/admin-institution-users', {
+        method: 'PUT',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          institution_id: institution?.id,
+          is_active: !currentActive
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Usuário ${!currentActive ? 'ativado' : 'desativado'} com sucesso`);
+        await loadUsers();
+      } else {
+        toast.error(result.error || 'Erro ao alterar status do usuário');
+      }
+    } catch (error) {
+      console.error('Error toggling user:', error);
+      toast.error('Erro ao alterar status do usuário');
+    }
+  };
+
+  const toggleAssistantEnabled = async (assistantId: string, currentEnabled: boolean) => {
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch('/api/admin-institution-toggle-assistant', {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          institution_id: institution?.id,
+          assistant_id: assistantId,
+          is_enabled: !currentEnabled
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Assistente ${!currentEnabled ? 'habilitado' : 'desabilitado'} com sucesso`);
+        await loadAssistants();
+      } else {
+        toast.error(result.error || 'Erro ao alterar assistente');
+      }
+    } catch (error) {
+      console.error('Error toggling assistant:', error);
+      toast.error('Erro ao alterar assistente');
+    }
+  };
+
+  const setAssistantAsDefault = async (assistantId: string) => {
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch('/api/admin-institution-toggle-assistant', {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          institution_id: institution?.id,
+          assistant_id: assistantId,
+          set_as_default: true
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Assistente definido como padrão');
+        await loadAssistants();
+      } else {
+        toast.error(result.error || 'Erro ao definir assistente padrão');
+      }
+    } catch (error) {
+      console.error('Error setting default assistant:', error);
+      toast.error('Erro ao definir assistente padrão');
+    }
+  };
+
+  if (!isOpen || !institution) return null;
+
+  const tabs = [
+    { id: 'overview' as TabType, label: 'Visão Geral', icon: Building2 },
+    { id: 'users' as TabType, label: 'Usuários', icon: Users },
+    { id: 'assistants' as TabType, label: 'Assistentes', icon: Bot },
+    { id: 'reports' as TabType, label: 'Relatórios', icon: BarChart3 },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center space-x-4">
+            {institution.logo_url ? (
+              <img
+                src={institution.logo_url}
+                alt={`${institution.name} Logo`}
+                className="h-12 w-12 rounded-lg object-cover"
+              />
+            ) : (
+              <div
+                className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold text-lg"
+                style={{ backgroundColor: institution.primary_color }}
+              >
+                {institution.name.charAt(0)}
+              </div>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {institution.name}
+              </h2>
+              <p className="text-gray-600">
+                /i/{institution.slug} • {institution.stats.total_users} usuários
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <Users className="h-8 w-8 text-blue-600" />
+                    <div className="ml-3">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {institution.stats.total_users}
+                      </p>
+                      <p className="text-sm text-gray-600">Usuários Ativos</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <Bot className="h-8 w-8 text-green-600" />
+                    <div className="ml-3">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {institution.stats.total_assistants}
+                      </p>
+                      <p className="text-sm text-gray-600">Assistentes</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <BarChart3 className="h-8 w-8 text-purple-600" />
+                    <div className="ml-3">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {institution.stats.total_conversations}
+                      </p>
+                      <p className="text-sm text-gray-600">Conversas</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <Settings className="h-8 w-8 text-yellow-600" />
+                    <div className="ml-3">
+                      <p className="text-lg font-bold text-gray-900">
+                        {institution.stats.license_status === 'unlimited' ? 'Ilimitada' : 'Ativa'}
+                      </p>
+                      <p className="text-sm text-gray-600">Licença</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Institution Details */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Detalhes da Instituição</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">ID</p>
+                    <p className="text-sm text-gray-900 font-mono">{institution.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Slug</p>
+                    <p className="text-sm text-gray-900">{institution.slug}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Cor Primária</p>
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: institution.primary_color }}
+                      ></div>
+                      <p className="text-sm text-gray-900">{institution.primary_color}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Criada em</p>
+                    <p className="text-sm text-gray-900">
+                      {new Date(institution.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Usuários da Instituição</h3>
+                <button
+                  onClick={loadUsers}
+                  disabled={userLoading}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <RefreshCw size={16} className={userLoading ? 'animate-spin' : ''} />
+                  <span>Atualizar</span>
+                </button>
+              </div>
+
+              {userLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Carregando usuários...</p>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nenhum usuário encontrado
+                  </h3>
+                  <p className="text-gray-600">
+                    Esta instituição ainda não possui usuários cadastrados.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Usuário
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Último Acesso
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {users.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.email}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {user.user_id.slice(0, 8)}...
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                              user.role === 'subadmin' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {user.last_access
+                              ? new Date(user.last_access).toLocaleDateString('pt-BR')
+                              : 'Nunca'
+                            }
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.is_active ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => toggleUserActive(user.user_id, user.is_active)}
+                              className={`p-1 rounded hover:bg-gray-100 ${
+                                user.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
+                              }`}
+                              title={user.is_active ? 'Desativar usuário' : 'Ativar usuário'}
+                            >
+                              {user.is_active ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'assistants' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Assistentes da Instituição</h3>
+                <button
+                  onClick={loadAssistants}
+                  disabled={assistantLoading}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <RefreshCw size={16} className={assistantLoading ? 'animate-spin' : ''} />
+                  <span>Atualizar</span>
+                </button>
+              </div>
+
+              {assistantLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Carregando assistentes...</p>
+                </div>
+              ) : assistants.length === 0 ? (
+                <div className="text-center py-8">
+                  <Bot className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nenhum assistente configurado
+                  </h3>
+                  <p className="text-gray-600">
+                    Configure os assistentes disponíveis para esta instituição.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {assistants.map((assistant) => (
+                    <div
+                      key={assistant.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <Bot size={20} className={`${assistant.is_enabled ? 'text-green-600' : 'text-gray-400'}`} />
+                          {assistant.is_default && (
+                            <Star size={16} className="text-yellow-500" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {assistant.custom_name || assistant.name}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {assistant.assistant_id}
+                          </p>
+                          {assistant.description && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {assistant.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setAssistantAsDefault(assistant.assistant_id)}
+                          disabled={assistant.is_default || !assistant.is_enabled}
+                          className={`p-2 rounded-lg ${
+                            assistant.is_default
+                              ? 'text-yellow-600 bg-yellow-50'
+                              : assistant.is_enabled
+                                ? 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'
+                                : 'text-gray-300 cursor-not-allowed'
+                          }`}
+                          title={assistant.is_default ? 'Assistente padrão' : 'Definir como padrão'}
+                        >
+                          {assistant.is_default ? <Star size={16} /> : <StarOff size={16} />}
+                        </button>
+
+                        <button
+                          onClick={() => toggleAssistantEnabled(assistant.assistant_id, assistant.is_enabled)}
+                          className={`p-2 rounded-lg ${
+                            assistant.is_enabled
+                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                              : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                          }`}
+                          title={assistant.is_enabled ? 'Desabilitar assistente' : 'Habilitar assistente'}
+                        >
+                          {assistant.is_enabled ? <Eye size={16} /> : <EyeOff size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'reports' && (
+            <div className="text-center py-12">
+              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Relatórios em Desenvolvimento
+              </h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                Em breve você terá acesso a relatórios detalhados de uso, estatísticas e métricas da instituição.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

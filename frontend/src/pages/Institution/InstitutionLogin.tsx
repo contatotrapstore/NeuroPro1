@@ -155,29 +155,32 @@ export const InstitutionLogin: React.FC = () => {
           {/* Header com Logo */}
           <div className="text-center mb-8">
             {institution.logo_url ? (
-              <img
-                src={institution.logo_url}
-                alt={`${institution.name} Logo`}
-                className="h-16 w-auto mx-auto mb-4"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
+              <>
+                <img
+                  src={institution.logo_url}
+                  alt={`${institution.name} Logo`}
+                  className="h-24 w-auto mx-auto mb-6"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </>
             ) : (
-              <div
-                className="h-16 w-16 mx-auto mb-4 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: institution.primary_color }}
-              >
-                <span className="text-white font-bold text-2xl">
-                  {institution.name.charAt(0)}
-                </span>
-              </div>
+              <>
+                <div
+                  className="h-16 w-16 mx-auto mb-4 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: institution.primary_color }}
+                >
+                  <span className="text-white font-bold text-2xl">
+                    {institution.name.charAt(0)}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  {institution.name}
+                </h1>
+              </>
             )}
-
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {institution.name}
-            </h1>
 
             <p className="text-gray-600">
               {institution.settings.welcome_message || 'Entre com suas credenciais'}

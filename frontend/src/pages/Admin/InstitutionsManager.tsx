@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Users, Bot, Eye, Search, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthHeaders } from '../../utils/auth';
+import { InstitutionDetailModal } from './InstitutionDetailModal';
 
 interface Institution {
   id: string;
@@ -26,6 +27,8 @@ export const InstitutionsManager: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const loadInstitutions = async (page = 1) => {
     setLoading(true);
@@ -130,6 +133,16 @@ export const InstitutionsManager: React.FC = () => {
     window.open(`/i/${institution.slug}`, '_blank');
   };
 
+  const openInstitutionModal = (institution: Institution) => {
+    setSelectedInstitution(institution);
+    setModalOpen(true);
+  };
+
+  const closeInstitutionModal = () => {
+    setSelectedInstitution(null);
+    setModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -223,7 +236,11 @@ export const InstitutionsManager: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {institutions.map((institution) => (
-                  <tr key={institution.id} className="hover:bg-gray-50">
+                  <tr
+                    key={institution.id}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => openInstitutionModal(institution)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {institution.logo_url ? (
@@ -267,9 +284,12 @@ export const InstitutionsManager: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => viewInstitution(institution)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          viewInstitution(institution);
+                        }}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded mr-2"
-                        title="Visualizar instituição"
+                        title="Visualizar página da instituição"
                       >
                         <Eye size={16} />
                       </button>
@@ -350,6 +370,13 @@ export const InstitutionsManager: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Institution Detail Modal */}
+      <InstitutionDetailModal
+        institution={selectedInstitution}
+        isOpen={modalOpen}
+        onClose={closeInstitutionModal}
+      />
     </div>
   );
 };
