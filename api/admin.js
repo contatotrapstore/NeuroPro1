@@ -285,6 +285,7 @@ module.exports = async function handler(req, res) {
           totalActiveSubscriptions: stats.total_active_subscriptions || 0, // 258 total (com admins)
           realPayingUsers: stats.real_paying_users || 0, // 22 usuários únicos pagantes
           monthlyRevenue: stats.monthly_revenue || 0, // R$ 6.862,80 receita real
+          totalActiveRevenue: stats.monthly_revenue || 0, // Receita ativa (mesmo valor da mensal)
           totalConversations: totalConversations || 0,
           recentConversations: recentConversations || 0,
           adminSubscriptions: stats.admin_subscriptions || 0, // 86 assinaturas de admin
