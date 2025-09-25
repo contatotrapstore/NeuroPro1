@@ -108,48 +108,6 @@ module.exports = async function handler(req, res) {
     const userEmail = user.email;
 
     if (req.method === 'GET') {
-      // Check if user is admin - return all assistants as active subscriptions
-      if (isAdminUser(userEmail)) {
-        console.log('👑 Admin user detected in subscriptions, returning all assistants:', userEmail);
-
-        // Get all active assistants for admin
-        const { data: allAssistants, error: adminError } = await supabase
-          .from('assistants')
-          .select('id, name, description, icon, openai_assistant_id, color_theme')
-          .eq('is_active', true)
-          .order('created_at', { ascending: true });
-
-        if (adminError) {
-          console.error('Error getting assistants for admin subscriptions:', adminError);
-          return res.status(500).json({
-            success: false,
-            error: `Erro ao buscar assistentes para admin: ${adminError.message}`
-          });
-        }
-
-        // Create virtual subscriptions for all assistants
-        const virtualSubscriptions = allAssistants.map(assistant => ({
-          id: `admin-${assistant.id}`,
-          user_id: userId,
-          assistant_id: assistant.id,
-          plan: 'admin',
-          status: 'active',
-          amount: 0, // Admin access is free
-          subscription_type: 'admin',
-          package_type: 'admin',
-          expires_at: '2099-12-31T23:59:59Z', // Far future date
-          created_at: new Date().toISOString(),
-          assistants: assistant
-        }));
-
-        console.log('✅ Returning admin virtual subscriptions:', virtualSubscriptions.length);
-
-        return res.status(200).json({
-          success: true,
-          data: virtualSubscriptions,
-          access_type: 'admin'
-        });
-      }
       // Get user subscriptions using service key
       console.log('📊 Buscando assinaturas do usuário:', {
         userId: userId,
@@ -192,59 +150,84 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      if (!subscriptions || subscriptions.length === 0) {
-        console.log('⚠️ No subscriptions found for user:', userId);
-        return res.status(200).json({
-          success: true,
-          data: []
+      // Initialize final subscriptions array with user's real subscriptions
+      let finalSubscriptions = [];
+
+      if (subscriptions && subscriptions.length > 0) {
+        // Get assistant details for real subscriptions
+        const assistantIds = subscriptions.map(sub => sub.assistant_id);
+        console.log('🔍 Looking for assistants:', assistantIds);
+
+        const { data: assistants, error: assistError } = await supabase
+          .from('assistants')
+          .select('id, name, description, icon, openai_assistant_id, color_theme')
+          .in('id', assistantIds);
+
+        console.log('🤖 Assistants query result:', {
+          hasAssistants: !!assistants,
+          assistantsCount: assistants ? assistants.length : 0,
+          assistError: assistError ? assistError.message : 'none'
         });
+
+        if (assistError) {
+          console.error('❌ Assistants query error:', assistError);
+          // Use subscriptions without assistant details if assistant query fails
+          finalSubscriptions = subscriptions;
+        } else {
+          // Merge subscription and assistant data
+          finalSubscriptions = subscriptions.map(subscription => {
+            const assistant = assistants?.find(a => a.id === subscription.assistant_id);
+            return {
+              ...subscription,
+              assistants: assistant || null
+            };
+          });
+        }
       }
 
-      // Get assistant details separately
-      const assistantIds = subscriptions.map(sub => sub.assistant_id);
-      console.log('🔍 Looking for assistants:', assistantIds);
+      // Check if user is admin - add virtual subscriptions for all assistants
+      if (isAdminUser(userEmail)) {
+        console.log('👑 Admin user detected, adding virtual subscriptions:', userEmail);
 
-      const { data: assistants, error: assistError } = await supabase
-        .from('assistants')
-        .select('id, name, description, icon, openai_assistant_id, color_theme')
-        .in('id', assistantIds);
+        // Get all active assistants for admin
+        const { data: allAssistants, error: adminError } = await supabase
+          .from('assistants')
+          .select('id, name, description, icon, openai_assistant_id, color_theme')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
 
-      console.log('🤖 Assistants query result:', {
-        hasAssistants: !!assistants,
-        assistantsCount: assistants ? assistants.length : 0,
-        assistError: assistError ? assistError.message : 'none'
-      });
+        if (adminError) {
+          console.error('Error getting assistants for admin subscriptions:', adminError);
+        } else {
+          // Create virtual subscriptions for all assistants
+          const virtualSubscriptions = allAssistants.map(assistant => ({
+            id: `admin-${assistant.id}`,
+            user_id: userId,
+            assistant_id: assistant.id,
+            plan: 'admin',
+            status: 'active',
+            amount: 0, // Admin access is free
+            subscription_type: 'admin',
+            package_type: 'admin',
+            expires_at: '2099-12-31T23:59:59Z', // Far future date
+            created_at: new Date().toISOString(),
+            assistants: assistant
+          }));
 
-      if (assistError) {
-        console.error('❌ Assistants query error:', assistError);
-        // Return subscriptions without assistant details if assistant query fails
-        return res.status(200).json({
-          success: true,
-          data: subscriptions
-        });
+          console.log('✅ Adding admin virtual subscriptions:', virtualSubscriptions.length);
+          finalSubscriptions = [...finalSubscriptions, ...virtualSubscriptions];
+        }
       }
 
-      // Merge subscription and assistant data
-      const enrichedSubscriptions = subscriptions.map(subscription => {
-        const assistant = assistants?.find(a => a.id === subscription.assistant_id);
-        return {
-          ...subscription,
-          assistants: assistant || null
-        };
-      });
-
-      console.log('✅ Final enriched subscriptions:', {
-        count: enrichedSubscriptions.length,
-        sample: enrichedSubscriptions[0] ? {
-          id: enrichedSubscriptions[0].id,
-          assistant_id: enrichedSubscriptions[0].assistant_id,
-          hasAssistantData: !!enrichedSubscriptions[0].assistants
-        } : null
+      console.log('✅ Final subscriptions:', {
+        count: finalSubscriptions.length,
+        realSubscriptions: finalSubscriptions.filter(s => s.plan !== 'admin').length,
+        adminVirtual: finalSubscriptions.filter(s => s.plan === 'admin').length
       });
 
       return res.status(200).json({
         success: true,
-        data: enrichedSubscriptions
+        data: finalSubscriptions
       });
     }
 
