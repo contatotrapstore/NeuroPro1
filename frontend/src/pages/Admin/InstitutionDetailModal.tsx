@@ -307,6 +307,31 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
     }
   };
 
+  const fetchReports = async () => {
+    if (!institution?.id) return;
+
+    setReportLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/admin-institution-reports?institution_id=${institution.id}&period=${reportPeriod}`, {
+        method: 'GET',
+        headers,
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setReportData(result.data);
+      } else {
+        toast.error(result.error || 'Erro ao carregar relatórios');
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast.error('Erro ao carregar relatórios');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   if (!isOpen || !institution) return null;
 
   const tabs = [
@@ -627,32 +652,32 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => setAssistantAsDefault(assistant.assistant_id)}
-                          disabled={assistant.is_default || !assistant.is_enabled}
-                          className={`p-2 rounded-lg ${
-                            assistant.is_default
-                              ? 'text-yellow-600 bg-yellow-50'
-                              : assistant.is_enabled
-                                ? 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'
-                                : 'text-gray-300 cursor-not-allowed'
-                          }`}
-                          title={assistant.is_default ? 'Assistente padrão' : 'Definir como padrão'}
-                        >
-                          {assistant.is_default ? <Star size={16} /> : <StarOff size={16} />}
-                        </button>
-
-                        <button
-                          onClick={() => toggleAssistantEnabled(assistant.assistant_id, assistant.is_enabled)}
-                          className={`p-2 rounded-lg ${
+                        {/* Status indicators only - no controls for institutions */}
+                        <div className="flex items-center space-x-1 text-xs">
+                          {assistant.is_default && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                              <Star size={12} className="mr-1" />
+                              Padrão
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full ${
                             assistant.is_enabled
-                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                              : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
-                          }`}
-                          title={assistant.is_enabled ? 'Desabilitar assistente' : 'Habilitar assistente'}
-                        >
-                          {assistant.is_enabled ? <Eye size={16} /> : <EyeOff size={16} />}
-                        </button>
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {assistant.is_enabled ? (
+                              <>
+                                <Eye size={12} className="mr-1" />
+                                Ativo
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff size={12} className="mr-1" />
+                                Inativo
+                              </>
+                            )}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
