@@ -95,7 +95,7 @@ export const InstitutionReportsManager: React.FC = () => {
   const loadInstitutions = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/institutions?action=list', {
+      const response = await fetch('/api/admin-institutions?action=list', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sb-access-token') || ''}`
         }

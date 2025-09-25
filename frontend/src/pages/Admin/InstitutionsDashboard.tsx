@@ -57,7 +57,7 @@ export const InstitutionsDashboard: React.FC = () => {
         time_range: timeRange
       });
 
-      const response = await fetch(`/api/admin/institutions?${params}`, {
+      const response = await fetch(`/api/admin-institutions?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
