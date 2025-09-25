@@ -124,15 +124,7 @@ module.exports = async function handler(req, res) {
 
         let query = supabase
           .from('institutions')
-          .select(`
-            *,
-            institution_subscriptions!inner(
-              plan_type,
-              payment_status,
-              valid_until,
-              max_users
-            )
-          `);
+          .select('*');
 
         // Filtros
         if (status_filter === 'active') {
@@ -190,8 +182,8 @@ module.exports = async function handler(req, res) {
               stats: {
                 total_users: usersCount.count || 0,
                 total_conversations: conversationsCount.count || 0,
-                license_status: institution.institution_subscriptions?.[0]?.payment_status || 'none',
-                license_expires: institution.institution_subscriptions?.[0]?.valid_until || null
+                license_status: 'unlimited', // ABPSI has unlimited access
+                license_expires: null
               }
             };
           })

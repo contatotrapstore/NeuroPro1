@@ -16,12 +16,6 @@ interface Institution {
     license_status: string;
     license_expires?: string;
   };
-  institution_subscriptions?: Array<{
-    plan_type: string;
-    payment_status: string;
-    valid_until?: string;
-    max_users?: number;
-  }>;
 }
 
 export const InstitutionsManager: React.FC = () => {
@@ -99,35 +93,15 @@ export const InstitutionsManager: React.FC = () => {
       );
     }
 
-    const license = institution.institution_subscriptions?.[0];
-    if (!license || license.payment_status !== 'active') {
+    // Simplified status based on license_status from API
+    const status = institution.stats.license_status;
+
+    if (status === 'unlimited') {
       return (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-          Sem Licença
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+          Ativa (Ilimitada)
         </span>
       );
-    }
-
-    if (license.valid_until) {
-      const daysUntilExpiry = Math.ceil(
-        (new Date(license.valid_until).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      if (daysUntilExpiry < 0) {
-        return (
-          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-            Expirada
-          </span>
-        );
-      }
-
-      if (daysUntilExpiry <= 7) {
-        return (
-          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-            Expirando
-          </span>
-        );
-      }
     }
 
     return (
