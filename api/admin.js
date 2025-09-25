@@ -250,91 +250,24 @@ module.exports = async function handler(req, res) {
     }
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'stats') {
-      // GET /admin/stats - Get system statistics excluding admin accounts
+      // GET /admin/stats - Get system statistics with corrected calculations
 
-      // Admin emails that should be excluded from stats
-      const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
+      // Use secure RPC function to get corrected user stats
+      const { data: stats, error: statsError } = await supabase.rpc('get_user_stats');
 
-      // Use secure RPC function to get user stats (avoids SECURITY DEFINER view issues)
-      const { data: userStats, error: userStatsError } = await supabase.rpc('get_user_stats');
-
-      if (userStatsError) {
-        console.error('Error fetching user stats:', userStatsError);
+      if (statsError) {
+        console.error('Error fetching user stats:', statsError);
         return res.status(500).json({
           success: false,
           message: 'Erro ao buscar estatísticas de usuários',
-          error: userStatsError.message
+          error: statsError.message
         });
       }
-
-      const totalUsers = userStats.non_admin_users || 0;
-
-      // For subscription filtering, we'll need to get admin user IDs differently
-      // Get admin user IDs from subscriptions table (more reliable than auth.users)
-      const { data: adminSubscriptions } = await supabase
-        .from('user_subscriptions')
-        .select('user_id')
-        .in('user_id', (await supabase
-          .from('user_subscriptions')
-          .select('user_id')
-          .not('user_id', 'is', null)
-        ).data?.map(s => s.user_id) || []);
-
-      // We can't easily filter admin IDs without auth.users access, so we'll use all subscriptions
-      const adminUserIds = []; // Will be empty, but we'll filter by known patterns if needed
-
-      // Get active subscriptions (excluding admin subscriptions)
-      const { data: allActiveSubscriptions, error: subsError } = await supabase
-        .from('user_subscriptions')
-        .select('user_id')
-        .eq('status', 'active')
-        .gte('expires_at', new Date().toISOString());
-
-      const nonAdminActiveSubscriptions = allActiveSubscriptions?.filter(sub => 
-        !adminUserIds.includes(sub.user_id)
-      ) || [];
-      const activeSubscriptions = nonAdminActiveSubscriptions.length;
 
       // Get total conversations
       const { count: totalConversations, error: convsError } = await supabase
         .from('conversations')
         .select('id', { count: 'exact', head: true });
-
-      // Calculate monthly revenue (excluding admin subscriptions)
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 7);
-      
-      const { data: allMonthlySubscriptions, error: revenueError } = await supabase
-        .from('user_subscriptions')
-        .select('subscription_type, assistant_id, user_id')
-        .gte('created_at', `${currentMonth}-01T00:00:00.000Z`)
-        .lt('created_at', `${nextMonth}-01T00:00:00.000Z`)
-        .eq('status', 'active');
-
-      const monthlySubscriptions = allMonthlySubscriptions?.filter(sub => 
-        !adminUserIds.includes(sub.user_id)
-      ) || [];
-
-      // Get assistant prices for revenue calculation
-      const { data: assistants, error: assistantsError } = await supabase
-        .from('assistants')
-        .select('id, monthly_price, semester_price');
-
-      let monthlyRevenue = 0;
-      if (monthlySubscriptions && assistants && !revenueError && !assistantsError) {
-        const assistantPrices = {};
-        assistants.forEach(a => {
-          assistantPrices[a.id] = {
-            monthly: a.monthly_price || 39.90,
-            semester: a.semester_price || 199.00
-          };
-        });
-
-        monthlyRevenue = monthlySubscriptions.reduce((sum, sub) => {
-          const prices = assistantPrices[sub.assistant_id] || { monthly: 39.90, semester: 199.00 };
-          return sum + (sub.subscription_type === 'monthly' ? prices.monthly : prices.semester);
-        }, 0);
-      }
 
       // Get recent conversations (last 30 days)
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -343,57 +276,34 @@ module.exports = async function handler(req, res) {
         .select('id', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
 
-      // Calculate total active revenue (all active subscriptions excluding admins)
-      const { data: allActiveSubscriptionsData, error: activeRevError } = await supabase
-        .from('user_subscriptions')
-        .select('subscription_type, assistant_id, user_id')
-        .eq('status', 'active')
-        .gte('expires_at', new Date().toISOString());
-
-      const activeSubscriptionsData = allActiveSubscriptionsData?.filter(sub => 
-        !adminUserIds.includes(sub.user_id)
-      ) || [];
-
-      let totalActiveRevenue = 0;
-      if (activeSubscriptionsData && assistants && !activeRevError && !assistantsError) {
-        const assistantPrices = {};
-        assistants.forEach(a => {
-          assistantPrices[a.id] = {
-            monthly: a.monthly_price || 39.90,
-            semester: a.semester_price || 199.00
-          };
-        });
-
-        totalActiveRevenue = activeSubscriptionsData.reduce((sum, sub) => {
-          const prices = assistantPrices[sub.assistant_id] || { monthly: 39.90, semester: 199.00 };
-          return sum + (sub.subscription_type === 'monthly' ? prices.monthly : prices.semester);
-        }, 0);
-      }
-
       return res.json({
         success: true,
         data: {
-          totalUsers: totalUsers,
-          activeSubscriptions: activeSubscriptions || 0,
-          activePackages: 0, // Packages não implementados ainda
+          totalUsers: stats.neuro_users || 0, // Usuários Neuro (excluindo admins e ABPSI)
+          abpsiUsers: stats.abpsi_users || 0, // Usuários ABPSI separados
+          activeSubscriptions: stats.active_subscriptions || 0, // Assinaturas reais (1 por usuário)
+          realPayingUsers: stats.real_paying_users || 0, // Usuários que realmente pagam
+          monthlyRevenue: stats.monthly_revenue || 0, // Receita mensal corrigida
+          totalConversations: totalConversations || 0,
           recentConversations: recentConversations || 0,
-          monthlyRevenue: monthlyRevenue,
-          totalActiveRevenue: totalActiveRevenue
+          timestamp: stats.timestamp
         },
-        message: 'Estatísticas recuperadas com sucesso'
+        message: 'Estatísticas recuperadas com sucesso (corrigidas)'
       });
     }
 
     else if (req.method === 'GET' && pathParts.length === 2 && pathParts[1] === 'users') {
-      // GET /admin/users - List ALL users (with and without subscriptions)
+      // GET /admin/users - List users with filters for Neuro/ABPSI separation
       const page = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
+      const filter = url.searchParams.get('filter') || 'all'; // all, neuro, abpsi, paying
 
-      // Use secure RPC function to get users (avoids SECURITY DEFINER view issues)
+      // Use secure RPC function with filters
       const { data: usersData, error: usersError } = await supabase.rpc('get_admin_users_list', {
         page_limit: limit,
-        page_offset: offset
+        page_offset: offset,
+        user_type: filter
       });
 
       if (usersError) {
@@ -405,114 +315,21 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const allUsers = { users: usersData.users || [] };
+      // RPC already provides paginated and filtered data
+      const users = usersData.users || [];
       const totalCount = usersData.total_count || 0;
-
-      // Then get subscription data to enrich user information
-      const { data: allSubscriptions, error: subsError } = await supabase
-        .from('user_subscriptions')
-        .select('user_id, created_at, status, expires_at, package_type, assistant_id')
-        .order('created_at', { ascending: false });
-
-      if (subsError) {
-        console.error('Error fetching subscriptions:', subsError);
-        return res.status(500).json({
-          success: false,
-          message: 'Erro ao buscar assinaturas',
-          error: subsError.message
-        });
-      }
-
-
-      // Create user map from ALL users (with and without subscriptions)
-      const userMap = new Map();
-
-      // Initialize ALL users first from RPC response
-      if (allUsers.users) {
-        allUsers.users.forEach(user => {
-          userMap.set(user.id, {
-            id: user.id,
-            email: user.email,
-            name: user.name || user.email?.split('@')[0] || 'Usuário',
-            created_at: user.created_at,
-            last_sign_in_at: user.last_sign_in_at,
-            email_confirmed_at: user.email_confirmed_at,
-            user_metadata: { name: user.name },
-            active_subscriptions: 0,
-            active_packages: 0,
-            is_admin: user.is_admin
-          });
-        });
-      }
-      
-      // Add subscription and package counts
-      if (allSubscriptions) {
-        allSubscriptions.forEach(sub => {
-          if (!sub.user_id || !userMap.has(sub.user_id)) return;
-          
-          const user = userMap.get(sub.user_id);
-          
-          if (sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
-            // Se tem package_type e é um pacote, conta como pacote
-            if (sub.package_type === 'package_3' || sub.package_type === 'package_6') {
-              user.active_packages++;
-            } else {
-              // Senão conta como assinatura individual (inclusive quando package_type é null, undefined ou 'individual')
-              user.active_subscriptions++;
-            }
-          }
-        });
-      }
-
-      // Get all assistants to calculate available assistants for each user
-      const { data: allAssistants, error: assistantsError } = await supabase
-        .from('assistants')
-        .select('id, name, icon, icon_url, icon_type, color_theme')
-        .eq('is_active', true);
-
-      if (assistantsError) {
-        console.error('Error fetching assistants for user calculation:', assistantsError);
-      }
-
-      // Add available assistants information to each user
-      for (const [userId, user] of userMap) {
-        if (allAssistants) {
-          // Get user's subscribed assistants
-          const userSubscriptions = allSubscriptions?.filter(sub => 
-            sub.user_id === userId && 
-            sub.status === 'active' && 
-            new Date(sub.expires_at) > new Date()
-          ) || [];
-
-          const subscribedAssistantIds = userSubscriptions.map(sub => sub.assistant_id);
-          
-          // Filter available assistants
-          const availableAssistants = allAssistants
-            .filter(assistant => !subscribedAssistantIds.includes(assistant.id))
-            .slice(0, 5); // Limit to 5 for display
-
-          user.availableAssistants = availableAssistants;
-        } else {
-          user.availableAssistants = [];
-        }
-      }
-
-      // Convert map to array, sort by creation date (newest first), and paginate
-      const allUsersList = Array.from(userMap.values());
-      allUsersList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      const paginatedUsers = allUsersList.slice(offset, offset + limit);
-      const totalUsers = allUsersList.length;
 
       return res.json({
         success: true,
-        data: paginatedUsers,
+        data: users,
         pagination: {
-          totalUsers: totalUsers,
+          totalUsers: totalCount,
           currentPage: page,
-          totalPages: Math.ceil(totalUsers / limit),
+          totalPages: Math.ceil(totalCount / limit),
           limit: limit
         },
-        message: 'Usuários recuperados com sucesso'
+        filter: filter,
+        message: `Usuários ${filter !== 'all' ? filter : ''} recuperados com sucesso`
       });
     }
 
