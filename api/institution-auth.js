@@ -222,6 +222,9 @@ async function handleAuthAction(req, res, supabase, institutionSlug, supabaseUrl
       try {
         console.log('🔐 Verifying institution access via RPC...');
 
+        // Importar createClient do Supabase
+        const { createClient } = require('@supabase/supabase-js');
+
         // Criar client com o token do usuário
         const userClient = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
