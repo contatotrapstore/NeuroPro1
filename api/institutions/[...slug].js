@@ -1,5 +1,4 @@
 const { createClient } = require('@supabase/supabase-js');
-const { applyCors } = require('../utils/cors');
 
 /**
  * API Centralizada para Instituições (Vercel Dynamic Routes)
@@ -7,12 +6,38 @@ const { applyCors } = require('../utils/cors');
  * Exemplos: /api/institutions/abpsi/auth, /api/institutions/abpsi/dashboard
  */
 module.exports = async function handler(req, res) {
-  console.log('🏛️ Institution Dynamic API v1.0');
+  console.log('🏛️ Institution Dynamic API v2.0');
+  console.log('Request URL:', req.url);
+  console.log('Query params:', req.query);
 
-  // Apply CORS
-  const corsHandled = applyCors(req, res);
-  if (corsHandled) {
-    return;
+  // ============================================
+  // CORS HEADERS (INLINE)
+  // ============================================
+  const allowedOrigins = [
+    'https://www.neuroialab.com.br',
+    'https://neuroialab.com.br',
+    'https://neuroai-lab.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000'
+  ];
+
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -143,19 +168,33 @@ async function handleAuth(req, res, supabase, institutionSlug) {
       }
 
       try {
-        // Decode JWT to get user ID
-        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        const userId = payload.sub;
+        // Create user-specific client to validate token
+        const userClient = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        });
 
-        if (!userId) {
+        // Get user from token using Supabase auth
+        const { data: { user }, error: userError } = await userClient.auth.getUser();
+
+        if (userError || !user) {
           return res.status(401).json({
             success: false,
-            error: 'Token inválido'
+            error: 'Token inválido ou expirado'
           });
         }
 
+        const userId = user.id;
+
         // Verificar se usuário pertence à instituição
-        const { data: institutionUser, error: userError } = await supabase
+        const { data: institutionUser, error: institutionUserError } = await supabase
           .from('institution_users')
           .select(`
             role,
@@ -168,7 +207,7 @@ async function handleAuth(req, res, supabase, institutionSlug) {
           .eq('is_active', true)
           .single();
 
-        if (userError || !institutionUser) {
+        if (institutionUserError || !institutionUser) {
           return res.status(403).json({
             success: false,
             error: 'Usuário não tem acesso a esta instituição'

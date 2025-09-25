@@ -98,25 +98,33 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     setLoading(true);
     setError(null);
 
+    console.log(`🔄 InstitutionContext: Loading institution ${slug}...`);
+
     try {
-      const response = await fetch(`/api/institutions/${slug}/auth`, {
+      // Use the simplified endpoint with query parameter
+      const response = await fetch(`/api/institution-auth?slug=${slug}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         }
       });
 
+      console.log('📡 Institution load response status:', response.status);
+
       const result = await response.json();
+      console.log('📊 Institution load result:', result);
 
       if (result.success && result.data.institution) {
+        console.log('✅ Institution loaded successfully:', result.data.institution.name);
         setInstitution(result.data.institution);
         return true;
       } else {
+        console.error('❌ Failed to load institution:', result.error);
         setError(result.error || 'Instituição não encontrada');
         return false;
       }
     } catch (error) {
-      console.error('Error loading institution:', error);
+      console.error('💥 Error loading institution:', error);
       setError('Erro ao carregar informações da instituição');
       return false;
     } finally {
@@ -129,8 +137,11 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     setLoading(true);
     setError(null);
 
+    console.log(`🔄 InstitutionContext: Verifying access for ${slug}...`);
+
     try {
-      const response = await fetch(`/api/institutions/${slug}/auth`, {
+      // Use the simplified endpoint with query parameter
+      const response = await fetch(`/api/institution-auth?slug=${slug}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,20 +152,25 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
         })
       });
 
+      console.log('📡 Access verification response status:', response.status);
+
       const result = await response.json();
+      console.log('📊 Access verification result:', result);
 
       if (result.success) {
+        console.log('✅ Access verified successfully');
         setInstitution(result.data.institution);
         setUserAccess(result.data.user_access);
         setAvailableAssistants(result.data.available_assistants || []);
         return true;
       } else {
+        console.error('❌ Access verification failed:', result.error);
         setError(result.error || 'Acesso não autorizado');
         return false;
       }
     } catch (error) {
-      console.error('Error verifying access:', error);
-      setError('Erro ao verificar acesso');
+      console.error('💥 Error verifying access:', error);
+      setError(`Erro ao verificar acesso: ${error.message}`);
       return false;
     } finally {
       setLoading(false);

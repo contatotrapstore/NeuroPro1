@@ -9,6 +9,18 @@
   },
   "rewrites": [
     {
+      "source": "/api/institutions/:slug*/auth",
+      "destination": "/api/institutions/[...slug]"
+    },
+    {
+      "source": "/api/institutions/:slug*/dashboard",
+      "destination": "/api/institutions/[...slug]"
+    },
+    {
+      "source": "/api/institutions/:slug*/users",
+      "destination": "/api/institutions/[...slug]"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
