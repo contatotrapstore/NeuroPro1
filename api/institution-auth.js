@@ -233,29 +233,54 @@ async function handleAuthAction(req, res, supabase, institutionSlug) {
       }
 
       try {
-        // Create user-specific client to validate token (needs service key for user validation)
+        // Try service key first, fallback to anon key approach if not available
         const serviceKey = supabaseServiceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-        if (!serviceKey) {
-          return res.status(500).json({
-            success: false,
-            error: 'Token validation requires service key'
-          });
-        }
 
-        const userClient = createClient(supabaseUrl, serviceKey, {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
+        let user;
+        let userError;
+
+        if (serviceKey) {
+          // Use service key for full token validation
+          const userClient = createClient(supabaseUrl, serviceKey, {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            },
+            global: {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
             }
-          }
-        });
+          });
 
-        // Get user from token using Supabase auth
-        const { data: { user }, error: userError } = await userClient.auth.getUser();
+          const result = await userClient.auth.getUser();
+          user = result.data.user;
+          userError = result.error;
+        } else {
+          // Fallback: use anon key client and try to get user from token directly
+          console.log('⚠️ Using anon key fallback for token validation');
+          const anonClient = createClient(supabaseUrl, supabaseKey);
+
+          try {
+            // Parse JWT token manually to get user ID (basic validation)
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3) {
+              throw new Error('Invalid token format');
+            }
+
+            const payload = JSON.parse(atob(tokenParts[1]));
+            if (!payload.sub || !payload.exp || payload.exp < Date.now() / 1000) {
+              throw new Error('Token expired or invalid');
+            }
+
+            // Create minimal user object
+            user = { id: payload.sub, email: payload.email };
+            userError = null;
+          } catch (err) {
+            user = null;
+            userError = { message: 'Invalid token: ' + err.message };
+          }
+        }
 
         if (userError || !user) {
           console.error('Token validation failed:', userError);

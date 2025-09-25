@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { cn } from '../../utils/cn';
+import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 
 export const InstitutionLogin: React.FC = () => {
@@ -30,7 +31,7 @@ export const InstitutionLogin: React.FC = () => {
     const checkAccess = async () => {
       if (user && institution && slug) {
         try {
-          const { data: { session } } = await require('../../services/supabase').supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
           if (session?.access_token) {
             const hasAccess = await verifyAccess(session.access_token, slug);
             if (hasAccess) {
