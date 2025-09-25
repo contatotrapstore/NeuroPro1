@@ -134,6 +134,9 @@ module.exports = async function handler(req, res) {
           assistant_id: assistant.id,
           plan: 'admin',
           status: 'active',
+          amount: 0, // Admin access is free
+          subscription_type: 'admin',
+          package_type: 'admin',
           expires_at: '2099-12-31T23:59:59Z', // Far future date
           created_at: new Date().toISOString(),
           assistants: assistant

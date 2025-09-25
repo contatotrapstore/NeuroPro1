@@ -91,17 +91,25 @@ export default function Subscriptions() {
       ]);
 
       if (subscriptionsResult.success) {
-        const subscriptions = subscriptionsResult.data || [];
-        console.log('✅ Subscriptions loaded:', subscriptions);
+        const allSubscriptions = subscriptionsResult.data || [];
+        console.log('✅ Subscriptions loaded:', allSubscriptions);
 
-        // Debug: Check for missing amount fields
-        subscriptions.forEach((sub, index) => {
+        // Filter out admin subscriptions from user panel
+        const userSubscriptions = allSubscriptions.filter(sub => sub.plan !== 'admin');
+        console.log('✅ Filtered admin subscriptions:', {
+          total: allSubscriptions.length,
+          userOnly: userSubscriptions.length,
+          adminFiltered: allSubscriptions.length - userSubscriptions.length
+        });
+
+        // Debug: Check for missing amount fields in user subscriptions only
+        userSubscriptions.forEach((sub, index) => {
           if (!sub.amount && sub.amount !== 0) {
             console.warn(`⚠️ Subscription ${index} missing amount:`, sub);
           }
         });
 
-        setSubscriptions(subscriptions);
+        setSubscriptions(userSubscriptions);
       } else {
         console.error('❌ Erro ao carregar assinaturas:', subscriptionsResult.error);
       }
