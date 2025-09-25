@@ -165,34 +165,44 @@ module.exports = async function handler(req, res) {
           });
         }
 
-        // Buscar dados dos usuários no auth.users
+        // Buscar dados dos usuários na tabela auth.users
+        // NOTA: Como não temos acesso direto ao auth.users, vamos buscar pela view profiles se existir
+        // ou usar dados básicos
         const usersWithDetails = [];
         if (institutionUsers && institutionUsers.length > 0) {
-          for (const institutionUser of institutionUsers) {
-            try {
-              const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(
-                institutionUser.user_id
-              );
+          // Tentar buscar todos os emails em uma única query
+          const userIds = institutionUsers.map(u => u.user_id);
 
-              if (!authError && authUser?.user) {
-                usersWithDetails.push({
-                  ...institutionUser,
-                  email: authUser.user.email,
-                  created_at: authUser.user.created_at,
-                  email_confirmed_at: authUser.user.email_confirmed_at
-                });
-              } else {
-                // Caso não consiga buscar do auth, manter apenas dados básicos
-                usersWithDetails.push({
-                  ...institutionUser,
-                  email: `user-${institutionUser.user_id.slice(0, 8)}@unknown.com`
-                });
-              }
-            } catch (error) {
-              console.error(`Error fetching user ${institutionUser.user_id}:`, error);
+          // Tentar buscar da view profiles primeiro (se existir)
+          let profiles = [];
+          try {
+            const { data: profilesData, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, email, created_at')
+              .in('id', userIds);
+
+            if (!profilesError && profilesData) {
+              profiles = profilesData;
+            }
+          } catch (error) {
+            console.log('Profiles view not available, using fallback');
+          }
+
+          // Mapear os dados
+          for (const institutionUser of institutionUsers) {
+            const profile = profiles.find(p => p.id === institutionUser.user_id);
+
+            if (profile) {
               usersWithDetails.push({
                 ...institutionUser,
-                email: `user-${institutionUser.user_id.slice(0, 8)}@error.com`
+                email: profile.email,
+                created_at: profile.created_at
+              });
+            } else {
+              // Fallback: usar ID parcial como identificador
+              usersWithDetails.push({
+                ...institutionUser,
+                email: `user-${institutionUser.user_id.slice(0, 8)}@instituicao.com`
               });
             }
           }
@@ -276,18 +286,25 @@ module.exports = async function handler(req, res) {
           });
         }
 
-        // Buscar usuário por email no auth.users
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        // Buscar usuário por email
+        // Como não temos acesso direto ao auth.users, vamos verificar se existe na tabela profiles
+        // ou assumir que o email é válido e buscar o ID correspondente
+        let foundUser = null;
 
-        if (authError) {
-          console.error('Error searching for user:', authError);
-          return res.status(500).json({
-            success: false,
-            error: 'Erro ao buscar usuário'
-          });
+        try {
+          // Tentar buscar em profiles primeiro
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+          if (!profileError && profileData) {
+            foundUser = { id: profileData.id, email: email };
+          }
+        } catch (error) {
+          console.log('Unable to find user in profiles, email might not exist');
         }
-
-        const foundUser = authUsers?.users?.find(u => u.email === email);
 
         if (!foundUser) {
           return res.status(404).json({
