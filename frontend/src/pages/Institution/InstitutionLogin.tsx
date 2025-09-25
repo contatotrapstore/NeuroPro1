@@ -18,6 +18,7 @@ export const InstitutionLogin: React.FC = () => {
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasCheckedAccess, setHasCheckedAccess] = useState(false);
 
   // Carregar instituição ao montar componente
   useEffect(() => {
@@ -26,17 +27,26 @@ export const InstitutionLogin: React.FC = () => {
     }
   }, [slug, institution, loadInstitution]);
 
-  // Redirecionar se já logado e tem acesso
+  // Redirecionar se já logado e tem acesso (prevenir loop infinito)
   useEffect(() => {
     const checkAccess = async () => {
-      if (user && institution && slug) {
+      if (user && institution && slug && !hasCheckedAccess && !authLoading && !loading) {
+        console.log('🔍 Checking user access to institution...');
+        setHasCheckedAccess(true);
+
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.access_token) {
+            console.log('🎫 Session found, verifying access...');
             const hasAccess = await verifyAccess(session.access_token, slug);
             if (hasAccess) {
+              console.log('✅ Access verified, redirecting...');
               navigate(`/i/${slug}`, { replace: true });
+            } else {
+              console.log('❌ Access denied, staying on login page');
             }
+          } else {
+            console.log('❌ No session found');
           }
         } catch (error) {
           console.error('Error checking access:', error);
@@ -44,8 +54,13 @@ export const InstitutionLogin: React.FC = () => {
       }
     };
 
+    // Reset hasCheckedAccess when user changes
+    if (!user) {
+      setHasCheckedAccess(false);
+    }
+
     checkAccess();
-  }, [user, institution, slug, verifyAccess, navigate]);
+  }, [user, institution, slug, verifyAccess, navigate, hasCheckedAccess, authLoading, loading]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({

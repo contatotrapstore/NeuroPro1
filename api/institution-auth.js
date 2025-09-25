@@ -227,10 +227,23 @@ async function handleAuthAction(req, res, supabase, institutionSlug, supabaseUrl
     }
 
     if (action === 'verify_access') {
+      // Get token from Authorization header or request body
+      const authHeader = req.headers.authorization;
+      const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      const tokenFromBody = req.body?.token;
+      const token = tokenFromHeader || tokenFromBody;
+
+      console.log('🔑 Token sources:', {
+        hasAuthHeader: !!authHeader,
+        hasTokenInBody: !!tokenFromBody,
+        usingHeader: !!tokenFromHeader,
+        usingBody: !!tokenFromBody && !tokenFromHeader
+      });
+
       if (!token) {
         return res.status(400).json({
           success: false,
-          error: 'Token de acesso necessário'
+          error: 'Token de acesso necessário (envie no Authorization header ou no body)'
         });
       }
 
@@ -285,11 +298,21 @@ async function handleAuthAction(req, res, supabase, institutionSlug, supabaseUrl
         }
 
         if (userError || !user) {
-          console.error('Token validation failed:', userError);
+          console.error('Token validation failed:', {
+            error: userError,
+            hasUser: !!user,
+            tokenSource: tokenFromHeader ? 'header' : 'body',
+            serviceKeyAvailable: !!serviceKey
+          });
           return res.status(401).json({
             success: false,
             error: 'Token inválido ou expirado',
-            details: userError?.message
+            details: userError?.message,
+            debug_info: {
+              token_source: tokenFromHeader ? 'Authorization header' : 'Request body',
+              service_key_available: !!serviceKey,
+              error_type: userError?.code || 'unknown'
+            }
           });
         }
 

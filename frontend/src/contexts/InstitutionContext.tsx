@@ -140,15 +140,15 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     console.log(`🔄 InstitutionContext: Verifying access for ${slug}...`);
 
     try {
-      // Use the simplified endpoint with query parameter
+      // Use the simplified endpoint with query parameter and send token in Authorization header
       const response = await fetch(`/api/institution-auth?slug=${slug}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          action: 'verify_access',
-          token
+          action: 'verify_access'
         })
       });
 
