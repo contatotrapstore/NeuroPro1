@@ -116,7 +116,7 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       return handleGetInstitution(req, res, supabase, institutionSlug);
     } else if (req.method === 'POST') {
-      return handleAuthAction(req, res, supabase, institutionSlug);
+      return handleAuthAction(req, res, supabase, institutionSlug, supabaseUrl, supabaseServiceKey, supabaseAnonKey);
     } else {
       return res.status(405).json({
         success: false,
@@ -198,7 +198,7 @@ async function handleGetInstitution(req, res, supabase, institutionSlug) {
 // ============================================
 // POST - Authentication Actions
 // ============================================
-async function handleAuthAction(req, res, supabase, institutionSlug) {
+async function handleAuthAction(req, res, supabase, institutionSlug, supabaseUrl, supabaseServiceKey, supabaseAnonKey) {
   try {
     const { action, token, email, password } = req.body;
 
@@ -259,7 +259,7 @@ async function handleAuthAction(req, res, supabase, institutionSlug) {
         } else {
           // Fallback: use anon key client and try to get user from token directly
           console.log('⚠️ Using anon key fallback for token validation');
-          const anonClient = createClient(supabaseUrl, supabaseKey);
+          const anonClient = createClient(supabaseUrl, supabaseAnonKey);
 
           try {
             // Parse JWT token manually to get user ID (basic validation)

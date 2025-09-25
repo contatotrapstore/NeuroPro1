@@ -26,7 +26,6 @@ import { adminService } from '../services/admin.service';
 import type { AdminStats, AdminUser } from '../services/admin.service';
 import { AssistantManager } from './Admin/AssistantManager';
 import { InstitutionsManager } from './Admin/InstitutionsManager';
-import { InstitutionReportsManager } from './Admin/InstitutionReportsManager';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
 import toast, { Toaster } from 'react-hot-toast';
 import { supabase } from '../services/supabase';
@@ -43,7 +42,7 @@ type UserData = AdminUser & {
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants' | 'institutions' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants' | 'institutions'>('overview');
   const [stats, setStats] = useState<AdminStatsDisplay>({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -365,8 +364,7 @@ export default function AdminDashboard() {
               { id: 'overview', name: 'Visão Geral', icon: BarChart3 },
               { id: 'users', name: 'Usuários', icon: Users },
               { id: 'assistants', name: 'Assistentes', icon: Bot },
-              { id: 'institutions', name: 'Faculdades', icon: Building2 },
-              { id: 'reports', name: 'Relatórios', icon: FileText }
+              { id: 'institutions', name: 'Faculdades', icon: Building2 }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -632,12 +630,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Reports Tab */}
-        {activeTab === 'reports' && (
-          <div className="space-y-6">
-            <InstitutionReportsManager />
-          </div>
-        )}
 
         {/* Modal for managing user assistants */}
         {showModal && selectedUser && (

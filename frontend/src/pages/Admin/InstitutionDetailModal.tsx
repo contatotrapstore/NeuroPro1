@@ -222,29 +222,30 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
   const toggleUserActive = async (userId: string, currentActive: boolean) => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch('/api/admin-institution-users', {
-        method: 'PUT',
+      const action = currentActive ? 'deactivate' : 'activate';
+
+      const response = await fetch(`/api/admin-institution-user-subscriptions?institution_id=${institution?.id}`, {
+        method: 'POST',
         headers: {
           ...headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           user_id: userId,
-          institution_id: institution?.id,
-          is_active: !currentActive
+          action: action
         }),
       });
 
       const result = await response.json();
       if (result.success) {
-        toast.success(`Usuário ${!currentActive ? 'ativado' : 'desativado'} com sucesso`);
+        toast.success(`Assinatura ${action === 'activate' ? 'ativada' : 'desativada'} com sucesso`);
         await loadUsers();
       } else {
-        toast.error(result.error || 'Erro ao alterar status do usuário');
+        toast.error(result.error || 'Erro ao alterar assinatura do usuário');
       }
     } catch (error) {
-      console.error('Error toggling user:', error);
-      toast.error('Erro ao alterar status do usuário');
+      console.error('Error toggling user subscription:', error);
+      toast.error('Erro ao alterar assinatura do usuário');
     }
   };
 
@@ -507,7 +508,7 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                           Último Acesso
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
+                          Assinatura
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Ações
@@ -544,7 +545,7 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {user.is_active ? 'Ativo' : 'Inativo'}
+                              {user.is_active ? 'Assinatura Ativa' : 'Sem Assinatura'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -553,7 +554,7 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                               className={`p-1 rounded hover:bg-gray-100 ${
                                 user.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
                               }`}
-                              title={user.is_active ? 'Desativar usuário' : 'Ativar usuário'}
+                              title={user.is_active ? 'Desativar assinatura' : 'Ativar assinatura'}
                             >
                               {user.is_active ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
