@@ -67,33 +67,61 @@ module.exports = async function handler(req, res) {
     // ============================================
     const { createClient } = require('@supabase/supabase-js');
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    // Try multiple environment variable patterns
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                              process.env.SUPABASE_SERVICE_KEY ||
+                              process.env.VITE_SUPABASE_SERVICE_KEY ||
+                              process.env.SUPABASE_KEY ||
+                              process.env.VITE_SUPABASE_KEY;
+
+    // If no service key, try anon key as fallback (limited functionality)
+    const supabaseKey = supabaseServiceKey || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     // Detailed error logging for missing environment variables
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseKey) {
       const missingVars = [];
-      if (!supabaseUrl) missingVars.push('SUPABASE_URL');
-      if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
+      if (!supabaseUrl) missingVars.push('SUPABASE_URL or VITE_SUPABASE_URL');
+      if (!supabaseKey) missingVars.push('Any Supabase key (service_role, service, anon)');
+
+      console.error('🔍 Trying all possible variable names:');
+      console.error('SUPABASE_URL:', !!process.env.SUPABASE_URL);
+      console.error('VITE_SUPABASE_URL:', !!process.env.VITE_SUPABASE_URL);
+      console.error('SUPABASE_SERVICE_ROLE_KEY:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+      console.error('SUPABASE_SERVICE_KEY:', !!process.env.SUPABASE_SERVICE_KEY);
+      console.error('VITE_SUPABASE_SERVICE_KEY:', !!process.env.VITE_SUPABASE_SERVICE_KEY);
+      console.error('SUPABASE_KEY:', !!process.env.SUPABASE_KEY);
+      console.error('VITE_SUPABASE_KEY:', !!process.env.VITE_SUPABASE_KEY);
+      console.error('SUPABASE_ANON_KEY:', !!process.env.SUPABASE_ANON_KEY);
+      console.error('VITE_SUPABASE_ANON_KEY:', !!process.env.VITE_SUPABASE_ANON_KEY);
 
       console.error(`❌ Missing environment variables: ${missingVars.join(', ')}`);
-      console.error('Environment check:', {
-        SUPABASE_URL: supabaseUrl ? 'SET' : 'MISSING',
-        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING',
-        SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'MISSING',
-        VERCEL_ENV: process.env.VERCEL_ENV || 'NOT_SET',
-        NODE_ENV: process.env.NODE_ENV || 'NOT_SET'
-      });
 
       return res.status(500).json({
         success: false,
         error: 'Configuração do servidor incompleta',
         details: `Missing environment variables: ${missingVars.join(', ')}`,
-        help: 'Configure the missing variables in Vercel Dashboard → Settings → Environment Variables'
+        help: 'Configure the missing variables in Vercel Dashboard → Settings → Environment Variables',
+        debug_info: {
+          found_url: !!supabaseUrl,
+          found_key: !!supabaseKey,
+          using_service_key: !!supabaseServiceKey,
+          using_anon_fallback: !supabaseServiceKey && !!supabaseKey
+        }
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    console.log('🔧 Supabase initialized with:', {
+      url: supabaseUrl ? 'Found' : 'Missing',
+      key_type: supabaseServiceKey ? 'Service Key' : 'Anon Key (limited)',
+      key_source: supabaseServiceKey ?
+        (process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' :
+         process.env.SUPABASE_SERVICE_KEY ? 'SUPABASE_SERVICE_KEY' :
+         process.env.VITE_SUPABASE_SERVICE_KEY ? 'VITE_SUPABASE_SERVICE_KEY' : 'Other') :
+        (process.env.SUPABASE_ANON_KEY ? 'SUPABASE_ANON_KEY' : 'VITE_SUPABASE_ANON_KEY')
+    });
 
     // ============================================
     // AUTHENTICATION

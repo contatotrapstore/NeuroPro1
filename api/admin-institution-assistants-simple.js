@@ -59,11 +59,19 @@ module.exports = async function handler(req, res) {
     // ============================================
     const { createClient } = require('@supabase/supabase-js');
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    // Try multiple environment variable patterns
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                              process.env.SUPABASE_SERVICE_KEY ||
+                              process.env.VITE_SUPABASE_SERVICE_KEY ||
+                              process.env.SUPABASE_KEY ||
+                              process.env.VITE_SUPABASE_KEY;
+
+    // If no service key, try anon key as fallback (limited functionality)
+    const supabaseKey = supabaseServiceKey || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     // Detailed error logging for missing environment variables
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseKey) {
       const missingVars = [];
       if (!supabaseUrl) missingVars.push('SUPABASE_URL');
       if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
@@ -85,7 +93,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    console.log('🔧 Supabase initialized for institution-assistants API');
 
     // ============================================
     // AUTHENTICATION
