@@ -4,6 +4,8 @@
  */
 module.exports = async function handler(req, res) {
   console.log('🏛️ Admin Institutions Simple API v1.0');
+  console.log('Environment:', process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown');
+  console.log('Region:', process.env.VERCEL_REGION || 'unknown');
 
   // ============================================
   // CORS HEADERS (INLINE)
@@ -68,10 +70,26 @@ module.exports = async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
+    // Detailed error logging for missing environment variables
     if (!supabaseUrl || !supabaseServiceKey) {
+      const missingVars = [];
+      if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+      if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
+
+      console.error(`❌ Missing environment variables: ${missingVars.join(', ')}`);
+      console.error('Environment check:', {
+        SUPABASE_URL: supabaseUrl ? 'SET' : 'MISSING',
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING',
+        SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'MISSING',
+        VERCEL_ENV: process.env.VERCEL_ENV || 'NOT_SET',
+        NODE_ENV: process.env.NODE_ENV || 'NOT_SET'
+      });
+
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'Configuração do servidor incompleta',
+        details: `Missing environment variables: ${missingVars.join(', ')}`,
+        help: 'Configure the missing variables in Vercel Dashboard → Settings → Environment Variables'
       });
     }
 
