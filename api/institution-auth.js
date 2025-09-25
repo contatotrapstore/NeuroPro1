@@ -50,13 +50,14 @@ module.exports = async function handler(req, res) {
                               process.env.SUPABASE_KEY ||
                               process.env.VITE_SUPABASE_KEY;
 
-    // For GET requests (public data), allow anon key as fallback
+    // For GET requests and verify_access (public data), allow anon key as fallback
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     const isGetRequest = req.method === 'GET';
+    const isVerifyAccess = req.method === 'POST' && req.body?.action === 'verify_access';
 
     let supabaseKey = supabaseServiceKey;
-    if (!supabaseKey && isGetRequest && supabaseAnonKey) {
-      console.log('🔓 Using anon key for GET request (public data)');
+    if (!supabaseKey && (isGetRequest || isVerifyAccess) && supabaseAnonKey) {
+      console.log('🔓 Using anon key for public request');
       supabaseKey = supabaseAnonKey;
     }
 
@@ -64,7 +65,7 @@ module.exports = async function handler(req, res) {
       const missingVars = [];
       if (!supabaseUrl) missingVars.push('SUPABASE_URL');
       if (!supabaseKey) {
-        if (isGetRequest) {
+        if (isGetRequest || isVerifyAccess) {
           missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY');
         } else {
           missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
@@ -87,9 +88,10 @@ module.exports = async function handler(req, res) {
         details: `Missing environment variables: ${missingVars.join(', ')}`,
         debug_info: {
           request_method: req.method,
+          action: req.body?.action,
           has_service_key: !!supabaseServiceKey,
           has_anon_key: !!supabaseAnonKey,
-          using_fallback: !supabaseServiceKey && isGetRequest
+          using_fallback: !supabaseServiceKey && (isGetRequest || isVerifyAccess)
         }
       });
     }
