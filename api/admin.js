@@ -255,75 +255,28 @@ module.exports = async function handler(req, res) {
       // Admin emails that should be excluded from stats
       const adminEmails = ['gouveiarx@gmail.com', 'psitales@gmail.com', 'psitales.sales@gmail.com'];
 
-      // FALLBACK: Get users from database tables instead of auth.admin API
-      let allUserIds = new Set();
-      let adminUserIds = [];
-      let totalUsers = 0;
+      // Get ALL users from auth.users to count total (not just those with subscriptions)
+      const { data: allUsers, error: allUsersError } = await supabase.auth.admin.listUsers();
 
-      try {
-        // Try auth.admin.listUsers() first
-        const { data: allUsers, error: allUsersError } = await supabase.auth.admin.listUsers();
-
-        if (allUsersError) {
-          console.error('Error with auth.admin.listUsers, using fallback method:', {
-            message: allUsersError.message,
-            code: allUsersError.code,
-            details: allUsersError.details,
-            hint: allUsersError.hint,
-            status: allUsersError.status
-          });
-          throw new Error('Using fallback method');
-        }
-
-        // Extract admin user IDs for filtering subscriptions
-        const adminUsers = allUsers.users?.filter(user =>
-          adminEmails.includes(user.email?.toLowerCase() || '')
-        ) || [];
-        adminUserIds = adminUsers.map(user => user.id);
-
-        // Count total users excluding admins
-        totalUsers = allUsers.users?.filter(user =>
-          !adminEmails.includes(user.email?.toLowerCase() || '')
-        ).length || 0;
-
-        console.log('✅ Successfully used auth.admin.listUsers method');
-
-      } catch (error) {
-        console.log('🔄 Using fallback method to count users from database tables with real data');
-
-        // Fallback: Get unique user IDs from subscriptions, conversations, and real profiles
-        const [subscriptionsResult, conversationsResult, profilesResult] = await Promise.all([
-          supabase.from('user_subscriptions').select('user_id').not('user_id', 'is', null),
-          supabase.from('conversations').select('user_id').not('user_id', 'is', null),
-          supabase.from('user_profiles').select('*') // Buscar dados reais dos perfis
-        ]);
-
-        // Combine all user IDs
-        const subscriptionUserIds = subscriptionsResult.data?.map(s => s.user_id) || [];
-        const conversationUserIds = conversationsResult.data?.map(c => c.user_id) || [];
-
-        allUserIds = new Set([...subscriptionUserIds, ...conversationUserIds]);
-
-        // Now we can identify admin users by email from real profiles data
-        const realProfiles = profilesResult.data || [];
-        const adminUsers = realProfiles.filter(profile =>
-          adminEmails.includes(profile.email?.toLowerCase() || '')
-        );
-        adminUserIds = adminUsers.map(user => user.id);
-
-        // Count total users excluding admins (using real profile data)
-        const realUserIds = new Set(realProfiles.map(p => p.id));
-        const nonAdminProfiles = realProfiles.filter(profile =>
-          !adminEmails.includes(profile.email?.toLowerCase() || '')
-        );
-
-        // Use intersection of users found in activities and real profiles
-        const activeUserIds = [...allUserIds].filter(id => realUserIds.has(id));
-        const nonAdminActiveUsers = activeUserIds.filter(id => !adminUserIds.includes(id));
-        totalUsers = nonAdminActiveUsers.length;
-
-        console.log(`📊 Fallback method found ${totalUsers} real users (${realProfiles.length} total profiles, ${adminUserIds.length} admins excluded)`);
+      if (allUsersError) {
+        console.error('Error fetching all users for stats:', allUsersError);
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar estatísticas de usuários',
+          error: allUsersError.message
+        });
       }
+
+      // Extract admin user IDs for filtering subscriptions
+      const adminUsers = allUsers.users?.filter(user =>
+        adminEmails.includes(user.email?.toLowerCase() || '')
+      ) || [];
+      const adminUserIds = adminUsers.map(user => user.id);
+
+      // Count total users excluding admins
+      const totalUsers = allUsers.users?.filter(user =>
+        !adminEmails.includes(user.email?.toLowerCase() || '')
+      ).length || 0;
 
       // Get active subscriptions (excluding admin subscriptions)
       const { data: allActiveSubscriptions, error: subsError } = await supabase
@@ -432,88 +385,8 @@ module.exports = async function handler(req, res) {
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
 
-      let allUsers = { users: [] };
-      let usersError = null;
-
-      try {
-        // Try to get ALL users from auth.users using Service Role Key
-        const result = await supabase.auth.admin.listUsers();
-
-        if (result.error) {
-          console.error('Error with auth.admin.listUsers for /admin/users, using fallback:', {
-            message: result.error.message,
-            code: result.error.code,
-            details: result.error.details,
-            hint: result.error.hint,
-            status: result.error.status
-          });
-          throw new Error('Using fallback method for users endpoint');
-        }
-
-        allUsers = result.data;
-        console.log('✅ Successfully used auth.admin.listUsers for /admin/users endpoint');
-
-      } catch (error) {
-        console.log('🔄 Using fallback method for /admin/users endpoint with real data');
-
-        // Fallback: Build user list from subscription, conversation data AND real profiles
-        const [subscriptionsResult, conversationsResult, profilesResult] = await Promise.all([
-          supabase.from('user_subscriptions').select('user_id, created_at').not('user_id', 'is', null),
-          supabase.from('conversations').select('user_id, created_at').not('user_id', 'is', null),
-          supabase.from('user_profiles').select('*') // Buscar dados reais dos perfis
-        ]);
-
-        // Create map of real profiles
-        const profilesMap = {};
-        const realProfiles = profilesResult.data || [];
-        realProfiles.forEach(profile => {
-          profilesMap[profile.id] = profile;
-        });
-
-        // Get active user IDs from subscriptions and conversations
-        const userIds = new Set([
-          ...(subscriptionsResult.data?.map(s => s.user_id) || []),
-          ...(conversationsResult.data?.map(c => c.user_id) || [])
-        ]);
-
-        // Build user list using REAL profile data when available
-        allUsers = {
-          users: Array.from(userIds).map(userId => {
-            const profile = profilesMap[userId];
-
-            if (profile) {
-              // Use REAL data from profile
-              return {
-                id: profile.id,
-                email: profile.email,
-                created_at: profile.created_at,
-                last_sign_in_at: profile.last_sign_in_at,
-                email_confirmed_at: profile.email_confirmed_at,
-                user_metadata: profile.user_metadata || {},
-                full_name: profile.full_name,
-                updated_at: profile.updated_at
-              };
-            } else {
-              // Only use fallback if profile doesn't exist
-              const firstActivity = subscriptionsResult.data?.find(s => s.user_id === userId) ||
-                                  conversationsResult.data?.find(c => c.user_id === userId);
-
-              return {
-                id: userId,
-                email: `user-${userId.slice(-8)}@neuroialab.com.br`, // Better fallback domain
-                created_at: firstActivity?.created_at || new Date().toISOString(),
-                last_sign_in_at: null,
-                email_confirmed_at: null,
-                user_metadata: {}
-              };
-            }
-          })
-        };
-
-        const realDataCount = allUsers.users.filter(u => profilesMap[u.id]).length;
-        const fallbackCount = allUsers.users.length - realDataCount;
-        console.log(`📊 Fallback method: ${realDataCount} users with REAL data, ${fallbackCount} with fallback data (${allUsers.users.length} total)`);
-      }
+      // First, get ALL users from auth.users using Service Role Key
+      const { data: allUsers, error: usersError } = await supabase.auth.admin.listUsers();
 
       if (usersError) {
         console.error('Error fetching all users:', usersError);
