@@ -50,21 +50,51 @@ module.exports = async function handler(req, res) {
                               process.env.SUPABASE_KEY ||
                               process.env.VITE_SUPABASE_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    // For GET requests (public data), allow anon key as fallback
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const isGetRequest = req.method === 'GET';
+
+    let supabaseKey = supabaseServiceKey;
+    if (!supabaseKey && isGetRequest && supabaseAnonKey) {
+      console.log('🔓 Using anon key for GET request (public data)');
+      supabaseKey = supabaseAnonKey;
+    }
+
+    if (!supabaseUrl || !supabaseKey) {
       const missingVars = [];
       if (!supabaseUrl) missingVars.push('SUPABASE_URL');
-      if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
+      if (!supabaseKey) {
+        if (isGetRequest) {
+          missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY');
+        } else {
+          missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
+        }
+      }
 
       console.error(`❌ Missing environment variables: ${missingVars.join(', ')}`);
+      console.error('Environment check:', {
+        SUPABASE_URL: !!process.env.SUPABASE_URL,
+        VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+        VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
+        REQUEST_METHOD: req.method
+      });
 
       return res.status(500).json({
         success: false,
         error: 'Configuração do servidor incompleta',
-        details: `Missing environment variables: ${missingVars.join(', ')}`
+        details: `Missing environment variables: ${missingVars.join(', ')}`,
+        debug_info: {
+          request_method: req.method,
+          has_service_key: !!supabaseServiceKey,
+          has_anon_key: !!supabaseAnonKey,
+          using_fallback: !supabaseServiceKey && isGetRequest
+        }
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // ============================================
     // GET INSTITUTION SLUG

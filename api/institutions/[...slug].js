@@ -42,17 +42,37 @@ module.exports = async function handler(req, res) {
 
   try {
     // Initialize Supabase client
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                              process.env.SUPABASE_SERVICE_KEY ||
+                              process.env.VITE_SUPABASE_SERVICE_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    // Allow anon key as fallback for limited functionality
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+
+    if (!supabaseUrl || !supabaseKey) {
+      const missingVars = [];
+      if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+      if (!supabaseKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY');
+
+      console.error('Dynamic route environment check:', {
+        SUPABASE_URL: !!supabaseUrl,
+        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+        VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
+        using_service_key: !!supabaseServiceKey
+      });
+
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'Configuração do servidor incompleta',
+        details: `Missing environment variables: ${missingVars.join(', ')}`
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log(`🔧 Dynamic route using ${supabaseServiceKey ? 'service' : 'anon'} key`);
 
     // Parse slug from URL
     const { slug: slugArray } = req.query;
@@ -169,7 +189,7 @@ async function handleAuth(req, res, supabase, institutionSlug) {
 
       try {
         // Create user-specific client to validate token
-        const userClient = createClient(supabaseUrl, supabaseServiceKey, {
+        const userClient = createClient(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL, supabaseServiceKey || process.env.SUPABASE_SERVICE_ROLE_KEY, {
           auth: {
             autoRefreshToken: false,
             persistSession: false
