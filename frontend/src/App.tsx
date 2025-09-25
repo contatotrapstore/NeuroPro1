@@ -1,7 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { InstitutionProvider } from './contexts/InstitutionContext';
 import ModernLayout from './components/layout/ModernLayout';
+import { InstitutionLayout } from './components/layout/InstitutionLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import PublicRoute from './components/layout/PublicRoute';
 import AdminProtectedRoute from './components/layout/AdminProtectedRoute';
@@ -19,14 +21,16 @@ import Checkout from './pages/Checkout';
 import PaymentPix from './pages/PaymentPix';
 import PixInstructions from './pages/PixInstructions';
 import { PaymentConfirmation } from './pages/PaymentConfirmation';
+import { InstitutionHome, InstitutionLogin, InstitutionChat, InstitutionAdmin, InstitutionSubscription } from './pages/Institution';
 import './index.css';
 
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-        <Routes>
+        <InstitutionProvider>
+          <Router>
+          <Routes>
           {/* Public Auth Routes */}
           <Route
             path="/auth/login"
@@ -168,6 +172,16 @@ const App: React.FC = () => {
             }
           />
 
+          {/* Institution Routes */}
+          <Route path="/i/:slug/login" element={<InstitutionLogin />} />
+          <Route path="/i/:slug" element={<InstitutionLayout />}>
+            <Route index element={<InstitutionHome />} />
+            <Route path="chat" element={<InstitutionChat />} />
+            <Route path="chat/:assistantId" element={<InstitutionChat />} />
+            <Route path="admin" element={<InstitutionAdmin />} />
+            <Route path="subscription" element={<InstitutionSubscription />} />
+          </Route>
+
           {/* Default Redirects */}
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="/" element={<Navigate to="/store" replace />} />
@@ -213,8 +227,9 @@ const App: React.FC = () => {
               </div>
             } 
           />
-        </Routes>
-        </Router>
+          </Routes>
+          </Router>
+        </InstitutionProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

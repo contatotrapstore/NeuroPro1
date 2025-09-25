@@ -17,12 +17,17 @@ import {
   Minus,
   KeyRound,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  FileText
 } from 'lucide-react';
 import { NeuroLabIconMedium } from '../components/icons/NeuroLabLogo';
 import { adminService } from '../services/admin.service';
 import type { AdminStats, AdminUser } from '../services/admin.service';
 import { AssistantManager } from './Admin/AssistantManager';
+import { InstitutionsManager } from './Admin/InstitutionsManager';
+import { InstitutionAssistantsManager } from './Admin/InstitutionAssistantsManager';
+import { InstitutionReportsManager } from './Admin/InstitutionReportsManager';
 import { AssistantIcon } from '../components/ui/AssistantIcon';
 import toast, { Toaster } from 'react-hot-toast';
 import { supabase } from '../services/supabase';
@@ -39,7 +44,7 @@ type UserData = AdminUser & {
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistants' | 'institutions' | 'institution-assistants' | 'reports'>('overview');
   const [stats, setStats] = useState<AdminStatsDisplay>({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -360,7 +365,10 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', name: 'Visão Geral', icon: BarChart3 },
               { id: 'users', name: 'Usuários', icon: Users },
-              { id: 'assistants', name: 'Assistentes', icon: Bot }
+              { id: 'assistants', name: 'Assistentes', icon: Bot },
+              { id: 'institutions', name: 'Faculdades', icon: Building2 },
+              { id: 'institution-assistants', name: 'IAs por Instituição', icon: Settings },
+              { id: 'reports', name: 'Relatórios', icon: FileText }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -616,6 +624,27 @@ export default function AdminDashboard() {
         {activeTab === 'assistants' && (
           <div className="space-y-6">
             <AssistantManager />
+          </div>
+        )}
+
+        {/* Institutions Tab */}
+        {activeTab === 'institutions' && (
+          <div className="space-y-6">
+            <InstitutionsManager />
+          </div>
+        )}
+
+        {/* Institution Assistants Tab */}
+        {activeTab === 'institution-assistants' && (
+          <div className="space-y-6">
+            <InstitutionAssistantsManager />
+          </div>
+        )}
+
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <div className="space-y-6">
+            <InstitutionReportsManager />
           </div>
         )}
 
