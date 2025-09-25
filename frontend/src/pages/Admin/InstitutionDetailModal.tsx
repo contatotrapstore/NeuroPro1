@@ -14,7 +14,15 @@ import {
   RefreshCw,
   Star,
   StarOff,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Activity,
+  MessageSquare,
+  Clock,
+  Download,
+  Filter
 } from 'lucide-react';
 import { getAuthHeaders } from '../../utils/auth';
 import toast from 'react-hot-toast';
@@ -58,6 +66,66 @@ interface InstitutionAssistant {
   display_order: number;
 }
 
+interface ReportData {
+  institution: {
+    id: string;
+    name: string;
+    slug: string;
+    created_at: string;
+  };
+  period: {
+    days: number;
+    start_date: string;
+    end_date: string;
+  };
+  overview: {
+    total_users: number;
+    active_users: number;
+    recent_active_users: number;
+    user_retention_rate: number;
+    total_assistants: number;
+    enabled_assistants: number;
+    total_conversations: number;
+    recent_conversations: number;
+    avg_conversations_per_user: number;
+    conversation_growth: number;
+  };
+  assistants: {
+    default_assistant?: {
+      id: string;
+      name: string;
+    };
+    usage_stats: Array<{
+      assistant_id: string;
+      name: string;
+      count: number;
+      percentage: number;
+    }>;
+    most_used?: {
+      assistant_id: string;
+      name: string;
+      count: number;
+      percentage: number;
+    };
+  };
+  timeline: {
+    daily_conversations: Array<{
+      date: string;
+      count: number;
+    }>;
+  };
+  users: {
+    breakdown: Array<{
+      id: string;
+      role: string;
+      is_active: boolean;
+      enrolled_at: string;
+      last_access?: string;
+    }>;
+  };
+  generated_at: string;
+}
+
 interface InstitutionDetailModalProps {
   institution: Institution | null;
   isOpen: boolean;
@@ -74,9 +142,12 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [users, setUsers] = useState<InstitutionUser[]>([]);
   const [assistants, setAssistants] = useState<InstitutionAssistant[]>([]);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [userLoading, setUserLoading] = useState(false);
   const [assistantLoading, setAssistantLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState('30');
 
   useEffect(() => {
     if (isOpen && institution) {
@@ -590,14 +661,214 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
           )}
 
           {activeTab === 'reports' && (
-            <div className="text-center py-12">
-              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Relatórios em Desenvolvimento
-              </h3>
-              <p className="text-gray-600 max-w-md mx-auto">
-                Em breve você terá acesso a relatórios detalhados de uso, estatísticas e métricas da instituição.
-              </p>
+            <div>
+              {/* Period Selector */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <label className="text-sm font-medium text-gray-700">Período:</label>
+                  <select
+                    value={reportPeriod}
+                    onChange={(e) => setReportPeriod(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="7">Últimos 7 dias</option>
+                    <option value="30">Últimos 30 dias</option>
+                    <option value="90">Últimos 90 dias</option>
+                  </select>
+                </div>
+                <button
+                  onClick={fetchReports}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 inline mr-2 ${reportLoading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </button>
+              </div>
+
+              {reportLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Carregando relatórios...</p>
+                </div>
+              ) : reportData ? (
+                <div className="space-y-6">
+                  {/* Overview Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <Users className="w-5 h-5 text-blue-600" />
+                        <span className="text-xs text-gray-500">Total</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {reportData.overview.total_users}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Usuários cadastrados</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <Activity className="w-5 h-5 text-green-600" />
+                        <span className="text-xs text-gray-500">Ativos</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {reportData.overview.recent_active_users}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Usuários ativos ({reportData.overview.user_retention_rate}%)</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <MessageSquare className="w-5 h-5 text-purple-600" />
+                        <span className="text-xs text-gray-500">Conversas</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {reportData.overview.total_conversations}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Total de conversas</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <TrendingUp className="w-5 h-5 text-orange-600" />
+                        <span className="text-xs text-gray-500">Média</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {reportData.overview.avg_conversations_per_user}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Conversas/usuário</p>
+                    </div>
+                  </div>
+
+                  {/* Assistant Usage */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Bot className="w-5 h-5 mr-2 text-blue-600" />
+                      Uso de Assistentes
+                    </h4>
+                    {reportData.assistants.usage_stats.length > 0 ? (
+                      <div className="space-y-3">
+                        {reportData.assistants.usage_stats.map((assistant, index) => (
+                          <div key={assistant.assistant_id} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-medium text-gray-700">
+                                {index + 1}. {assistant.name}
+                              </span>
+                              {reportData.assistants.default_assistant?.id === assistant.assistant_id && (
+                                <Star className="w-4 h-4 text-yellow-500" />
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="bg-gray-200 rounded-full h-2 w-32">
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full"
+                                  style={{ width: `${assistant.percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-600">
+                                {assistant.count} ({assistant.percentage}%)
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhum dado de uso disponível</p>
+                    )}
+                  </div>
+
+                  {/* Daily Activity Chart */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+                      Atividade Diária (Últimos 7 dias)
+                    </h4>
+                    {reportData.timeline.daily_conversations.length > 0 ? (
+                      <div className="space-y-2">
+                        {reportData.timeline.daily_conversations.map((day) => {
+                          const maxCount = Math.max(...reportData.timeline.daily_conversations.map(d => d.count), 1);
+                          const percentage = (day.count / maxCount) * 100;
+                          const date = new Date(day.date);
+                          const formattedDate = date.toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'short'
+                          });
+
+                          return (
+                            <div key={day.date} className="flex items-center space-x-3">
+                              <span className="text-xs text-gray-600 w-16">{formattedDate}</span>
+                              <div className="flex-1 bg-gray-200 rounded-full h-6">
+                                <div
+                                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-6 rounded-full flex items-center justify-end pr-2"
+                                  style={{ width: `${Math.max(percentage, 5)}%` }}
+                                >
+                                  <span className="text-xs text-white font-medium">
+                                    {day.count}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhum dado de atividade disponível</p>
+                    )}
+                  </div>
+
+                  {/* Additional Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">Crescimento de Conversas</h5>
+                      <div className="flex items-center space-x-2">
+                        {reportData.overview.conversation_growth > 0 ? (
+                          <>
+                            <TrendingUp className="w-5 h-5 text-green-500" />
+                            <span className="text-lg font-semibold text-green-600">
+                              +{reportData.overview.conversation_growth}
+                            </span>
+                          </>
+                        ) : reportData.overview.conversation_growth < 0 ? (
+                          <>
+                            <TrendingDown className="w-5 h-5 text-red-500" />
+                            <span className="text-lg font-semibold text-red-600">
+                              {reportData.overview.conversation_growth}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Activity className="w-5 h-5 text-gray-500" />
+                            <span className="text-lg font-semibold text-gray-600">0</span>
+                          </>
+                        )}
+                        <span className="text-xs text-gray-500">vs. dia anterior</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">Assistentes Habilitados</h5>
+                      <div className="flex items-center space-x-2">
+                        <Bot className="w-5 h-5 text-blue-500" />
+                        <span className="text-lg font-semibold text-gray-900">
+                          {reportData.overview.enabled_assistants} / {reportData.overview.total_assistants}
+                        </span>
+                        <span className="text-xs text-gray-500">assistentes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Report Footer */}
+                  <div className="text-xs text-gray-500 text-center pt-4 border-t">
+                    Relatório gerado em: {new Date(reportData.generated_at).toLocaleString('pt-BR')}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">
+                    Selecione um período e clique em "Atualizar" para gerar o relatório
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
