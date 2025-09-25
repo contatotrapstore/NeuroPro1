@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -92,9 +92,18 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   const [availableAssistants, setAvailableAssistants] = useState<InstitutionAssistant[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingInstitution, setIsLoadingInstitution] = useState(false);
+  const [isVerifyingAccess, setIsVerifyingAccess] = useState(false);
 
-  // Função para carregar dados básicos da instituição (público)
-  const loadInstitution = async (slug: string): Promise<boolean> => {
+  // Função para carregar dados básicos da instituição (público) - Memorizada para evitar loops
+  const loadInstitution = useCallback(async (slug: string): Promise<boolean> => {
+    // Se já está carregando ou já carregou esta instituição, retornar
+    if (isLoadingInstitution || (institution?.slug === slug)) {
+      console.log('🔄 InstitutionContext: Institution already loading or loaded, skipping...');
+      return !!institution;
+    }
+
+    setIsLoadingInstitution(true);
     setLoading(true);
     setError(null);
 
@@ -128,12 +137,20 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       setError('Erro ao carregar informações da instituição');
       return false;
     } finally {
+      setIsLoadingInstitution(false);
       setLoading(false);
     }
-  };
+  }, [institution?.slug, isLoadingInstitution]);
 
-  // Função para verificar acesso do usuário à instituição
-  const verifyAccess = async (token: string, slug: string): Promise<boolean> => {
+  // Função para verificar acesso do usuário à instituição - Memorizada para evitar loops
+  const verifyAccess = useCallback(async (token: string, slug: string): Promise<boolean> => {
+    // Se já está verificando, retornar
+    if (isVerifyingAccess) {
+      console.log('🔄 InstitutionContext: Access verification already in progress, skipping...');
+      return false;
+    }
+
+    setIsVerifyingAccess(true);
     setLoading(true);
     setError(null);
 
@@ -173,9 +190,10 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       setError(`Erro ao verificar acesso: ${error.message}`);
       return false;
     } finally {
+      setIsVerifyingAccess(false);
       setLoading(false);
     }
-  };
+  }, [isVerifyingAccess]);
 
   // Função para limpar contexto
   const clearContext = () => {
@@ -290,43 +308,62 @@ export const useInstitution = (): InstitutionContextType => {
   return context;
 };
 
-// Hook especializado para verificar acesso a instituições
+// Hook especializado para verificar acesso a instituições - Corrigido para evitar loops
 export const useInstitutionAuth = (slug?: string) => {
-  const { verifyAccess, loadInstitution, isInstitutionUser, canAccessAdminPanel, error } = useInstitution();
+  const { verifyAccess, loadInstitution, isInstitutionUser, canAccessAdminPanel, error, institution } = useInstitution();
   const [authChecked, setAuthChecked] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
-      if (!slug) return;
+      // Se não tem slug, já está checando, ou já foi checado, retornar
+      if (!slug || isChecking) return;
 
-      // Primeiro, carregar informações básicas da instituição
-      const institutionLoaded = await loadInstitution(slug);
-      if (!institutionLoaded) {
-        setAuthChecked(true);
+      // Se já temos a instituição carregada e verificada para este slug, considerar OK
+      if (institution?.slug === slug && authChecked) {
         return;
       }
 
-      // Tentar verificar acesso do usuário
+      setIsChecking(true);
+      setAuthChecked(false);
+
       try {
+        // Carregar instituição apenas se não está carregada para este slug
+        if (institution?.slug !== slug) {
+          console.log('🔍 useInstitutionAuth: Loading institution for first time...');
+          const loaded = await loadInstitution(slug);
+          if (!loaded) {
+            setAuthChecked(true);
+            setIsChecking(false);
+            return;
+          }
+        }
+
+        // Verificar sessão e acesso do usuário
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError || !session?.access_token) {
           // Usuário não logado - ok para páginas públicas
+          console.log('🔍 useInstitutionAuth: No session, public access only');
           setAuthChecked(true);
+          setIsChecking(false);
           return;
         }
 
         // Verificar acesso à instituição
+        console.log('🔍 useInstitutionAuth: Verifying user access...');
         await verifyAccess(session.access_token, slug);
+
       } catch (error) {
         console.error('Error checking institution access:', error);
       } finally {
         setAuthChecked(true);
+        setIsChecking(false);
       }
     };
 
     checkAccess();
-  }, [slug, verifyAccess, loadInstitution]);
+  }, [slug]); // Remover dependências instáveis para evitar loops
 
   return {
     authChecked,

@@ -20,20 +20,9 @@ export const InstitutionHome: React.FC = () => {
     loading
   } = useInstitution();
 
-  // Redirecionar para login se não autenticado
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate(`/i/${slug}/login`);
-    }
-  }, [user, loading, navigate, slug]);
-
-  // Redirecionar para verificar acesso se necessário
-  useEffect(() => {
-    if (user && institution && !isInstitutionUser && !loading) {
-      // Usuário logado mas sem acesso à instituição
-      navigate(`/i/${slug}/login`);
-    }
-  }, [user, institution, isInstitutionUser, loading, navigate, slug]);
+  // Verificações de acesso são feitas pelo InstitutionLayout
+  // Removemos verificações duplicadas para evitar loops
+  // Se chegou aqui, é porque o Layout já validou o acesso
 
   if (loading || !institution || !user) {
     return (
