@@ -163,28 +163,44 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    console.log(`📊 Generating reports for institution: ${institution.name}`);
+    console.log(`📊 Generating reports for institution: ${institution.name} (${institutionId})`);
 
     // ============================================
     // GENERATE REPORTS DATA
     // ============================================
 
-    const periodDays = parseInt(period);
+    const periodDays = parseInt(period) || 30;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - periodDays);
 
-    // 1. ESTATÍSTICAS GERAIS
-    const { data: userStats, error: userError } = await supabase
-      .from('institution_users')
-      .select('*')
-      .eq('institution_id', institutionId);
+    console.log(`📊 Report period: ${periodDays} days, from ${startDate.toISOString()}`);
 
-    if (userError) {
-      console.error('Error fetching user stats:', userError);
+    // 1. ESTATÍSTICAS GERAIS
+    let userStats = [];
+    try {
+      const { data: userStatsData, error: userError } = await supabase
+        .from('institution_users')
+        .select('*')
+        .eq('institution_id', institutionId);
+
+      if (userError) {
+        console.error('Error fetching user stats:', userError);
+        throw new Error(`Erro ao buscar usuários: ${userError.message}`);
+      }
+
+      userStats = userStatsData || [];
+      console.log(`📊 Found ${userStats.length} users for institution`);
+    } catch (error) {
+      console.error('Critical error in user stats:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao buscar dados dos usuários da instituição',
+        details: error.message
+      });
     }
 
-    const totalUsers = userStats?.length || 0;
-    const activeUsers = userStats?.filter(u => u.is_active)?.length || 0;
+    const totalUsers = userStats.length;
+    const activeUsers = userStats.filter(u => u.is_active).length;
 
     // Usuários com último acesso recente
     const recentActiveUsers = userStats?.filter(u => {
@@ -194,36 +210,62 @@ module.exports = async function handler(req, res) {
     })?.length || 0;
 
     // 2. ASSISTENTES
-    const { data: assistantStats, error: assistantError } = await supabase
-      .from('institution_assistants')
-      .select('*')
-      .eq('institution_id', institutionId);
+    let assistantStats = [];
+    try {
+      const { data: assistantStatsData, error: assistantError } = await supabase
+        .from('institution_assistants')
+        .select('*')
+        .eq('institution_id', institutionId);
 
-    if (assistantError) {
-      console.error('Error fetching assistant stats:', assistantError);
+      if (assistantError) {
+        console.error('Error fetching assistant stats:', assistantError);
+        // Não falhar por conta dos assistentes - continuar com array vazio
+      }
+
+      assistantStats = assistantStatsData || [];
+      console.log(`📊 Found ${assistantStats.length} assistants for institution`);
+    } catch (error) {
+      console.error('Error in assistant stats (non-critical):', error);
+      assistantStats = [];
     }
 
-    const totalAssistants = assistantStats?.length || 0;
-    const enabledAssistants = assistantStats?.filter(a => a.is_enabled)?.length || 0;
-    const defaultAssistant = assistantStats?.find(a => a.is_default);
+    const totalAssistants = assistantStats.length;
+    const enabledAssistants = assistantStats.filter(a => a.is_enabled).length;
+    const defaultAssistant = assistantStats.find(a => a.is_default);
 
     // 3. CONVERSAS
     let conversationStats = { total: 0, recent: 0, byAssistant: [], byPeriod: [] };
 
     try {
-      // Buscar conversas de usuários da instituição
-      const { data: conversations, error: convError } = await supabase
-        .from('conversations')
-        .select(`
-          id,
-          assistant_id,
-          created_at,
-          updated_at,
-          user_id
-        `)
-        .in('user_id', userStats?.map(u => u.user_id) || []);
+      // Verificar se há usuários antes de buscar conversas
+      const userIds = userStats?.map(u => u.user_id) || [];
+      console.log(`📊 User IDs for conversations query:`, { count: userIds.length, sample: userIds.slice(0, 3) });
 
-      if (!convError && conversations) {
+      let conversations = [];
+
+      // Só buscar conversas se há usuários
+      if (userIds.length > 0) {
+        const { data: conversationsData, error: convError } = await supabase
+          .from('conversations')
+          .select(`
+            id,
+            assistant_id,
+            created_at,
+            updated_at,
+            user_id
+          `)
+          .in('user_id', userIds);
+
+        if (convError) {
+          console.error('Error fetching conversations:', convError);
+        } else {
+          conversations = conversationsData || [];
+        }
+      }
+
+      console.log(`📊 Conversations found:`, conversations.length);
+
+      if (conversations && conversations.length > 0) {
         conversationStats.total = conversations.length;
 
         // Conversas recentes
@@ -258,12 +300,28 @@ module.exports = async function handler(req, res) {
         }
 
         conversations.forEach(conv => {
-          const convDate = conv.created_at.split('T')[0];
-          if (dailyStats.hasOwnProperty(convDate)) {
-            dailyStats[convDate]++;
+          if (conv.created_at) {
+            const convDate = conv.created_at.split('T')[0];
+            if (dailyStats.hasOwnProperty(convDate)) {
+              dailyStats[convDate]++;
+            }
           }
         });
 
+        conversationStats.byPeriod = Object.entries(dailyStats).map(([date, count]) => ({
+          date,
+          count
+        }));
+      } else {
+        console.log('📊 No conversations found or no users - initializing empty stats');
+        // Inicializar período vazio para gráficos
+        const dailyStats = {};
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateKey = date.toISOString().split('T')[0];
+          dailyStats[dateKey] = 0;
+        }
         conversationStats.byPeriod = Object.entries(dailyStats).map(([date, count]) => ({
           date,
           count
@@ -280,60 +338,84 @@ module.exports = async function handler(req, res) {
       conversationStats.byPeriod[conversationStats.byPeriod.length - 1].count -
       conversationStats.byPeriod[conversationStats.byPeriod.length - 2].count : 0;
 
+    console.log('📊 Final metrics calculated:', {
+      totalUsers,
+      activeUsers,
+      recentActiveUsers,
+      userRetentionRate,
+      totalAssistants,
+      enabledAssistants,
+      totalConversations: conversationStats.total,
+      recentConversations: conversationStats.recent,
+      avgConversationsPerUser,
+      conversationGrowth
+    });
+
     // ============================================
     // RESPONSE DATA
     // ============================================
-    const reportData = {
-      institution: {
-        id: institution.id,
-        name: institution.name,
-        slug: institution.slug,
-        created_at: institution.created_at
-      },
-      period: {
-        days: periodDays,
-        start_date: startDate.toISOString(),
-        end_date: new Date().toISOString()
-      },
-      overview: {
-        total_users: totalUsers,
-        active_users: activeUsers,
-        recent_active_users: recentActiveUsers,
-        user_retention_rate: userRetentionRate,
-        total_assistants: totalAssistants,
-        enabled_assistants: enabledAssistants,
-        total_conversations: conversationStats.total,
-        recent_conversations: conversationStats.recent,
-        avg_conversations_per_user: avgConversationsPerUser,
-        conversation_growth: conversationGrowth
-      },
-      assistants: {
-        default_assistant: defaultAssistant ? {
-          id: defaultAssistant.assistant_id,
-          name: defaultAssistant.custom_name || 'Assistente Padrão'
-        } : null,
-        usage_stats: conversationStats.byAssistant,
-        most_used: conversationStats.byAssistant[0] || null
-      },
-      timeline: {
-        daily_conversations: conversationStats.byPeriod
-      },
-      users: {
-        breakdown: userStats?.map(u => ({
-          id: u.user_id,
-          role: u.role,
-          is_active: u.is_active,
-          enrolled_at: u.enrolled_at,
-          last_access: u.last_access
-        })) || []
-      },
-      generated_at: new Date().toISOString()
-    };
+    try {
+      const reportData = {
+        institution: {
+          id: institution.id,
+          name: institution.name,
+          slug: institution.slug,
+          created_at: institution.created_at
+        },
+        period: {
+          days: periodDays,
+          start_date: startDate.toISOString(),
+          end_date: new Date().toISOString()
+        },
+        overview: {
+          total_users: totalUsers,
+          active_users: activeUsers,
+          recent_active_users: recentActiveUsers,
+          user_retention_rate: userRetentionRate,
+          total_assistants: totalAssistants,
+          enabled_assistants: enabledAssistants,
+          total_conversations: conversationStats.total,
+          recent_conversations: conversationStats.recent,
+          avg_conversations_per_user: avgConversationsPerUser,
+          conversation_growth: conversationGrowth
+        },
+        assistants: {
+          default_assistant: defaultAssistant ? {
+            id: defaultAssistant.assistant_id,
+            name: defaultAssistant.custom_name || 'Assistente Padrão'
+          } : null,
+          usage_stats: conversationStats.byAssistant,
+          most_used: conversationStats.byAssistant[0] || null
+        },
+        timeline: {
+          daily_conversations: conversationStats.byPeriod
+        },
+        users: {
+          breakdown: userStats.map(u => ({
+            id: u.user_id,
+            role: u.role,
+            is_active: u.is_active,
+            enrolled_at: u.enrolled_at,
+            last_access: u.last_access
+          }))
+        },
+        generated_at: new Date().toISOString()
+      };
 
-    return res.status(200).json({
-      success: true,
-      data: reportData
-    });
+      console.log('✅ Report data generated successfully');
+
+      return res.status(200).json({
+        success: true,
+        data: reportData
+      });
+    } catch (error) {
+      console.error('Error generating report response:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao gerar resposta do relatório',
+        details: error.message
+      });
+    }
 
   } catch (error) {
     console.error('Admin Institution Reports API Error:', error);

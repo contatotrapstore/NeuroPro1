@@ -143,76 +143,36 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       // List users for institution
       try {
-        // Buscar usuários da instituição com dados do auth.users
-        const { data: institutionUsers, error: usersError } = await supabase
-          .from('institution_users')
-          .select(`
-            id,
-            user_id,
-            role,
-            is_active,
-            enrolled_at,
-            last_access
-          `)
-          .eq('institution_id', institutionId)
-          .order('enrolled_at', { ascending: false });
+        console.log('📊 Fetching institution users using RPC:', institutionId);
 
-        if (usersError) {
-          console.error('Error fetching institution users:', usersError);
+        // Use secure RPC function to get institution users with real auth.users data
+        const { data: usersData, error: rpcError } = await supabase
+          .rpc('get_institution_users_with_details', {
+            institution_id_param: institutionId
+          });
+
+        if (rpcError) {
+          console.error('Error fetching institution users via RPC:', rpcError);
           return res.status(500).json({
             success: false,
             error: 'Erro ao buscar usuários da instituição'
           });
         }
 
-        // Buscar dados dos usuários na tabela auth.users
-        // NOTA: Como não temos acesso direto ao auth.users, vamos buscar pela view profiles se existir
-        // ou usar dados básicos
-        const usersWithDetails = [];
-        if (institutionUsers && institutionUsers.length > 0) {
-          // Tentar buscar todos os emails em uma única query
-          const userIds = institutionUsers.map(u => u.user_id);
-
-          // Tentar buscar da view profiles primeiro (se existir)
-          let profiles = [];
-          try {
-            const { data: profilesData, error: profilesError } = await supabase
-              .from('profiles')
-              .select('id, email, created_at')
-              .in('id', userIds);
-
-            if (!profilesError && profilesData) {
-              profiles = profilesData;
-            }
-          } catch (error) {
-            console.log('Profiles view not available, using fallback');
-          }
-
-          // Mapear os dados
-          for (const institutionUser of institutionUsers) {
-            const profile = profiles.find(p => p.id === institutionUser.user_id);
-
-            if (profile) {
-              usersWithDetails.push({
-                ...institutionUser,
-                email: profile.email,
-                created_at: profile.created_at
-              });
-            } else {
-              // Fallback: usar ID parcial como identificador
-              usersWithDetails.push({
-                ...institutionUser,
-                email: `user-${institutionUser.user_id.slice(0, 8)}@instituicao.com`
-              });
-            }
-          }
-        }
+        console.log('✅ Institution users fetched via RPC:', {
+          count: usersData ? usersData.length : 0,
+          sample: usersData && usersData[0] ? {
+            email: usersData[0].email,
+            name: usersData[0].name,
+            hasRealEmail: !usersData[0].email?.includes('@instituicao.com')
+          } : null
+        });
 
         return res.status(200).json({
           success: true,
           data: {
-            users: usersWithDetails,
-            count: usersWithDetails.length
+            users: usersData || [],
+            count: usersData ? usersData.length : 0
           }
         });
 

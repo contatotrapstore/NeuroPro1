@@ -49,10 +49,14 @@ interface InstitutionUser {
   id: string;
   user_id: string;
   email: string;
+  name?: string;
   role: 'admin' | 'subadmin' | 'user';
   is_active: boolean;
   enrolled_at: string;
   last_access?: string;
+  created_at?: string;
+  last_sign_in_at?: string;
+  is_admin?: boolean;
 }
 
 interface InstitutionAssistant {
@@ -545,9 +549,12 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                         <tr key={user.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
-                              {user.email}
+                              {user.name || user.email?.split('@')[0] || 'Usuário'}
                             </div>
                             <div className="text-sm text-gray-500">
+                              {user.email}
+                            </div>
+                            <div className="text-xs text-gray-400">
                               ID: {user.user_id.slice(0, 8)}...
                             </div>
                           </td>
