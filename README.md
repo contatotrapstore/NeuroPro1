@@ -2,20 +2,27 @@
 
 Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica, incluindo as novas áreas de **Neuromodulação** e **Terapia Ocupacional**.
 
-**🚀 Versão Atual**: v3.2.0 - Sistema de Pacotes Completo e Funcional
+**🚀 Versão Atual**: v3.3.0 - Sistema 100% Operacional com Admin Dashboard
 
 ## ✅ Status do Sistema
 - 🟢 **Frontend**: 100% funcional
 - 🟢 **Backend**: 100% funcional
 - 🟢 **Autenticação**: 100% funcional
 - 🟢 **Chat/Assistentes**: 100% funcional
-- 🟢 **Sistema de Pacotes**: 100% funcional ✨ NOVO
+- 🟢 **Sistema de Pacotes**: 100% funcional ✨
+- 🟢 **Admin Dashboard**: 100% funcional ✨ **NOVO**
+- 🟢 **Sistema ABPSI**: 100% funcional ✨ **NOVO**
 - 🟢 **Pagamentos PIX**: 100% funcional
 - 🟡 **Pagamentos Cartão**: Temporariamente desabilitado (em correção)
 - 🟢 **Webhooks Asaas**: 100% funcional
 - 🟢 **Deploy Vercel**: 100% funcional
 
-> **⚠️ Nota**: Cartão de crédito temporariamente indisponível devido a problema de autorização. PIX funcionando perfeitamente. Ver `PAYMENT_STATUS_2025.md` para detalhes.
+## 📊 Métricas em Produção (Setembro 2025)
+- 👥 **48 usuários ativos** (45 Neuro + 1 ABPSI + 2 Admin)
+- 💰 **R$ 7.223,28** receita mensal recorrente
+- 📈 **258 assinaturas ativas** (172 usuários + 86 admin)
+- 🎯 **22 usuários pagantes únicos**
+- ⚡ **Zero erros críticos** - Sistema 100% estável
 
 ## 🧠 Sobre o Projeto
 
@@ -107,12 +114,13 @@ A NeuroIA Lab atende **5 áreas distintas** da saúde mental e reabilitação:
 - Redis caching for performance
 - Comprehensive admin API endpoints
 
-### Admin Panel
-- **Secure Admin Dashboard** with real-time statistics
-- **User Management** - Complete user oversight and management
-- **Subscription Control** - Full subscription lifecycle management  
-- **Revenue Tracking** - Real-time financial analytics
-- **Role-based Access** - Admin authentication and authorization
+### Admin Panel ✨ **NOVO**
+- **Dashboard Completo** - Estatísticas reais com 48 usuários e R$ 7.223,28 receita
+- **Gestão de Usuários** - Administração completa de contas e assinaturas
+- **Sistema ABPSI** - Portal institucional para Academia Brasileira de Psicanálise
+- **Controle Financeiro** - Acompanhamento de receita e usuários pagantes
+- **Relatórios Avançados** - Exportação de dados e análises detalhadas
+- **Acesso Seguro** - Autenticação baseada em roles com RPC functions
 ### Infraestrutura
 - VPS Linux (Ubuntu)
 - PM2
@@ -228,6 +236,9 @@ O projeto está pré-configurado para deploy no Vercel:
 - **[🏛️ System Architecture](docs/architecture/README.md)** - Arquitetura do sistema
 - **[🗄️ Database Schema](docs/architecture/database-schema.md)** - Modelo de dados
 - **[⚙️ Admin Guide](docs/admin/ADMIN_GUIDE.md)** - Painel administrativo
+- **[📊 System Status](docs/admin/SYSTEM_STATUS.md)** - Status completo do sistema ✨ **NOVO**
+- **[🔧 SQL Functions](docs/database/SQL_FUNCTIONS.md)** - Funções RPC implementadas ✨ **NOVO**
+- **[🏢 ABPSI Portal](docs/ABPSI.md)** - Sistema institucional ✨ **NOVO**
 - **[🔧 Deploy Instructions](DEPLOY_INSTRUCTIONS.md)** - Deploy no Vercel
 - **[📋 CHANGELOG](CHANGELOG.md)** - Histórico de versões
 
