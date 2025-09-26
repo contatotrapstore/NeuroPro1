@@ -11,8 +11,6 @@ export const InstitutionDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
-  const [hasSubscription, setHasSubscription] = useState<boolean>(false);
-  const [subscriptionLoading, setSubscriptionLoading] = useState<boolean>(true);
 
   // Verificação de segurança do contexto
   const context = useInstitution();
@@ -34,7 +32,9 @@ export const InstitutionDashboard: React.FC = () => {
     getPrimaryAssistant,
     getSimulatorAssistant,
     isInstitutionUser,
-    canAccessAssistants
+    canAccessAssistants,
+    hasActiveSubscription,
+    isCheckingSubscription
   } = context;
 
   if (!institution) return null;
@@ -45,47 +45,7 @@ export const InstitutionDashboard: React.FC = () => {
   // Check if user can manage users (is admin)
   const canManageUsers = userAccess?.is_admin && userAccess?.permissions?.manage_users;
 
-  // Check user subscription status
-  useEffect(() => {
-    const checkUserSubscription = async () => {
-      if (!user || !slug || !isInstitutionUser) {
-        setSubscriptionLoading(false);
-        return;
-      }
-
-      try {
-        const { supabase } = await import('../../services/supabase');
-        const token = (await supabase.auth.getSession()).data.session?.access_token;
-
-        if (!token) {
-          setSubscriptionLoading(false);
-          return;
-        }
-
-        const response = await fetch('/api/check-institution-subscription', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            institution_slug: slug
-          })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          setHasSubscription(result.data.has_subscription);
-        }
-      } catch (error) {
-        console.error('Error checking subscription:', error);
-      } finally {
-        setSubscriptionLoading(false);
-      }
-    };
-
-    checkUserSubscription();
-  }, [user, slug, isInstitutionUser]);
+  // Subscription status now comes from context - no local checking needed
 
   // Fetch pending users count if admin
   useEffect(() => {
@@ -136,7 +96,7 @@ export const InstitutionDashboard: React.FC = () => {
     }
 
     // Check if user has subscription for chat access
-    if (targetPath.includes('/chat') && !subscriptionLoading && !hasSubscription) {
+    if (targetPath.includes('/chat') && !isCheckingSubscription && !hasActiveSubscription) {
       navigate(`/i/${slug}/checkout`);
       return;
     }
@@ -167,15 +127,15 @@ export const InstitutionDashboard: React.FC = () => {
     {
       title: user && isInstitutionUser ? 'Assinatura' : 'Acesso',
       value: user && isInstitutionUser
-        ? (subscriptionLoading ? 'Verificando...' : (hasSubscription ? 'Ativa' : 'Pendente'))
+        ? (isCheckingSubscription ? 'Verificando...' : (hasActiveSubscription ? 'Ativa' : 'Pendente'))
         : 'Público',
       icon: user && isInstitutionUser ? 'creditCard' : 'shieldCheck',
       description: user && isInstitutionUser
-        ? (subscriptionLoading ? 'Verificando status...' : (hasSubscription ? 'Acesso completo às IAs' : 'Pagamento necessário'))
+        ? (isCheckingSubscription ? 'Verificando status...' : (hasActiveSubscription ? 'Acesso completo às IAs' : 'Pagamento necessário'))
         : 'Navegação livre',
       isStatus: true,
       statusColor: user && isInstitutionUser
-        ? (subscriptionLoading ? 'gray' : (hasSubscription ? 'green' : 'orange'))
+        ? (isCheckingSubscription ? 'gray' : (hasActiveSubscription ? 'green' : 'orange'))
         : 'blue'
     }
   ];
@@ -257,7 +217,7 @@ export const InstitutionDashboard: React.FC = () => {
       </div>
 
       {/* Subscription Warning Banner */}
-      {user && isInstitutionUser && !subscriptionLoading && !hasSubscription && (
+      {user && isInstitutionUser && !isCheckingSubscription && !hasActiveSubscription && (
         <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-400 rounded-xl p-6 shadow-sm">
           <div className="flex items-start space-x-4">
             <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
