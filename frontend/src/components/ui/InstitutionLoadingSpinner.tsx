@@ -75,7 +75,7 @@ export const InstitutionLoadingSpinner = React.forwardRef<
     return (
       <div
         ref={ref}
-        className={cn("flex flex-col items-center justify-center space-y-3", className)}
+        className={cn("flex flex-col items-center justify-center space-y-3 mx-auto", className)}
         {...props}
       >
         <div className={spinnerVariants({ size })}>
@@ -105,7 +105,7 @@ export const InstitutionLoadingSpinner = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn(spinnerVariants({ size }), className)}
+      className={cn(spinnerVariants({ size }), "mx-auto", className)}
       {...props}
     >
       {!shouldUseTextFallback ? (

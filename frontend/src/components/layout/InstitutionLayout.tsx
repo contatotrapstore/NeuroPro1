@@ -61,7 +61,7 @@ export const InstitutionLayout: React.FC<InstitutionLayoutProps> = ({ children }
     <div
       className="min-h-screen"
       style={{
-        background: institution.settings.theme?.gradient || `linear-gradient(135deg, ${institution.primary_color}10 0%, ${institution.primary_color}05 100%)`,
+        background: institution?.settings?.theme?.gradient || `linear-gradient(135deg, ${institution.primary_color}10 0%, ${institution.primary_color}05 100%)`,
       }}
     >
       {/* Custom CSS Variables */}
@@ -69,7 +69,7 @@ export const InstitutionLayout: React.FC<InstitutionLayoutProps> = ({ children }
         :root {
           --institution-primary: ${institution.primary_color};
           --institution-secondary: ${institution.secondary_color || institution.primary_color};
-          --institution-gradient: ${institution.settings.theme?.gradient || `linear-gradient(135deg, ${institution.primary_color} 0%, ${institution.secondary_color || institution.primary_color} 100%)`};
+          --institution-gradient: ${institution?.settings?.theme?.gradient || `linear-gradient(135deg, ${institution.primary_color} 0%, ${institution.secondary_color || institution.primary_color} 100%)`};
         }
 
         .institution-gradient {
@@ -137,9 +137,9 @@ export const InstitutionLayout: React.FC<InstitutionLayoutProps> = ({ children }
                 <h1 className="text-xl font-bold text-gray-900">
                   {institution.name}
                 </h1>
-                {institution.settings.subtitle && (
+                {institution?.settings?.subtitle && (
                   <p className="text-sm text-gray-600">
-                    {institution.settings.subtitle}
+                    {institution?.settings?.subtitle}
                   </p>
                 )}
               </div>
@@ -183,30 +183,30 @@ export const InstitutionLayout: React.FC<InstitutionLayoutProps> = ({ children }
       </main>
 
       {/* Footer */}
-      {!institution.settings.branding?.show_neurolab_footer === false && (
+      {!institution?.settings?.branding?.show_neurolab_footer === false && (
         <footer className="glass-card-institution border-t mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                {institution.settings.contact?.email && (
+                {institution?.settings?.contact?.email && (
                   <a
-                    href={`mailto:${institution.settings.contact.email}`}
+                    href={`mailto:${institution?.settings?.contact?.email}`}
                     className="text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    {institution.settings.contact.email}
+                    {institution?.settings?.contact?.email}
                   </a>
                 )}
-                {institution.settings.contact?.phone && (
+                {institution?.settings?.contact?.phone && (
                   <a
-                    href={`tel:${institution.settings.contact.phone}`}
+                    href={`tel:${institution?.settings?.contact?.phone}`}
                     className="text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    {institution.settings.contact.phone}
+                    {institution?.settings?.contact?.phone}
                   </a>
                 )}
-                {institution.settings.contact?.website && (
+                {institution?.settings?.contact?.website && (
                   <a
-                    href={institution.settings.contact.website}
+                    href={institution?.settings?.contact?.website}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-900 transition-colors"

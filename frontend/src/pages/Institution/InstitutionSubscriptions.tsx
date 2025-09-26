@@ -139,13 +139,13 @@ export const InstitutionSubscriptions: React.FC = () => {
                 <Icon name="mail" className="w-4 h-4 mr-2 inline" />
                 Contato por E-mail
               </a>
-              {institution.settings?.contact?.phone && (
+              {institution?.settings?.contact?.phone && (
                 <a
-                  href={`tel:${institution.settings.contact.phone}`}
+                  href={`tel:${institution?.settings?.contact?.phone}`}
                   className="block w-full text-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Icon name="phone" className="w-4 h-4 mr-2 inline" />
-                  {institution.settings.contact.phone}
+                  {institution?.settings?.contact?.phone}
                 </a>
               )}
             </div>
@@ -234,8 +234,8 @@ export const InstitutionSubscriptions: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-900 mb-2">Contato</h3>
             <div className="space-y-1 text-sm text-gray-600">
               <p>{institution.settings?.contact?.email || 'contato@abpsi.org.br'}</p>
-              {institution.settings?.contact?.phone && (
-                <p>{institution.settings.contact.phone}</p>
+              {institution?.settings?.contact?.phone && (
+                <p>{institution?.settings?.contact?.phone}</p>
               )}
             </div>
           </div>

@@ -377,7 +377,7 @@ export const InstitutionLogin: React.FC = () => {
             <div className="text-sm text-gray-600">
               Não tem acesso?{' '}
               <a
-                href={institution.settings.contact?.email ? `mailto:${institution.settings.contact.email}` : '#'}
+                href={institution?.settings?.contact?.email ? `mailto:${institution?.settings?.contact?.email}` : '#'}
                 className="hover:underline transition-colors"
                 style={{ color: institutionData.primary_color }}
               >

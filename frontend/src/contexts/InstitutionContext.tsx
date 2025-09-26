@@ -257,8 +257,8 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       }
 
       // Aplicar configurações de tema
-      if (institution.settings.theme) {
-        const theme = institution.settings.theme;
+      if (institution?.settings?.theme) {
+        const theme = institution.settings?.theme;
 
         if (theme.font_family) {
           root.style.setProperty('--institution-font', theme.font_family);
@@ -270,18 +270,18 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       }
 
       // Aplicar favicon customizado
-      if (institution.settings.branding?.custom_favicon) {
+      if (institution?.settings?.branding?.custom_favicon) {
         const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
         if (favicon) {
-          favicon.href = institution.settings.branding.custom_favicon;
+          favicon.href = institution.settings?.branding?.custom_favicon;
         }
       }
 
       // Aplicar meta description
-      if (institution.settings.branding?.meta_description) {
+      if (institution?.settings?.branding?.meta_description) {
         const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement;
         if (metaDescription) {
-          metaDescription.content = institution.settings.branding.meta_description;
+          metaDescription.content = institution.settings?.branding?.meta_description;
         }
       }
 
