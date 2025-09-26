@@ -14,6 +14,7 @@ export const InstitutionLogin: React.FC = () => {
   const { signIn, user, loading: authLoading } = useAuth();
   const {
     institution,
+    userAccess,
     verifyAccess,
     refreshUserAccess,
     clearInstitutionCache,
