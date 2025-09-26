@@ -234,6 +234,231 @@ function AssistantSelectorModal({ onClose, onSelect, assistants, institution }: 
   );
 }
 
+interface NewSessionModalProps {
+  onClose: () => void;
+  onConfirm: (title: string, assistantId: string) => void;
+  assistants: any[];
+  selectedAssistantId: string | null;
+  institution: any;
+}
+
+function NewSessionModal({ onClose, onConfirm, assistants, selectedAssistantId, institution }: NewSessionModalProps) {
+  const [customTitle, setCustomTitle] = useState('');
+  const [selectedAssistant, setSelectedAssistant] = useState(selectedAssistantId || assistants[0]?.id || '');
+
+  const targetAssistant = assistants.find(a => a.id === selectedAssistant);
+  const isSimulator = targetAssistant?.id === 'asst_9vDTodTAQIJV1mu2xPzXpBs8';
+
+  // Gerar sugestão automática de nome
+  const generateSuggestedTitle = () => {
+    if (!targetAssistant) return '';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+    const timeStr = now.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (isSimulator) {
+      return `Sessão Psicanálise ${dateStr} ${timeStr}`;
+    }
+    return `${targetAssistant.name} - ${dateStr} ${timeStr}`;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalTitle = customTitle.trim() || generateSuggestedTitle();
+    onConfirm(finalTitle, selectedAssistant);
+    onClose();
+  };
+
+  const suggestedTitle = generateSuggestedTitle();
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-md w-full">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">
+              Nova Conversa
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Icon name="x" className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-gray-600 mt-1">
+            Personalize sua nova sessão de chat
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            {/* Seleção de Assistente */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assistente
+              </label>
+              <select
+                value={selectedAssistant}
+                onChange={(e) => setSelectedAssistant(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': institution.primary_color } as React.CSSProperties}
+              >
+                {assistants.map((assistant) => (
+                  <option key={assistant.id} value={assistant.id}>
+                    {assistant.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Nome Personalizado */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nome da Conversa
+              </label>
+              <input
+                type="text"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder={suggestedTitle}
+                maxLength={50}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': institution.primary_color } as React.CSSProperties}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Deixe vazio para usar sugestão automática
+              </p>
+            </div>
+
+            {/* Preview */}
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-sm text-gray-600 mb-1">Preview:</p>
+              <div className="flex items-center space-x-2">
+                <AssistantIcon
+                  iconType={targetAssistant?.icon || 'bot'}
+                  className="w-5 h-5"
+                  color={targetAssistant?.color_theme || institution.primary_color}
+                />
+                <span className="font-medium text-gray-900">
+                  {customTitle.trim() || suggestedTitle}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Botões */}
+          <div className="flex space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-colors font-medium"
+              style={{ backgroundColor: institution.primary_color }}
+            >
+              Criar Conversa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// DeleteConfirmModal Component
+interface DeleteConfirmModalProps {
+  onClose: () => void;
+  onConfirm: () => void;
+  sessionTitle: string;
+  institution: any;
+}
+
+function DeleteConfirmModal({ onClose, onConfirm, sessionTitle, institution }: DeleteConfirmModalProps) {
+  const handleConfirm = () => {
+    onConfirm();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-md w-full">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">
+              Excluir Conversa
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Icon name="x" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: '#fee2e2' }}
+            >
+              <Icon name="trash2" className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900">
+                Tem certeza que deseja excluir esta conversa?
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Esta ação não pode ser desfeita.
+              </p>
+            </div>
+          </div>
+
+          {/* Session Info */}
+          <div className="bg-gray-50 rounded-lg p-3 mb-6">
+            <p className="text-sm font-medium text-gray-900 mb-1">
+              {sessionTitle}
+            </p>
+            <p className="text-xs text-gray-500">
+              Todas as mensagens desta conversa serão perdidas permanentemente
+            </p>
+          </div>
+
+          {/* Botões */}
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              Sim, Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -270,6 +495,14 @@ export const InstitutionChat: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showAssistantSelector, setShowAssistantSelector] = useState(false);
+
+  // Novos estados para gerenciamento avançado de sessões
+  const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [selectedAssistantForNew, setSelectedAssistantForNew] = useState<string | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -363,7 +596,7 @@ export const InstitutionChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const createNewSession = useCallback(async (selectedAssistantId?: string) => {
+  const createNewSession = useCallback(async (selectedAssistantId?: string, customTitle?: string) => {
     const targetAssistant = selectedAssistantId
       ? availableAssistants.find(a => a.id === selectedAssistantId)
       : currentAssistant;
@@ -371,9 +604,16 @@ export const InstitutionChat: React.FC = () => {
     if (!targetAssistant) return;
 
     const isTargetSimulator = targetAssistant.id === 'asst_9vDTodTAQIJV1mu2xPzXpBs8';
-    const sessionTitle = isTargetSimulator
-      ? 'Nova Sessão de Psicanálise'
-      : `Nova Conversa - ${targetAssistant.name}`;
+
+    // Usar título personalizado se fornecido, caso contrário usar títulos padrão
+    let sessionTitle;
+    if (customTitle) {
+      sessionTitle = customTitle;
+    } else {
+      sessionTitle = isTargetSimulator
+        ? 'Nova Sessão de Psicanálise'
+        : `Nova Conversa - ${targetAssistant.name}`;
+    }
 
     const newSession: ChatSession = {
       id: Date.now().toString(),
@@ -422,6 +662,49 @@ Como posso ajudá-lo hoje?`,
       navigate(`/i/${slug}/chat/${selectedAssistantId}`);
     }
   }, [availableAssistants, currentAssistant, assistantId, slug, navigate]);
+
+  // Função para excluir uma sessão
+  const deleteSession = useCallback((sessionId: string) => {
+    // Remover da lista de sessões
+    setSessions(prev => {
+      const updatedSessions = prev.filter(s => s.id !== sessionId);
+      // Salvar no localStorage
+      saveSessionsToStorage(updatedSessions);
+      return updatedSessions;
+    });
+
+    // Se a sessão excluída é a atual, limpar a sessão atual
+    if (currentSession?.id === sessionId) {
+      setCurrentSession(null);
+      // Navegar para o chat principal (sem assistente específico)
+      navigate(`/i/${slug}/chat`);
+    }
+
+    // Fechar modais
+    setShowDeleteConfirm(false);
+    setSessionToDelete(null);
+
+    console.log('🗑️ Sessão excluída:', sessionId);
+  }, [currentSession, slug, navigate]);
+
+  // Função para confirmar exclusão de sessão
+  const handleDeleteSession = useCallback((sessionId: string) => {
+    setSessionToDelete(sessionId);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  // Handler para criar nova sessão com título personalizado
+  const handleCreateNewSession = useCallback((title: string, assistantId: string) => {
+    createNewSession(assistantId, title);
+    setShowNewSessionModal(false);
+    setSelectedAssistantForNew(null);
+  }, [createNewSession]);
+
+  // Handler para abrir modal de nova sessão
+  const handleOpenNewSessionModal = useCallback((assistantId?: string) => {
+    setSelectedAssistantForNew(assistantId || null);
+    setShowNewSessionModal(true);
+  }, []);
 
   const sendMessage = async () => {
     if (!message.trim() || !currentSession || isLoading || !currentAssistant) {
@@ -637,7 +920,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                 )}
               </div>
               <button
-                onClick={() => setShowAssistantSelector(true)}
+                onClick={() => handleOpenNewSessionModal()}
                 className="px-3 py-1.5 text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
                 style={{ backgroundColor: institution.primary_color }}
               >
@@ -654,45 +937,115 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                 const isActive = currentSession?.id === session.id;
 
                 return (
-                  <button
+                  <div
                     key={session.id}
-                    onClick={() => setCurrentSession(session)}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg transition-colors",
+                      "w-full rounded-lg transition-colors group relative",
                       isActive
                         ? "text-white"
                         : "text-gray-700 hover:bg-gray-100"
                     )}
                     style={isActive ? { backgroundColor: institution.primary_color } : {}}
                   >
-                    <div className="flex items-center space-x-3">
-                      <AssistantIcon
-                        iconType={sessionAssistant?.icon || 'bot'}
-                        className="w-8 h-8 flex-shrink-0"
-                        color={sessionAssistant?.color_theme || institution.primary_color}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm font-medium truncate",
-                          isActive ? "text-white" : "text-gray-900"
-                        )}>
-                          {session.title}
-                        </p>
-                        <p className={cn(
-                          "text-xs truncate",
-                          isActive ? "text-white/80" : "text-gray-500"
-                        )}>
-                          {sessionAssistant?.name || 'Assistente'}
-                        </p>
-                        <p className={cn(
-                          "text-xs",
-                          isActive ? "text-white/70" : "text-gray-400"
-                        )}>
-                          {session.updated_at.toLocaleDateString('pt-BR')}
-                        </p>
+                    <button
+                      onClick={() => setCurrentSession(session)}
+                      className="w-full text-left p-3 flex-1"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <AssistantIcon
+                          iconType={sessionAssistant?.icon || 'bot'}
+                          className="w-8 h-8 flex-shrink-0"
+                          color={sessionAssistant?.color_theme || institution.primary_color}
+                        />
+                        <div className="flex-1 min-w-0 pr-8"> {/* Add padding-right for buttons */}
+                          {editingSessionId === session.id ? (
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              onBlur={() => {
+                                // Save the edited title
+                                if (editingTitle.trim()) {
+                                  setSessions(prev => prev.map(s =>
+                                    s.id === session.id
+                                      ? { ...s, title: editingTitle.trim() }
+                                      : s
+                                  ));
+                                  saveSessionsToStorage(sessions.map(s =>
+                                    s.id === session.id
+                                      ? { ...s, title: editingTitle.trim() }
+                                      : s
+                                  ));
+                                }
+                                setEditingSessionId(null);
+                                setEditingTitle('');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  setEditingSessionId(null);
+                                  setEditingTitle('');
+                                }
+                              }}
+                              className="text-sm font-medium bg-transparent border-none outline-none ring-1 ring-white/50 rounded px-1 text-white placeholder-white/70 w-full"
+                              autoFocus
+                            />
+                          ) : (
+                            <p className={cn(
+                              "text-sm font-medium truncate",
+                              isActive ? "text-white" : "text-gray-900"
+                            )}>
+                              {session.title}
+                            </p>
+                          )}
+                          <p className={cn(
+                            "text-xs truncate",
+                            isActive ? "text-white/80" : "text-gray-500"
+                          )}>
+                            {sessionAssistant?.name || 'Assistente'}
+                          </p>
+                          <p className={cn(
+                            "text-xs",
+                            isActive ? "text-white/70" : "text-gray-400"
+                          )}>
+                            {session.updated_at.toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
                       </div>
+                    </button>
+
+                    {/* Action buttons */}
+                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingSessionId(session.id);
+                          setEditingTitle(session.title);
+                        }}
+                        className={cn(
+                          "p-1 rounded hover:bg-black/10 transition-colors",
+                          isActive ? "text-white/80 hover:text-white" : "text-gray-500 hover:text-gray-700"
+                        )}
+                        title="Editar nome"
+                      >
+                        <Icon name="edit2" className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSession(session.id);
+                        }}
+                        className={cn(
+                          "p-1 rounded hover:bg-red-500/20 transition-colors",
+                          isActive ? "text-white/80 hover:text-red-200" : "text-gray-500 hover:text-red-600"
+                        )}
+                        title="Excluir conversa"
+                      >
+                        <Icon name="trash2" className="w-3 h-3" />
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
 
@@ -899,6 +1252,27 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
           )}
         </div>
       </div>
+
+      {/* Modal de Nova Sessão */}
+      {showNewSessionModal && (
+        <NewSessionModal
+          onClose={() => setShowNewSessionModal(false)}
+          onConfirm={handleCreateNewSession}
+          assistants={availableAssistants}
+          selectedAssistantId={selectedAssistantForNew}
+          institution={institution}
+        />
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteConfirm && sessionToDelete && (
+        <DeleteConfirmModal
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={() => deleteSession(sessionToDelete)}
+          sessionTitle={sessions.find(s => s.id === sessionToDelete)?.title || 'Conversa'}
+          institution={institution}
+        />
+      )}
 
       {/* Modal de Seleção de Assistente */}
       {showAssistantSelector && (
