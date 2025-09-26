@@ -242,10 +242,10 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
 
       const result = await response.json();
       if (result.success) {
-        toast.success(`Assinatura ${action === 'activate' ? 'ativada' : 'desativada'} com sucesso`);
+        toast.success(`Conta ${action === 'activate' ? 'ativada' : 'desativada'} com sucesso`);
         await loadUsers();
       } else {
-        toast.error(result.error || 'Erro ao alterar assinatura do usuário');
+        toast.error(result.error || 'Erro ao alterar conta do usuário');
       }
     } catch (error) {
       console.error('Error toggling user subscription:', error);
@@ -577,7 +577,7 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {user.is_active ? 'Assinatura Ativa' : 'Sem Assinatura'}
+                              {user.is_active ? 'Conta Ativa' : 'Conta Inativa'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -586,7 +586,7 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                               className={`p-1 rounded hover:bg-gray-100 ${
                                 user.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
                               }`}
-                              title={user.is_active ? 'Desativar assinatura' : 'Ativar assinatura'}
+                              title={user.is_active ? 'Desativar conta' : 'Ativar conta'}
                             >
                               {user.is_active ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
