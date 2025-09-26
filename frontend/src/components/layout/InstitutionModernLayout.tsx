@@ -152,7 +152,7 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
 
   return (
     <div
-      className="min-h-screen bg-gradient-mesh"
+      className="min-h-screen bg-gradient-mesh flex"
       style={{
         '--institution-primary': institution.primary_color,
         '--institution-secondary': institution.secondary_color || institution.primary_color,
@@ -174,46 +174,39 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
         .institution-hover:hover { background-color: var(--institution-hover); }
 
         .sidebar-fixed {
-          position: fixed;
-          left: 0;
-          top: 0;
-          bottom: 0;
           width: 280px;
           background: white;
           border-right: 1px solid rgb(229 231 235);
-          z-index: 50;
-          transform: translateX(-100%);
-          transition: transform 0.3s ease-in-out;
+          flex-shrink: 0;
         }
 
-        .sidebar-fixed.open {
-          transform: translateX(0);
-        }
-
-        @media (min-width: 1024px) {
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 1023px) {
           .sidebar-fixed {
-            position: relative;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 50;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+          }
+
+          .sidebar-fixed.open {
             transform: translateX(0);
           }
 
           .main-content {
-            margin-left: 0;
+            flex: 1;
+            min-width: 0;
           }
         }
 
-        @media (max-width: 1023px) {
-          .main-content {
-            margin-left: 0;
-          }
-        }
-
+        /* Desktop: sidebar always visible */
         @media (min-width: 1024px) {
-          body {
-            display: flex;
-          }
-
           .sidebar-fixed {
-            flex-shrink: 0;
+            position: static;
+            transform: translateX(0);
           }
 
           .main-content {
