@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams, Outlet } from 'react-router-
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
 import { Icon } from '../ui/Icon';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { InstitutionLoadingSpinner } from '../ui/InstitutionLoadingSpinner';
 import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
 
@@ -22,7 +22,9 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
     loading,
     error,
     isInstitutionUser,
-    canAccessAdminPanel
+    canAccessAdminPanel,
+    authenticationComplete,
+    institutionLoaded
   } = useInstitution();
   const navigate = useNavigate();
   const location = useLocation();
@@ -103,25 +105,27 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
     }
   }, [sidebarOpen]);
 
-  // Redirect to login if not authenticated or no access
+  // Redirect to login if not authenticated or no access (melhorado para evitar loops)
   useEffect(() => {
-    if (!loading && (!user || !isInstitutionUser)) {
+    // Só redirecionar se não está carregando E alguma verificação foi completada
+    if (!loading && institutionLoaded && user && !authenticationComplete) {
+      console.log('⚠️ Layout: User not authenticated for institution, redirecting to login...');
       navigate(`/i/${slug}/login`);
     }
-  }, [user, isInstitutionUser, loading, navigate, slug]);
+  }, [user, institutionLoaded, authenticationComplete, loading, navigate, slug]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner size="lg" />
+          <InstitutionLoadingSpinner size="lg" institution={institution} />
           <p className="mt-4 text-gray-600">Carregando portal...</p>
         </div>
       </div>
     );
   }
 
-  if (error || !institution || !user || !isInstitutionUser) {
+  if (error || !institution || !user || !authenticationComplete) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full">

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { InstitutionLoadingSpinner } from '../../components/ui/InstitutionLoadingSpinner';
 import { AssistantIcon } from '../../components/ui/AssistantIcon';
 import { Icon } from '../../components/ui/Icon';
 import { cn } from '../../utils/cn';
@@ -439,7 +439,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner size="lg" color={institution?.primary_color} />
+          <InstitutionLoadingSpinner size="lg" institution={institution} />
           <p className="mt-4 text-gray-600">Carregando chat...</p>
         </div>
       </div>
@@ -685,7 +685,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                         <div className="ml-2">
                           <div className="bg-white rounded-2xl px-4 py-3 shadow-sm">
                             <div className="flex items-center space-x-2">
-                              <LoadingSpinner size="sm" />
+                              <InstitutionLoadingSpinner size="sm" institution={institution} />
                               <span className="text-gray-600 text-sm">
                                 {isSimulator ? 'Refletindo...' : 'Pensando...'}
                               </span>

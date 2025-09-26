@@ -66,11 +66,14 @@ interface InstitutionContextType {
   // Estados de carregamento
   loading: boolean;
   error: string | null;
+  authenticationComplete: boolean;
+  institutionLoaded: boolean;
 
   // Funções
   loadInstitution: (slug: string) => Promise<boolean>;
   verifyAccess: (token: string, slug: string) => Promise<boolean>;
   clearContext: () => void;
+  setAuthenticationComplete: (complete: boolean) => void;
 
   // Helpers
   hasPermission: (permission: string) => boolean;
@@ -92,6 +95,8 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   const [availableAssistants, setAvailableAssistants] = useState<InstitutionAssistant[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authenticationComplete, setAuthenticationComplete] = useState(false);
+  const [institutionLoaded, setInstitutionLoaded] = useState(false);
   const [isLoadingInstitution, setIsLoadingInstitution] = useState(false);
   const [isVerifyingAccess, setIsVerifyingAccess] = useState(false);
 
@@ -126,15 +131,18 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       if (result.success && result.data.institution) {
         console.log('✅ Institution loaded successfully:', result.data.institution.name);
         setInstitution(result.data.institution);
+        setInstitutionLoaded(true);
         return true;
       } else {
         console.error('❌ Failed to load institution:', result.error);
         setError(result.error || 'Instituição não encontrada');
+        setInstitutionLoaded(false);
         return false;
       }
     } catch (error) {
       console.error('💥 Error loading institution:', error);
       setError('Erro ao carregar informações da instituição');
+      setInstitutionLoaded(false);
       return false;
     } finally {
       setIsLoadingInstitution(false);
@@ -179,15 +187,19 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
         setInstitution(result.data.institution);
         setUserAccess(result.data.user_access);
         setAvailableAssistants(result.data.available_assistants || []);
+        setAuthenticationComplete(true);
+        setInstitutionLoaded(true);
         return true;
       } else {
         console.error('❌ Access verification failed:', result.error);
         setError(result.error || 'Acesso não autorizado');
+        setAuthenticationComplete(false);
         return false;
       }
     } catch (error) {
       console.error('💥 Error verifying access:', error);
       setError(`Erro ao verificar acesso: ${error.message}`);
+      setAuthenticationComplete(false);
       return false;
     } finally {
       setIsVerifyingAccess(false);
@@ -201,6 +213,12 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     setUserAccess(null);
     setAvailableAssistants([]);
     setError(null);
+    setLoading(false);
+    setAuthenticationComplete(false);
+    setInstitutionLoaded(false);
+    setIsLoadingInstitution(false);
+    setIsVerifyingAccess(false);
+    console.log('🧹 Institution context cleared');
   };
 
   // Helper para verificar permissões
@@ -283,9 +301,12 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     availableAssistants,
     loading,
     error,
+    authenticationComplete,
+    institutionLoaded,
     loadInstitution,
     verifyAccess,
     clearContext,
+    setAuthenticationComplete,
     hasPermission,
     isInstitutionUser,
     canAccessAdminPanel,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { InstitutionLoadingSpinner } from '../../components/ui/InstitutionLoadingSpinner';
 import { cn } from '../../utils/cn';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
@@ -11,39 +11,58 @@ export const InstitutionLogin: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { signIn, user, loading: authLoading } = useAuth();
-  const { institution, verifyAccess, loading, error, isInstitutionUser } = useInstitution();
+  const {
+    institution,
+    verifyAccess,
+    loading,
+    error,
+    isInstitutionUser,
+    authenticationComplete,
+    institutionLoaded,
+    setAuthenticationComplete
+  } = useInstitution();
 
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasCheckedAccess, setHasCheckedAccess] = useState(false);
+  const [hasCompletedCheck, setHasCompletedCheck] = useState(false);
 
-  // A instituição será carregada automaticamente pelo InstitutionLayout
-  // Não precisamos carregar aqui para evitar duplicação
-
-  // Redirecionar se já logado e tem acesso (simplificado para evitar loops)
+  // Reset authentication state when component mounts or slug changes
   useEffect(() => {
-    const checkAccess = () => {
-      // Se não tem user, slug, instituição, ou já checou, retornar
-      if (!user || !institution || !slug || hasCheckedAccess) return;
-
-      // Se já tem acesso verificado, redirecionar
-      if (isInstitutionUser) {
-        console.log('✅ User already has access, redirecting...');
-        setHasCheckedAccess(true);
-        navigate(`/i/${slug}`, { replace: true });
-      }
-    };
-
-    // Reset hasCheckedAccess when user changes
-    if (!user) {
-      setHasCheckedAccess(false);
+    if (slug) {
+      setAuthenticationComplete(false);
+      setHasCompletedCheck(false);
+      console.log(`🔄 InstitutionLogin: Reset for slug ${slug}`);
     }
+  }, [slug, setAuthenticationComplete]);
 
-    checkAccess();
-  }, [user, institution, slug, isInstitutionUser, navigate, hasCheckedAccess]);
+  // Redirecionar se já logado e tem acesso completo (prevenção de loop)
+  useEffect(() => {
+    // Só redirecionar se temos tudo necessário e ainda não completamos a verificação
+    if (
+      user &&
+      institution &&
+      institutionLoaded &&
+      authenticationComplete &&
+      isInstitutionUser &&
+      !hasCompletedCheck
+    ) {
+      console.log('✅ User authenticated and has access, redirecting to dashboard...');
+      setHasCompletedCheck(true);
+      navigate(`/i/${slug}`, { replace: true });
+    }
+  }, [
+    user,
+    institution,
+    institutionLoaded,
+    authenticationComplete,
+    isInstitutionUser,
+    hasCompletedCheck,
+    navigate,
+    slug
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -79,7 +98,8 @@ export const InstitutionLogin: React.FC = () => {
       }
 
       toast.success(`Bem-vindo à ${institution.name}!`);
-      navigate(`/i/${slug}`, { replace: true });
+      // Aguardar o próximo useEffect redirecionar automaticamente
+      // navigate será chamado quando authenticationComplete for true
 
     } catch (error: any) {
       console.error('Institution login error:', error);
@@ -100,7 +120,7 @@ export const InstitutionLogin: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner size="lg" />
+          <InstitutionLoadingSpinner size="lg" institution={institution} />
           <p className="mt-4 text-gray-600">Carregando...</p>
         </div>
       </div>
@@ -136,7 +156,7 @@ export const InstitutionLogin: React.FC = () => {
   if (!institution) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <InstitutionLoadingSpinner size="lg" institution={institution} />
       </div>
     );
   }
@@ -254,7 +274,7 @@ export const InstitutionLogin: React.FC = () => {
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
-                  <LoadingSpinner size="sm" color="white" className="mr-2" />
+                  <InstitutionLoadingSpinner size="sm" institution={institution} className="mr-2" />
                   Entrando...
                 </div>
               ) : (

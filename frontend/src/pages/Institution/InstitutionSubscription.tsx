@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { InstitutionLoadingSpinner } from '../../components/ui/InstitutionLoadingSpinner';
 import {
   ArrowLeft,
   Shield,
@@ -136,7 +136,7 @@ export const InstitutionSubscription: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner size="lg" color={institution?.primary_color} />
+          <InstitutionLoadingSpinner size="lg" institution={institution} />
           <p className="mt-4 text-gray-600">Carregando informações da licença...</p>
         </div>
       </div>
