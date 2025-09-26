@@ -161,10 +161,8 @@ export const InstitutionLogin: React.FC = () => {
     );
   }
 
-  return renderLoginForm(institution);
-
-  // Função para renderizar o formulário de login
-  function renderLoginForm(institutionData: any) {
+  // Função para renderizar o formulário de login (movida para dentro do componente)
+  const renderLoginForm = (institutionData: any) => {
     // Verificação de segurança
     if (!institutionData) {
       console.error('❌ renderLoginForm: institutionData is null or undefined');
@@ -347,5 +345,8 @@ export const InstitutionLogin: React.FC = () => {
       </div>
     </div>
     );
-  }
+  };
+
+  // Renderizar o formulário com os dados da instituição
+  return renderLoginForm(institution);
 };
