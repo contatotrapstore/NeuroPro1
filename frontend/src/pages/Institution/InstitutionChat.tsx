@@ -289,6 +289,69 @@ export const InstitutionChat: React.FC = () => {
     }
   }, [message]);
 
+  // Helper functions for localStorage
+  const getStorageKey = () => `institution_chat_${slug}_${user?.id}`;
+
+  const loadSessionsFromStorage = (): ChatSession[] => {
+    try {
+      const stored = localStorage.getItem(getStorageKey());
+      if (!stored) return [];
+
+      const parsed = JSON.parse(stored);
+      // Convert string dates back to Date objects
+      return parsed.map((session: any) => ({
+        ...session,
+        created_at: new Date(session.created_at),
+        updated_at: new Date(session.updated_at),
+        messages: session.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      }));
+    } catch (error) {
+      console.error('Error loading sessions from storage:', error);
+      return [];
+    }
+  };
+
+  const saveSessionsToStorage = (sessionsToSave: ChatSession[]) => {
+    try {
+      localStorage.setItem(getStorageKey(), JSON.stringify(sessionsToSave));
+    } catch (error) {
+      console.error('Error saving sessions to storage:', error);
+    }
+  };
+
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    if (!user || !slug) return;
+
+    const savedSessions = loadSessionsFromStorage();
+    if (savedSessions.length > 0) {
+      setSessions(savedSessions);
+      console.log(`📦 Loaded ${savedSessions.length} saved sessions for ${slug}`);
+
+      // If there's an assistantId in URL, try to restore that session
+      if (assistantId) {
+        const existingSession = savedSessions.find(s => s.assistant_id === assistantId);
+        if (existingSession) {
+          setCurrentSession(existingSession);
+          console.log(`🔄 Restored session for assistant ${assistantId}`);
+        }
+      }
+    }
+  }, [user, slug, assistantId]);
+
+  // Save sessions to localStorage when they change
+  useEffect(() => {
+    if (!user || !slug) return;
+
+    if (sessions.length > 0) {
+      saveSessionsToStorage(sessions);
+      console.log(`💾 Saved ${sessions.length} sessions to storage`);
+    }
+  }, [sessions, user, slug]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -364,10 +427,20 @@ Como posso ajudá-lo hoje?`,
     };
 
     // Adicionar mensagem do usuário
-    setCurrentSession(prev => prev ? {
-      ...prev,
-      messages: [...prev.messages, userMessage]
-    } : null);
+    const updatedSessionWithUser = currentSession ? {
+      ...currentSession,
+      messages: [...currentSession.messages, userMessage],
+      updated_at: new Date()
+    } : null;
+
+    setCurrentSession(updatedSessionWithUser);
+
+    // Update the session in the sessions array
+    if (updatedSessionWithUser) {
+      setSessions(prev => prev.map(s =>
+        s.id === updatedSessionWithUser.id ? updatedSessionWithUser : s
+      ));
+    }
 
     setMessage('');
     setIsLoading(true);
@@ -408,10 +481,20 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
         timestamp: new Date()
       };
 
-      setCurrentSession(prev => prev ? {
-        ...prev,
-        messages: [...prev.messages, assistantMessage]
-      } : null);
+      const updatedSessionWithAssistant = currentSession ? {
+        ...currentSession,
+        messages: [...currentSession.messages, assistantMessage],
+        updated_at: new Date()
+      } : null;
+
+      setCurrentSession(updatedSessionWithAssistant);
+
+      // Update the session in the sessions array
+      if (updatedSessionWithAssistant) {
+        setSessions(prev => prev.map(s =>
+          s.id === updatedSessionWithAssistant.id ? updatedSessionWithAssistant : s
+        ));
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
