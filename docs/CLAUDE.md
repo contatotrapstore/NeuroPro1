@@ -679,3 +679,105 @@ if (event === 'PASSWORD_RECOVERY') {
 - Handles edge cases like expired tokens and invalid states
 
 The system now works seamlessly with the production domain `https://www.neuroialab.com.br`.
+
+## 🔧 Chat Institucional ABPSI - Correções Críticas (26/09/2025)
+
+### Problema Resolvido
+Chat institucional ABPSI estava retornando erro "Serviço de IA temporariamente indisponível" devido a múltiplos problemas de configuração e sintaxe.
+
+### Série de Correções Aplicadas
+
+#### 1. Access to OPENAI_API_KEY
+**Problema**: `institution-chat.js` não conseguia acessar variável de ambiente
+**Causa**: Chave configurada no Vercel com prefixo `VITE_OPENAI_API_KEY`
+**Solução**: Adicionado fallback em `api/institution-chat.js`:
+```javascript
+const openaiApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
+```
+
+#### 2. Frontend API Routing
+**Problema**: Frontend chamando URL antiga `neuro-pro-backend-phi.vercel.app`
+**Solução**: Comentados valores hardcoded em:
+- `frontend/.env`: `# VITE_API_BASE_URL=...`
+- `frontend/.env.production`: `# VITE_API_BASE_URL=...`
+**Resultado**: `api.service.ts` usa fallback `/api` (caminho relativo)
+
+#### 3. API Service Centralization
+**Problema**: `InstitutionChat.tsx` usando `fetch()` direto, diferente do chat normal
+**Solução**: Criado método `sendInstitutionMessage()` no `api.service.ts`
+**Benefício**: Ambos os chats agora usam mesma infraestrutura (auth, headers, retry)
+
+#### 4. OpenAI SDK v5 Syntax Correction
+**Problema**: Erro `Path parameters result in path with invalid segments: /threads/undefined/runs/...`
+**Causa**: Sintaxe incorreta do OpenAI SDK v5
+**Antes**: `openai.beta.threads.runs.retrieve(threadId, runId)`
+**Depois**: `openai.beta.threads.runs.retrieve(runId, { thread_id: threadId })`
+
+#### 5. Polling Logic Enhancement
+**Problema**: Timeout de 30s muito baixo + erro "Status inesperado: in_progress"
+**Soluções Aplicadas**:
+- ✅ Timeout aumentado: 30s → 60s
+- ✅ Adicionado suporte a status `'in_progress'`
+- ✅ Progressive backoff: 300ms → 1000ms
+- ✅ Logs detalhados de polling (`⏳ Still waiting... attempt 10/60`)
+
+**Código Atualizado**:
+```javascript
+const maxAttempts = 60;
+const maxTimeMs = 60000;
+const processingStatuses = ['queued', 'in_progress', 'running'];
+
+while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts) {
+  const delayMs = Math.min(300 + (attempts * 100), 1000);
+  await new Promise(resolve => setTimeout(resolve, delayMs));
+  runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
+  attempts++;
+}
+```
+
+### Arquivos Modificados
+- `api/institution-chat.js` - 3 correções principais
+- `frontend/src/services/api.service.ts` - Novo método `sendInstitutionMessage`
+- `frontend/src/pages/Institution/InstitutionChat.tsx` - Migrado para apiService
+- `frontend/.env` - Comentado `VITE_API_BASE_URL`
+- `frontend/.env.production` - Comentado `VITE_API_BASE_URL`
+- `api/debug-env.js` - **NOVO** endpoint de debug
+- `api/vercel.json` - Adicionado roteamento para `/debug-env`
+
+### Debug Infrastructure
+**Endpoint de Debug**:
+```bash
+GET /api/debug-env
+# Retorna: todas env vars disponíveis, chaves OpenAI, contagens
+```
+
+**Logs Detalhados**:
+```javascript
+console.log('🔑 DETAILED ENV DEBUG:', {
+  has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+  has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
+  selected_key_source: 'OPENAI_API_KEY' | 'VITE_OPENAI_API_KEY' | 'none'
+});
+
+console.log('🔍 ALL ENV VARS COMPARISON:', {
+  total_count: 53,
+  sorted_keys: [...],
+  openai_related_keys: [...]
+});
+```
+
+### Status Atual
+✅ **Chat ABPSI**: Totalmente funcional
+✅ **OpenAI Integration**: Operacional com timeout de 60s
+✅ **API Routing**: Usando caminho relativo `/api`
+✅ **Polling**: Suporte completo a todos os status OpenAI
+✅ **Debug Tools**: Endpoint de inspeção disponível
+
+### Commits Relacionados
+- `b97574c` - fix(chat): critical fixes for ABPSI institution chat functionality
+- `3e14690` - fix(institution-chat): correct OpenAI SDK v5 syntax
+- `c5522f4` - fix(institution-chat): centralize API calls and debugging
+- `8833545` - fix(institution-chat): add fallback to VITE_OPENAI_API_KEY
+- `a4b7c6f` - debug: add OPENAI_API_KEY debug logging to chat.js
+- `5db1a3c` - fix(api-service): use relative /api path
+- `17da8c2` - debug: add environment variables debug endpoint

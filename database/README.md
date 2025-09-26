@@ -126,3 +126,65 @@ O sistema agora suporta nomes de assistentes longos como:
 - "Planejador de Exercícios Orofaciais e Neonatais (Bebês / Freio Lingual / Sucção)"
 - IDs gerados automaticamente com máximo de 39 caracteres
 - Validação preventiva em todos os pontos de entrada
+
+## 🔄 Recent Backend Changes (September 26, 2025)
+
+### Institution Chat Backend Overhaul
+
+Multiple critical fixes applied to `api/institution-chat.js`:
+
+#### Environment Variable Access
+- Added fallback: `OPENAI_API_KEY || VITE_OPENAI_API_KEY`
+- Prevents "API key not configured" errors in production
+
+#### OpenAI SDK v5 Compatibility
+- Fixed runs.retrieve() syntax: `(runId, { thread_id })` instead of `(threadId, runId)`
+- Prevents "undefined" path parameter errors
+
+#### Polling Logic Enhancement
+- Timeout increased: 30s → 60s
+- Added support for `'in_progress'` status
+- Progressive backoff: 300ms → 1000ms
+- Detailed logging every 10 attempts
+
+#### Debug Infrastructure
+**New Endpoint**: `/api/debug-env`
+```javascript
+GET /api/debug-env
+// Returns:
+{
+  has_OPENAI_API_KEY: boolean,
+  total_env_vars: number,
+  openai_env_keys: string[],
+  all_env_keys_count: number
+}
+```
+
+**Comprehensive Logging**:
+```javascript
+console.log('🔑 API Key Selection:', {
+  has_OPENAI_API_KEY: boolean,
+  has_VITE_OPENAI_API_KEY: boolean,
+  selected_key_source: 'OPENAI_API_KEY' | 'VITE_OPENAI_API_KEY' | 'none'
+});
+
+console.log('🏁 Polling finished:', {
+  finalStatus: 'completed',
+  totalAttempts: 15,
+  elapsedTime: '12s'
+});
+```
+
+### Database Impact
+No database schema changes were required. All fixes were backend API logic improvements.
+
+### RPC Functions Status
+All existing RPC functions remain unchanged:
+- ✅ `verify_institution_access()` - Working correctly
+- ✅ `get_institution_subscription_status()` - Operational
+- ✅ `check_institution_user_subscription()` - Active
+
+### API Endpoints Updated
+- `POST /api/institution-chat` - Enhanced with proper polling and error handling
+- `GET /api/debug-env` - **NEW** endpoint for environment variable inspection
+- All institution endpoints now use consistent apiService infrastructure

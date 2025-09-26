@@ -194,6 +194,71 @@ const CharacterCounter = ({ current, max }: {
 <CharacterCounter current={formData.name?.length || 0} max={FIELD_LIMITS.name} />
 ```
 
+## 🔗 API Integration (Updated Sept 26, 2025)
+
+### Centralized API Service
+
+**api.service.ts** now handles ALL API calls with consistent patterns:
+
+```typescript
+class ApiService {
+  // Base configuration
+  baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+  // Chat methods
+  async sendMessage(conversationId: string, message: string): Promise<ApiResponse<any>>
+
+  // Institution chat methods (NEW)
+  async sendInstitutionMessage(data: {
+    assistant_id: string;
+    message: string;
+    thread_id?: string;
+    institution_slug: string;
+    session_id: string;
+  }): Promise<ApiResponse<any>>
+}
+```
+
+**Benefits**:
+- ✅ Consistent authentication headers
+- ✅ Automatic retry logic
+- ✅ Centralized error handling
+- ✅ Rate limiting support
+- ✅ Request/response logging
+
+**Usage in Components**:
+```typescript
+// Regular Chat (ChatPage.tsx)
+const result = await apiService.sendMessage(conversationId, content);
+
+// Institution Chat (InstitutionChat.tsx)
+const result = await apiService.sendInstitutionMessage({
+  assistant_id: currentAssistant.openai_assistant_id,
+  message: userMessage.content,
+  thread_id: currentSession.thread_id,
+  institution_slug: slug!,
+  session_id: currentSession.id
+});
+```
+
+### Environment Configuration Fix
+
+**Problem Solved**: Frontend was calling old backend URLs hardcoded in `.env` files.
+
+**Solution**: Commented out hardcoded URLs to use relative `/api` paths:
+
+```env
+# frontend/.env
+# VITE_API_BASE_URL comentado para usar caminho relativo /api (mesmo domínio)
+# VITE_API_BASE_URL=https://neuro-pro-backend-phi.vercel.app
+
+# frontend/.env.production
+# VITE_API_BASE_URL comentado para usar caminho relativo /api (mesmo domínio)
+# VITE_API_BASE_URL=https://neuro-pro-backend.vercel.app/api
+```
+
+**Result**: `apiService` now uses fallback `/api` ensuring frontend calls same-domain backend.
+
 #### Validação Pré-envio
 ```typescript
 const handleSave = async () => {
