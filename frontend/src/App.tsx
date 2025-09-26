@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { InstitutionProvider } from './contexts/InstitutionContext';
 import ModernLayout from './components/layout/ModernLayout';
-import InstitutionModernLayout from './components/layout/InstitutionModernLayout';
+import InstitutionConditionalLayout from './components/layout/InstitutionConditionalLayout';
+import InstitutionProtectedRoute from './components/layout/InstitutionProtectedRoute';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import PublicRoute from './components/layout/PublicRoute';
 import AdminProtectedRoute from './components/layout/AdminProtectedRoute';
@@ -187,7 +188,7 @@ const App: React.FC = () => {
 
           {/* Institution Routes */}
           <Route path="/i/:slug/login" element={<InstitutionLogin />} />
-          <Route path="/i/:slug" element={<InstitutionModernLayout />}>
+          <Route path="/i/:slug" element={<InstitutionConditionalLayout />}>
             <Route index element={
               <Suspense fallback={<div className="p-8 text-center"><div className="animate-spin h-8 w-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>Carregando dashboard...</div>}>
                 <InstitutionDashboard />
@@ -198,13 +199,37 @@ const App: React.FC = () => {
                 <InstitutionDashboard />
               </Suspense>
             } />
-            <Route path="chat" element={<InstitutionChat />} />
-            <Route path="chat/:assistantId" element={<InstitutionChat />} />
             <Route path="store" element={<InstitutionStore />} />
-            <Route path="subscriptions" element={<InstitutionSubscriptions />} />
-            <Route path="profile" element={<div className="p-8"><h1 className="text-2xl font-bold">Perfil - Em desenvolvimento</h1></div>} />
-            <Route path="admin" element={<InstitutionAdmin />} />
-            <Route path="subscription" element={<InstitutionSubscription />} />
+            <Route path="chat" element={
+              <InstitutionProtectedRoute>
+                <InstitutionChat />
+              </InstitutionProtectedRoute>
+            } />
+            <Route path="chat/:assistantId" element={
+              <InstitutionProtectedRoute>
+                <InstitutionChat />
+              </InstitutionProtectedRoute>
+            } />
+            <Route path="subscriptions" element={
+              <InstitutionProtectedRoute>
+                <InstitutionSubscriptions />
+              </InstitutionProtectedRoute>
+            } />
+            <Route path="profile" element={
+              <InstitutionProtectedRoute>
+                <div className="p-8"><h1 className="text-2xl font-bold">Perfil - Em desenvolvimento</h1></div>
+              </InstitutionProtectedRoute>
+            } />
+            <Route path="admin" element={
+              <InstitutionProtectedRoute>
+                <InstitutionAdmin />
+              </InstitutionProtectedRoute>
+            } />
+            <Route path="subscription" element={
+              <InstitutionProtectedRoute>
+                <InstitutionSubscription />
+              </InstitutionProtectedRoute>
+            } />
             <Route path="home" element={<InstitutionHome />} />
           </Route>
 

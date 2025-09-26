@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
 import { AssistantIcon } from '../../components/ui/AssistantIcon';
 import { Icon } from '../../components/ui/Icon';
@@ -8,7 +9,9 @@ import { cn } from '../../utils/cn';
 
 export const InstitutionStore: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { institution, availableAssistants } = useInstitution();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { institution, availableAssistants, isInstitutionUser } = useInstitution();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -33,6 +36,21 @@ export const InstitutionStore: React.FC = () => {
   ];
 
   const featuredAssistant = availableAssistants.find(a => a.is_simulator) || availableAssistants[0];
+
+  // Função para lidar com ações que exigem autenticação
+  const handleAuthRequiredAction = (targetPath: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    if (!user || !isInstitutionUser) {
+      // Salvar URL de destino e redirecionar para login
+      const returnUrl = encodeURIComponent(targetPath);
+      navigate(`/i/${slug}/login?returnUrl=${returnUrl}`);
+      return;
+    }
+
+    // Se já autenticado, navegar normalmente
+    navigate(targetPath);
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -146,8 +164,8 @@ export const InstitutionStore: React.FC = () => {
                     </span>
                   </div>
 
-                  <Link
-                    to={`/i/${slug}/chat/${featuredAssistant.id}`}
+                  <button
+                    onClick={(e) => handleAuthRequiredAction(`/i/${slug}/chat/${featuredAssistant.id}`, e)}
                     className="inline-flex items-center px-6 py-3 rounded-xl text-white font-semibold transition-all hover:-translate-y-0.5 hover:shadow-lg"
                     style={{
                       backgroundColor: institution.primary_color,
@@ -155,8 +173,8 @@ export const InstitutionStore: React.FC = () => {
                     }}
                   >
                     <Icon name="play" className="w-5 h-5 mr-2" />
-                    Iniciar Simulação
-                  </Link>
+                    {user && isInstitutionUser ? 'Iniciar Simulação' : 'Fazer Login para Simular'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -248,10 +266,10 @@ export const InstitutionStore: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAssistants.map((assistant) => (
-              <Link
+              <div
                 key={assistant.id}
-                to={`/i/${slug}/chat/${assistant.id}`}
-                className="group bg-white rounded-xl border border-gray-200 p-6 hover:border-gray-300 hover:shadow-lg transition-all hover:-translate-y-1"
+                onClick={(e) => handleAuthRequiredAction(`/i/${slug}/chat/${assistant.id}`, e)}
+                className="group bg-white rounded-xl border border-gray-200 p-6 hover:border-gray-300 hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer"
               >
                 <div className="flex items-center mb-4">
                   <AssistantIcon
@@ -284,14 +302,14 @@ export const InstitutionStore: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">
-                    Clique para conversar
+                    {user && isInstitutionUser ? 'Clique para conversar' : 'Login necessário'}
                   </span>
                   <Icon
-                    name="arrow-right"
+                    name={user && isInstitutionUser ? "arrow-right" : "lock"}
                     className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors"
                   />
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

@@ -89,7 +89,7 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
 
   // Redirect to login if not authenticated or no access (melhorado para evitar loops)
   useEffect(() => {
-    // Só redirecionar se não está carregando E alguma verificação foi completada
+    // Só redirecionar se há usuário mas não tem acesso à instituição
     if (!loading && institutionLoaded && user && !authenticationComplete) {
       console.log('⚠️ Layout: User not authenticated for institution, redirecting to login...');
       navigate(`/i/${slug}/login`);
@@ -107,7 +107,8 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
     );
   }
 
-  if (error || !institution || !user || !authenticationComplete) {
+  // Só bloquear se há erro crítico ou se há usuário mas sem acesso
+  if (error || !institution || (user && !authenticationComplete)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full">

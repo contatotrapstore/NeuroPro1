@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
 import { AssistantIcon } from '../../components/ui/AssistantIcon';
 import { Icon } from '../../components/ui/Icon';
@@ -7,6 +8,8 @@ import { cn } from '../../utils/cn';
 
 export const InstitutionDashboard: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Verificação de segurança do contexto
   const context = useInstitution();
@@ -26,13 +29,29 @@ export const InstitutionDashboard: React.FC = () => {
     userAccess,
     availableAssistants,
     getPrimaryAssistant,
-    getSimulatorAssistant
+    getSimulatorAssistant,
+    isInstitutionUser
   } = context;
 
   if (!institution) return null;
 
   const primaryAssistant = getPrimaryAssistant();
   const simulatorAssistant = getSimulatorAssistant();
+
+  // Função para lidar com ações que exigem autenticação
+  const handleAuthRequiredAction = (targetPath: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    if (!user || !isInstitutionUser) {
+      // Salvar URL de destino e redirecionar para login
+      const returnUrl = encodeURIComponent(targetPath);
+      navigate(`/i/${slug}/login?returnUrl=${returnUrl}`);
+      return;
+    }
+
+    // Se já autenticado, navegar normalmente
+    navigate(targetPath);
+  };
 
   const stats = [
     {
@@ -42,22 +61,22 @@ export const InstitutionDashboard: React.FC = () => {
       description: 'IAs especializadas ativas'
     },
     {
-      title: 'Conversas Hoje',
-      value: '--',
+      title: user && isInstitutionUser ? 'Conversas Hoje' : 'Converse com IAs',
+      value: user && isInstitutionUser ? '--' : 'Login',
       icon: 'message',
-      description: 'Sessões realizadas'
+      description: user && isInstitutionUser ? 'Sessões realizadas' : 'Faça login para conversar'
     },
     {
-      title: 'Progresso',
-      value: '--',
+      title: user && isInstitutionUser ? 'Progresso' : 'Especialização',
+      value: user && isInstitutionUser ? '--' : 'ABPSI',
       icon: 'trending-up',
-      description: 'Horas de estudo'
+      description: user && isInstitutionUser ? 'Horas de estudo' : 'Psicanálise e formação'
     },
     {
-      title: 'Licença',
-      value: 'Ativa',
+      title: user && isInstitutionUser ? 'Licença' : 'Acesso',
+      value: user && isInstitutionUser ? 'Ativa' : 'Público',
       icon: 'shield-check',
-      description: 'Acesso completo',
+      description: user && isInstitutionUser ? 'Acesso completo' : 'Navegação livre',
       isStatus: true
     }
   ];
@@ -123,9 +142,15 @@ export const InstitutionDashboard: React.FC = () => {
             <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
               <Icon name="user" className="w-4 h-4" />
               <span className="text-sm font-medium">
-                {userAccess?.role === 'student' && 'Estudante'}
-                {userAccess?.role === 'professor' && 'Professor'}
-                {userAccess?.role === 'subadmin' && 'Administrador'}
+                {user && isInstitutionUser ? (
+                  <>
+                    {userAccess?.role === 'student' && 'Estudante'}
+                    {userAccess?.role === 'professor' && 'Professor'}
+                    {userAccess?.role === 'subadmin' && 'Administrador'}
+                  </>
+                ) : (
+                  'Visitante'
+                )}
               </span>
             </div>
           </div>
@@ -168,11 +193,11 @@ export const InstitutionDashboard: React.FC = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {quickActions.map((action, index) => (
-          <Link
+          <div
             key={index}
-            to={action.href}
+            onClick={(e) => handleAuthRequiredAction(action.href, e)}
             className={cn(
-              "block bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all hover:-translate-y-0.5",
+              "block bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer",
               action.highlight && "ring-2 ring-offset-2"
             )}
             style={action.highlight ? {
@@ -227,7 +252,7 @@ export const InstitutionDashboard: React.FC = () => {
                 ))}
               </div>
             )}
-          </Link>
+          </div>
         ))}
       </div>
 
@@ -254,10 +279,10 @@ export const InstitutionDashboard: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {availableAssistants.slice(0, 6).map((assistant) => (
-              <Link
+              <div
                 key={assistant.id}
-                to={`/i/${slug}/chat/${assistant.id}`}
-                className="flex items-center p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+                onClick={(e) => handleAuthRequiredAction(`/i/${slug}/chat/${assistant.id}`, e)}
+                className="flex items-center p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
               >
                 <div className="flex-shrink-0 mr-4">
                   <AssistantIcon
@@ -284,8 +309,8 @@ export const InstitutionDashboard: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <Icon name="chevron-right" className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              </Link>
+                <Icon name={user && isInstitutionUser ? "chevron-right" : "lock"} className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              </div>
             ))}
           </div>
         </div>
@@ -298,21 +323,24 @@ export const InstitutionDashboard: React.FC = () => {
         </h2>
 
         <div className="text-center py-12">
-          <Icon name="clock" className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <Icon name={user && isInstitutionUser ? "clock" : "message-square"} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nenhuma atividade recente
+            {user && isInstitutionUser ? 'Nenhuma atividade recente' : 'Comece sua jornada'}
           </h3>
           <p className="text-gray-600 mb-6">
-            Suas conversas e atividades aparecerão aqui
+            {user && isInstitutionUser ?
+              'Suas conversas e atividades aparecerão aqui' :
+              'Faça login para acessar nossos assistentes de IA especializados'
+            }
           </p>
-          <Link
-            to={`/i/${slug}/chat`}
+          <button
+            onClick={(e) => handleAuthRequiredAction(`/i/${slug}/chat`, e)}
             className="inline-flex items-center px-4 py-2 rounded-lg text-white font-medium hover:shadow-md transition-all"
             style={{ backgroundColor: institution.primary_color }}
           >
-            <Icon name="message-square" className="w-4 h-4 mr-2" />
-            Iniciar Chat
-          </Link>
+            <Icon name={user && isInstitutionUser ? "message-square" : "log-in"} className="w-4 h-4 mr-2" />
+            {user && isInstitutionUser ? 'Iniciar Chat' : 'Fazer Login'}
+          </button>
         </div>
       </div>
     </div>
