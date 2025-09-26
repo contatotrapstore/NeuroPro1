@@ -152,7 +152,7 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
 
   return (
     <div
-      className="min-h-screen bg-gradient-mesh flex"
+      className="min-h-screen bg-gradient-mesh"
       style={{
         '--institution-primary': institution.primary_color,
         '--institution-secondary': institution.secondary_color || institution.primary_color,
@@ -172,48 +172,6 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
         .institution-text-primary { color: var(--institution-primary); }
         .institution-border-primary { border-color: var(--institution-primary); }
         .institution-hover:hover { background-color: var(--institution-hover); }
-
-        .sidebar-fixed {
-          width: 280px;
-          background: white;
-          border-right: 1px solid rgb(229 231 235);
-          flex-shrink: 0;
-        }
-
-        /* Mobile: sidebar hidden by default */
-        @media (max-width: 1023px) {
-          .sidebar-fixed {
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            z-index: 50;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
-          }
-
-          .sidebar-fixed.open {
-            transform: translateX(0);
-          }
-
-          .main-content {
-            flex: 1;
-            min-width: 0;
-          }
-        }
-
-        /* Desktop: sidebar always visible */
-        @media (min-width: 1024px) {
-          .sidebar-fixed {
-            position: static;
-            transform: translateX(0);
-          }
-
-          .main-content {
-            flex: 1;
-            min-width: 0;
-          }
-        }
       `}</style>
 
       {/* Mobile Sidebar Overlay */}
@@ -423,7 +381,7 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
       </aside>
 
       {/* Main Content */}
-      <div className="main-content flex-1">
+      <div className="main-content">
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200">
           <div className="px-6 py-4">
