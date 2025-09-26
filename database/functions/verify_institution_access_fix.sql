@@ -1,5 +1,6 @@
--- Fix the verify_institution_access RPC function to remove the non-existent "settings" column reference
--- This function was causing 403 Forbidden errors due to trying to access a column that doesn't exist
+-- Fix the verify_institution_access RPC function to eliminate function ambiguity
+-- Resolve duplicate functions causing 403 Forbidden errors
+-- Support user approval workflow (allow inactive users to login)
 
 CREATE OR REPLACE FUNCTION verify_institution_access(p_institution_slug TEXT)
 RETURNS JSON
@@ -39,12 +40,11 @@ BEGIN
 
     v_institution_id := v_institution_record.id;
 
-    -- Check if user has access to this institution
+    -- Check if user has access to this institution (including inactive users for approval flow)
     SELECT * INTO v_access_record
     FROM institution_users
     WHERE institution_id = v_institution_id
-    AND user_id = v_user_id
-    AND is_active = true;
+    AND user_id = v_user_id;
 
     IF NOT FOUND THEN
         RETURN json_build_object(
@@ -58,24 +58,27 @@ BEGIN
     FROM auth.users
     WHERE id = v_user_id;
 
-    -- Get available assistants for this institution
+    -- Get available assistants for this institution (only show for active users)
+    -- Use data from institution_assistants directly since assistants table doesn't have matching records
     SELECT COALESCE(json_agg(
         json_build_object(
-            'id', id,
-            'name', name,
-            'description', description,
-            'icon', icon,
-            'color_theme', color_theme,
-            'openai_assistant_id', openai_assistant_id,
-            'is_simulator', is_simulator,
-            'is_primary', is_primary,
-            'display_order', display_order
-        ) ORDER BY display_order
+            'id', ia.id,
+            'name', COALESCE(ia.custom_name, 'Assistente ABPSI'),
+            'description', COALESCE(ia.custom_description, 'Assistente especializado em psicanálise'),
+            'icon', 'brain',  -- default icon
+            'color_theme', '#6366F1',  -- default color
+            'openai_assistant_id', ia.assistant_id,
+            'is_simulator', CASE WHEN ia.assistant_id = 'asst_9vDTodTAQIJV1mu2xPzXpBs8' THEN true ELSE false END,
+            'is_primary', COALESCE(ia.is_default, false),
+            'display_order', COALESCE(ia.display_order, 999)
+        ) ORDER BY COALESCE(ia.display_order, 999)
     ), '[]'::json) INTO v_assistants
-    FROM institution_assistants
-    WHERE institution_id = v_institution_id AND is_active = true;
+    FROM institution_assistants ia
+    WHERE ia.institution_id = v_institution_id
+      AND ia.is_enabled = true
+      AND v_access_record.is_active = true; -- Only show assistants if user is active/approved
 
-    -- Return success with all data, building settings object dynamically from existing columns
+    -- Return success with all data
     RETURN json_build_object(
         'success', true,
         'data', json_build_object(
@@ -109,14 +112,15 @@ BEGIN
             ),
             'user_access', json_build_object(
                 'role', v_access_record.role,
-                'is_admin', v_access_record.is_admin,
+                'is_admin', (v_access_record.role = 'subadmin'),
+                'is_active', v_access_record.is_active,
                 'permissions', json_build_object(
-                    'manage_users', v_access_record.is_admin,
-                    'view_reports', v_access_record.is_admin,
-                    'manage_assistants', v_access_record.is_admin,
-                    'manage_settings', v_access_record.is_admin,
-                    'view_conversations', v_access_record.is_admin,
-                    'export_data', v_access_record.is_admin
+                    'manage_users', (v_access_record.role = 'subadmin'),
+                    'view_reports', (v_access_record.role = 'subadmin'),
+                    'manage_assistants', (v_access_record.role = 'subadmin'),
+                    'manage_settings', (v_access_record.role = 'subadmin'),
+                    'view_conversations', (v_access_record.role = 'subadmin'),
+                    'export_data', (v_access_record.role = 'subadmin')
                 ),
                 'joined_at', v_access_record.created_at
             ),

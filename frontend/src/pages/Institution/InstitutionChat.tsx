@@ -99,6 +99,12 @@ function MessageInput({ message, setMessage, onSendMessage, isLoading, placehold
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔘 MessageInput handleSubmit:', {
+      hasMessage: !!message.trim(),
+      isLoading,
+      onSendMessage: typeof onSendMessage
+    });
+
     if (!message.trim() || isLoading) return;
     onSendMessage();
   };
@@ -418,7 +424,17 @@ Como posso ajudá-lo hoje?`,
   }, [availableAssistants, currentAssistant, assistantId, slug, navigate]);
 
   const sendMessage = async () => {
-    if (!message.trim() || !currentSession || isLoading || !currentAssistant) return;
+    if (!message.trim() || !currentSession || isLoading || !currentAssistant) {
+      console.log('❌ sendMessage blocked:', {
+        hasMessage: !!message.trim(),
+        hasSession: !!currentSession,
+        isLoading,
+        hasAssistant: !!currentAssistant
+      });
+      return;
+    }
+
+    console.log('✅ Sending message:', message.trim());
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -427,21 +443,19 @@ Como posso ajudá-lo hoje?`,
       timestamp: new Date()
     };
 
-    // Adicionar mensagem do usuário
-    const updatedSessionWithUser = currentSession ? {
+    // Adicionar mensagem do usuário de forma mais segura
+    const updatedSessionWithUser = {
       ...currentSession,
       messages: [...currentSession.messages, userMessage],
       updated_at: new Date()
-    } : null;
+    };
 
     setCurrentSession(updatedSessionWithUser);
 
     // Update the session in the sessions array
-    if (updatedSessionWithUser) {
-      setSessions(prev => prev.map(s =>
-        s.id === updatedSessionWithUser.id ? updatedSessionWithUser : s
-      ));
-    }
+    setSessions(prev => prev.map(s =>
+      s.id === updatedSessionWithUser.id ? updatedSessionWithUser : s
+    ));
 
     setMessage('');
     setIsLoading(true);
@@ -482,20 +496,21 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
         timestamp: new Date()
       };
 
-      const updatedSessionWithAssistant = currentSession ? {
-        ...currentSession,
-        messages: [...currentSession.messages, assistantMessage],
+      // Usar a sessão atualizada mais recente
+      const latestSession = sessions.find(s => s.id === currentSession.id) || currentSession;
+
+      const updatedSessionWithAssistant = {
+        ...latestSession,
+        messages: [...latestSession.messages, assistantMessage],
         updated_at: new Date()
-      } : null;
+      };
 
       setCurrentSession(updatedSessionWithAssistant);
 
       // Update the session in the sessions array
-      if (updatedSessionWithAssistant) {
-        setSessions(prev => prev.map(s =>
-          s.id === updatedSessionWithAssistant.id ? updatedSessionWithAssistant : s
-        ));
-      }
+      setSessions(prev => prev.map(s =>
+        s.id === updatedSessionWithAssistant.id ? updatedSessionWithAssistant : s
+      ));
 
     } catch (error) {
       console.error('Error sending message:', error);
