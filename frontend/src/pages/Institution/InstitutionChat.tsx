@@ -840,12 +840,11 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
         timestamp: new Date()
       };
 
-      // Usar a sessão atualizada mais recente
-      const latestSession = sessions.find(s => s.id === currentSession.id) || currentSession;
-
+      // ✅ CORRIGIDO: Usar updatedSessionWithUser que já contém a mensagem do usuário
+      // Em vez de buscar em sessions (que pode estar desatualizado devido ao closure)
       const updatedSessionWithAssistant = {
-        ...latestSession,
-        messages: [...latestSession.messages, assistantMessage],
+        ...updatedSessionWithUser,
+        messages: [...updatedSessionWithUser.messages, assistantMessage],
         updated_at: new Date()
       };
 
