@@ -324,17 +324,6 @@ export const InstitutionLogin: React.FC = () => {
                 Cadastre-se
               </button>
             </div>
-
-            <div className="text-sm text-gray-600">
-              Precisa de ajuda?{' '}
-              <a
-                href={institution?.settings?.contact?.email ? `mailto:${institution?.settings?.contact?.email}` : '#'}
-                className="hover:underline transition-colors"
-                style={{ color: institutionData.primary_color }}
-              >
-                Entre em contato
-              </a>
-            </div>
           </div>
 
           {/* Footer */}
