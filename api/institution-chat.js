@@ -271,7 +271,17 @@ module.exports = async function handler(req, res) {
     });
 
     // Use same validation logic as chat.js - graceful fallback instead of hard failure
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('placeholder')) {
+    // Try OPENAI_API_KEY first, then fallback to VITE_OPENAI_API_KEY (in case it's configured with VITE prefix)
+    const openaiApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
+
+    console.log('🔑 API Key Selection:', {
+      has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+      has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
+      selected_key_length: openaiApiKey ? openaiApiKey.length : 0,
+      selected_key_source: process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : (process.env.VITE_OPENAI_API_KEY ? 'VITE_OPENAI_API_KEY' : 'none')
+    });
+
+    if (!openaiApiKey || openaiApiKey.includes('placeholder')) {
       console.log('⚠️ OpenAI API key not configured for institution chat, returning friendly message');
       return res.status(200).json({
         success: true,
@@ -290,8 +300,8 @@ module.exports = async function handler(req, res) {
     }
 
     // Initialize OpenAI client (lazy loading)
-    console.log('🤖 Initializing OpenAI client...');
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    console.log('🤖 Initializing OpenAI client with selected key...');
+    const openai = new OpenAI({ apiKey: openaiApiKey });
 
     // Handle OpenAI thread
     let currentThreadId = thread_id;
