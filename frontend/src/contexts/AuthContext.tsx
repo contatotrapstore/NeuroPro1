@@ -157,10 +157,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string): Promise<{ needsConfirmation: boolean } | void> => {
+  const signUp = async (email: string, password: string, name: string, metadata?: any): Promise<{ needsConfirmation: boolean } | void> => {
     try {
       setLoading(true);
-      
+
       // First, sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -168,6 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         options: {
           data: {
             name: name,
+            ...metadata // Include institution metadata
           }
         }
       });
