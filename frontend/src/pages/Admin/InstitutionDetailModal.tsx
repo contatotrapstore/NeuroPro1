@@ -226,30 +226,30 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
   const toggleUserActive = async (userId: string, currentActive: boolean) => {
     try {
       const headers = await getAuthHeaders();
-      const action = currentActive ? 'deactivate' : 'activate';
+      const functionName = currentActive ? 'reject_institution_user' : 'approve_institution_user';
 
-      const response = await fetch(`/api/admin-institution-user-subscriptions?institution_id=${institution?.id}`, {
+      const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           ...headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: userId,
-          action: action
+          function_name: functionName,
+          params: [institution?.slug, userId]
         }),
       });
 
       const result = await response.json();
       if (result.success) {
-        toast.success(`Conta ${action === 'activate' ? 'ativada' : 'desativada'} com sucesso`);
+        toast.success(`Conta ${currentActive ? 'desativada' : 'ativada'} com sucesso`);
         await loadUsers();
       } else {
         toast.error(result.error || 'Erro ao alterar conta do usuário');
       }
     } catch (error) {
-      console.error('Error toggling user subscription:', error);
-      toast.error('Erro ao alterar assinatura do usuário');
+      console.error('Error toggling user active status:', error);
+      toast.error('Erro ao alterar conta do usuário');
     }
   };
 
