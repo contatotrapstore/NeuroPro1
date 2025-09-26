@@ -270,14 +270,20 @@ export const InstitutionRegister: React.FC = () => {
 
               <div className="mt-8">
                 <button
-                  onClick={() => navigate(`/i/${slug}/login`)}
+                  onClick={() => {
+                    if (needsEmailConfirmation) {
+                      navigate(`/i/${slug}/login`);
+                    } else {
+                      navigate(`/i/${slug}/pending-approval`);
+                    }
+                  }}
                   className="w-full px-6 py-3 rounded-xl text-white font-semibold transition-all transform hover:-translate-y-0.5 hover:shadow-lg"
                   style={{
                     backgroundColor: institutionData.primary_color,
                     boxShadow: `0 4px 15px ${institutionData.primary_color}30`
                   }}
                 >
-                  {needsEmailConfirmation ? 'Ir para Login' : 'Fazer Login Agora'}
+                  {needsEmailConfirmation ? 'Ir para Login' : 'Ver Status da Aprovação'}
                 </button>
               </div>
             </div>

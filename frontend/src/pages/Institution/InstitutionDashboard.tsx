@@ -11,6 +11,8 @@ export const InstitutionDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
+  const [hasSubscription, setHasSubscription] = useState<boolean>(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState<boolean>(true);
 
   // Verificação de segurança do contexto
   const context = useInstitution();
@@ -42,6 +44,48 @@ export const InstitutionDashboard: React.FC = () => {
 
   // Check if user can manage users (is admin)
   const canManageUsers = userAccess?.is_admin && userAccess?.permissions?.manage_users;
+
+  // Check user subscription status
+  useEffect(() => {
+    const checkUserSubscription = async () => {
+      if (!user || !slug || !isInstitutionUser) {
+        setSubscriptionLoading(false);
+        return;
+      }
+
+      try {
+        const { supabase } = await import('../../services/supabase');
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+
+        if (!token) {
+          setSubscriptionLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/check-institution-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            institution_slug: slug
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          setHasSubscription(result.data.has_subscription);
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    };
+
+    checkUserSubscription();
+  }, [user, slug, isInstitutionUser]);
 
   // Fetch pending users count if admin
   useEffect(() => {
@@ -86,11 +130,18 @@ export const InstitutionDashboard: React.FC = () => {
 
     // Check if user can access assistants (is active)
     if (isInstitutionUser && !canAccessAssistants) {
-      // User is logged in but not approved, show appropriate message
+      // User is logged in but not approved
+      navigate(`/i/${slug}/pending-approval`);
       return;
     }
 
-    // Se já autenticado e aprovado, navegar normalmente
+    // Check if user has subscription for chat access
+    if (targetPath.includes('/chat') && !subscriptionLoading && !hasSubscription) {
+      navigate(`/i/${slug}/checkout`);
+      return;
+    }
+
+    // Se já autenticado, aprovado e com assinatura (se necessário), navegar normalmente
     navigate(targetPath);
   };
 
@@ -114,11 +165,18 @@ export const InstitutionDashboard: React.FC = () => {
       description: user && isInstitutionUser ? 'Horas de estudo' : 'Psicanálise e formação'
     },
     {
-      title: user && isInstitutionUser ? 'Licença' : 'Acesso',
-      value: user && isInstitutionUser ? 'Ativa' : 'Público',
-      icon: 'shieldCheck',
-      description: user && isInstitutionUser ? 'Acesso completo' : 'Navegação livre',
-      isStatus: true
+      title: user && isInstitutionUser ? 'Assinatura' : 'Acesso',
+      value: user && isInstitutionUser
+        ? (subscriptionLoading ? 'Verificando...' : (hasSubscription ? 'Ativa' : 'Pendente'))
+        : 'Público',
+      icon: user && isInstitutionUser ? 'creditCard' : 'shieldCheck',
+      description: user && isInstitutionUser
+        ? (subscriptionLoading ? 'Verificando status...' : (hasSubscription ? 'Acesso completo às IAs' : 'Pagamento necessário'))
+        : 'Navegação livre',
+      isStatus: true,
+      statusColor: user && isInstitutionUser
+        ? (subscriptionLoading ? 'gray' : (hasSubscription ? 'green' : 'orange'))
+        : 'blue'
     }
   ];
 
@@ -198,6 +256,42 @@ export const InstitutionDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Subscription Warning Banner */}
+      {user && isInstitutionUser && !subscriptionLoading && !hasSubscription && (
+        <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-400 rounded-xl p-6 shadow-sm">
+          <div className="flex items-start space-x-4">
+            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Icon name="alert" className="w-5 h-5 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-orange-900 mb-2">
+                Assinatura Necessária
+              </h3>
+              <p className="text-orange-800 mb-4">
+                Para acessar os assistentes de IA especializados da {institution.name},
+                você precisa ativar sua assinatura individual.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  to={`/i/${slug}/checkout`}
+                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                >
+                  <Icon name="creditCard" className="w-4 h-4 mr-2" />
+                  Assinar Agora
+                </Link>
+                <Link
+                  to={`/i/${slug}/store`}
+                  className="inline-flex items-center px-4 py-2 bg-white text-orange-700 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors font-medium"
+                >
+                  <Icon name="eye" className="w-4 h-4 mr-2" />
+                  Ver Assistentes
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
@@ -216,8 +310,19 @@ export const InstitutionDashboard: React.FC = () => {
                 <Icon name={stat.icon as any} className="w-6 h-6" />
               </div>
               {stat.isStatus && (
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                  ✓ Ativa
+                <span className={cn(
+                  "text-xs font-medium px-2 py-1 rounded-full",
+                  stat.statusColor === 'green' && "bg-green-100 text-green-800",
+                  stat.statusColor === 'orange' && "bg-orange-100 text-orange-800",
+                  stat.statusColor === 'gray' && "bg-gray-100 text-gray-800",
+                  stat.statusColor === 'blue' && "bg-blue-100 text-blue-800"
+                )}>
+                  {stat.statusColor === 'green' && '✓'}
+                  {stat.statusColor === 'orange' && '⏳'}
+                  {stat.statusColor === 'gray' && '⏳'}
+                  {stat.statusColor === 'blue' && '✓'}
+                  {' '}
+                  {stat.value}
                 </span>
               )}
             </div>
