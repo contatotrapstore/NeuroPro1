@@ -354,5 +354,73 @@ export const institutionApi = {
       console.error('Error generating conversations report:', error);
       throw error;
     }
+  },
+
+  async approveUser(userId: string, slug: string): Promise<boolean> {
+    try {
+      // Get the institution first
+      const { data: institutionData, error: instError } = await supabase
+        .from('institutions')
+        .select('id')
+        .eq('slug', slug)
+        .single();
+
+      if (instError) {
+        throw new Error('Institution not found');
+      }
+
+      // Update user status
+      const { error } = await supabase
+        .from('institution_users')
+        .update({
+          is_active: true,
+          notes: 'Aprovado pelo administrador'
+        })
+        .eq('user_id', userId)
+        .eq('institution_id', institutionData.id);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error approving user:', error);
+      throw error;
+    }
+  },
+
+  async rejectUser(userId: string, slug: string, reason?: string): Promise<boolean> {
+    try {
+      // Get the institution first
+      const { data: institutionData, error: instError } = await supabase
+        .from('institutions')
+        .select('id')
+        .eq('slug', slug)
+        .single();
+
+      if (instError) {
+        throw new Error('Institution not found');
+      }
+
+      // Update user status and notes
+      const { error } = await supabase
+        .from('institution_users')
+        .update({
+          is_active: false,
+          notes: reason ? `Rejeitado: ${reason}` : 'Rejeitado pelo administrador'
+        })
+        .eq('user_id', userId)
+        .eq('institution_id', institutionData.id);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      throw error;
+    }
   }
 };

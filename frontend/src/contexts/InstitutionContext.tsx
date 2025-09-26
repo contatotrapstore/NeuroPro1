@@ -47,6 +47,7 @@ export interface InstitutionAssistant {
 export interface UserAccess {
   role: 'student' | 'teacher' | 'subadmin';
   is_admin: boolean;
+  is_active: boolean; // Added is_active field
   permissions: {
     manage_users?: boolean;
     view_reports?: boolean;
@@ -80,6 +81,7 @@ interface InstitutionContextType {
   hasPermission: (permission: string) => boolean;
   isInstitutionUser: boolean;
   canAccessAdminPanel: boolean;
+  canAccessAssistants: boolean; // Added helper for assistant access
   getPrimaryAssistant: () => InstitutionAssistant | null;
   getSimulatorAssistant: () => InstitutionAssistant | null;
 }
@@ -381,6 +383,7 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   // Computed properties
   const isInstitutionUser = !!userAccess;
   const canAccessAdminPanel = userAccess?.is_admin || false;
+  const canAccessAssistants = userAccess?.is_active || false; // Only active users can access assistants
 
   // Helper para obter assistente principal
   const getPrimaryAssistant = (): InstitutionAssistant | null => {
@@ -461,6 +464,7 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     hasPermission,
     isInstitutionUser,
     canAccessAdminPanel,
+    canAccessAssistants,
     getPrimaryAssistant,
     getSimulatorAssistant,
   };

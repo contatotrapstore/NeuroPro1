@@ -17,7 +17,6 @@ interface RegistrationFormData {
   department: string;
   semester?: number;
   phone?: string;
-  role: 'student' | 'professor';
 }
 
 export const InstitutionRegister: React.FC = () => {
@@ -34,8 +33,7 @@ export const InstitutionRegister: React.FC = () => {
     registration_number: '',
     department: '',
     semester: undefined,
-    phone: '',
-    role: 'student'
+    phone: ''
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -97,7 +95,7 @@ export const InstitutionRegister: React.FC = () => {
       return false;
     }
 
-    if (formData.role === 'student' && formData.semester && (formData.semester < 1 || formData.semester > 12)) {
+    if (formData.semester && (formData.semester < 1 || formData.semester > 12)) {
       setError('Semestre deve ser entre 1 e 12');
       return false;
     }
@@ -117,13 +115,14 @@ export const InstitutionRegister: React.FC = () => {
       setIsSubmitting(true);
 
       // Create user account with additional metadata
+      // Note: All new users are created as students and need admin approval
       const result = await signUp(formData.email, formData.password, formData.name, {
         phone: formData.phone,
         institution_slug: slug,
         institution_registration_number: formData.registration_number,
         institution_department: formData.department,
         institution_semester: formData.semester,
-        institution_role: formData.role
+        institution_role: 'student' // Always create as student
       });
 
       // Check if email confirmation is required
@@ -251,17 +250,19 @@ export const InstitutionRegister: React.FC = () => {
                 <div className="space-y-4">
                   <p className="text-gray-600 leading-relaxed">
                     Sua conta foi criada com sucesso na {institutionData.name}!
-                    Você já pode fazer login.
                   </p>
                   <div
                     className="rounded-lg p-4 border"
                     style={{
-                      backgroundColor: institutionData.primary_color + '10',
-                      borderColor: institutionData.primary_color + '40'
+                      backgroundColor: '#fbbf2415',
+                      borderColor: '#fbbf2440'
                     }}
                   >
-                    <p className="text-sm font-medium" style={{ color: institutionData.primary_color }}>
-                      ✅ Cadastro concluído - Login liberado
+                    <p className="text-sm font-medium" style={{ color: '#f59e0b' }}>
+                      ⏳ Aguardando aprovação do administrador
+                    </p>
+                    <p className="text-sm mt-2" style={{ color: '#f59e0b' }}>
+                      Seu acesso será liberado após a aprovação. Você receberá um email quando isso acontecer.
                     </p>
                   </div>
                 </div>
@@ -405,22 +406,15 @@ export const InstitutionRegister: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Usuário *
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Usuário
                 </label>
-                <select
-                  id="role"
-                  name="role"
-                  required
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                  style={{ '--tw-ring-color': institutionData.primary_color } as React.CSSProperties}
-                  disabled={isSubmitting}
-                >
-                  <option value="student">Estudante</option>
-                  <option value="professor">Professor</option>
-                </select>
+                <div className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600">
+                  Estudante
+                  <p className="text-xs text-gray-500 mt-1">
+                    Todos os novos usuários são registrados como estudantes. Para alteração de tipo, contate a administração.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -467,27 +461,25 @@ export const InstitutionRegister: React.FC = () => {
                   />
                 </div>
 
-                {formData.role === 'student' && (
-                  <div>
-                    <label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-2">
-                      Semestre Atual
-                    </label>
-                    <select
-                      id="semester"
-                      name="semester"
-                      value={formData.semester || ''}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                      style={{ '--tw-ring-color': institutionData.primary_color } as React.CSSProperties}
-                      disabled={isSubmitting}
-                    >
-                      <option value="">Selecione o semestre</option>
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(sem => (
-                        <option key={sem} value={sem}>{sem}º Semestre</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-2">
+                    Semestre Atual (Opcional)
+                  </label>
+                  <select
+                    id="semester"
+                    name="semester"
+                    value={formData.semester || ''}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                    style={{ '--tw-ring-color': institutionData.primary_color } as React.CSSProperties}
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Selecione o semestre</option>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(sem => (
+                      <option key={sem} value={sem}>{sem}º Semestre</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 

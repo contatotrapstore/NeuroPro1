@@ -71,7 +71,7 @@ CREATE POLICY "Service role can manage all institution users" ON public.institut
 -- 4. POLÍTICAS PARA INSTITUTION_ASSISTANTS
 -- ==========================================
 
--- Usuários podem ver assistentes das instituições que pertencem
+-- Usuários aprovados podem ver assistentes das instituições que pertencem
 CREATE POLICY "Institution members can view institution assistants" ON public.institution_assistants
     FOR SELECT
     USING (
@@ -79,7 +79,7 @@ CREATE POLICY "Institution members can view institution assistants" ON public.in
             SELECT 1 FROM public.institution_users iu
             WHERE iu.institution_id = institution_assistants.institution_id
                 AND iu.user_id = auth.uid()
-                AND iu.is_active = true
+                AND iu.is_active = true  -- Usuário deve estar aprovado
         )
         AND is_active = true
     );

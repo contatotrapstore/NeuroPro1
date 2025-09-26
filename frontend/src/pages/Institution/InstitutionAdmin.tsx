@@ -79,6 +79,38 @@ export const InstitutionAdmin: React.FC = () => {
     }
   };
 
+  const handleApproveUser = async (userId: string) => {
+    if (!slug) return;
+
+    try {
+      await institutionApi.approveUser(userId, slug);
+      toast.success('Usuário aprovado com sucesso!');
+
+      // Reload data to reflect changes
+      loadDashboardData();
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast.error('Erro ao aprovar usuário');
+    }
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    if (!slug) return;
+
+    const reason = window.prompt('Motivo da rejeição (opcional):');
+
+    try {
+      await institutionApi.rejectUser(userId, slug, reason || undefined);
+      toast.success('Usuário rejeitado');
+
+      // Reload data to reflect changes
+      loadDashboardData();
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast.error('Erro ao rejeitar usuário');
+    }
+  };
+
   const exportReport = async (type: 'users' | 'conversations' | 'usage') => {
     if (!slug) return;
 
@@ -251,6 +283,11 @@ export const InstitutionAdmin: React.FC = () => {
               >
                 <Users className="w-4 h-4 inline mr-2" />
                 Usuários ({users.length})
+                {users.filter(u => !u.is_active).length > 0 && (
+                  <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {users.filter(u => !u.is_active).length} pendente{users.filter(u => !u.is_active).length !== 1 ? 's' : ''}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('reports')}
@@ -354,6 +391,54 @@ export const InstitutionAdmin: React.FC = () => {
               </div>
             </div>
 
+            {/* Pending Approvals */}
+            {users.filter(u => !u.is_active).length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-yellow-600" />
+                  Aprovações Pendentes
+                </h3>
+                <div className="space-y-3">
+                  {users.filter(u => !u.is_active).slice(0, 3).map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {user.email || 'Email não disponível'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {getRoleBadge(user.role).props.children} • {new Date(user.enrolled_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleApproveUser(user.user_id)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                          title="Aprovar"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRejectUser(user.user_id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Rejeitar"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {users.filter(u => !u.is_active).length > 3 && (
+                    <button
+                      onClick={() => setActiveTab('users')}
+                      className="w-full text-sm text-blue-600 hover:underline mt-2"
+                    >
+                      Ver todos os {users.filter(u => !u.is_active).length} pendentes →
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Most Used Assistant */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
@@ -406,7 +491,7 @@ export const InstitutionAdmin: React.FC = () => {
                       Cadastrado em
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Status/Ações
                     </th>
                   </tr>
                 </thead>
@@ -446,13 +531,33 @@ export const InstitutionAdmin: React.FC = () => {
                         {new Date(user.enrolled_at).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.is_active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.is_active ? 'Ativo' : 'Inativo'}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {user.is_active ? 'Ativo' : 'Aguardando'}
+                          </span>
+                          {!user.is_active && (
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => handleApproveUser(user.user_id)}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                title="Aprovar usuário"
+                              >
+                                <UserCheck className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRejectUser(user.user_id)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Rejeitar usuário"
+                              >
+                                <Mail className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

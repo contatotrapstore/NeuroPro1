@@ -30,7 +30,8 @@ export const InstitutionDashboard: React.FC = () => {
     availableAssistants,
     getPrimaryAssistant,
     getSimulatorAssistant,
-    isInstitutionUser
+    isInstitutionUser,
+    canAccessAssistants
   } = context;
 
   if (!institution) return null;
@@ -49,7 +50,13 @@ export const InstitutionDashboard: React.FC = () => {
       return;
     }
 
-    // Se já autenticado, navegar normalmente
+    // Check if user can access assistants (is active)
+    if (isInstitutionUser && !canAccessAssistants) {
+      // User is logged in but not approved, show appropriate message
+      return;
+    }
+
+    // Se já autenticado e aprovado, navegar normalmente
     navigate(targetPath);
   };
 
@@ -309,7 +316,7 @@ export const InstitutionDashboard: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <Icon name={user && isInstitutionUser ? "chevronRight" : "lock"} className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Icon name={user && isInstitutionUser && canAccessAssistants ? "chevronRight" : "lock"} className="w-4 h-4 text-gray-400 flex-shrink-0" />
               </div>
             ))}
           </div>
@@ -325,21 +332,28 @@ export const InstitutionDashboard: React.FC = () => {
         <div className="text-center py-12">
           <Icon name={user && isInstitutionUser ? "clock" : "messageSquare"} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {user && isInstitutionUser ? 'Nenhuma atividade recente' : 'Comece sua jornada'}
+            {user && isInstitutionUser ?
+              (canAccessAssistants ? 'Nenhuma atividade recente' : 'Aguardando Aprovação') :
+              'Comece sua jornada'
+            }
           </h3>
           <p className="text-gray-600 mb-6">
             {user && isInstitutionUser ?
-              'Suas conversas e atividades aparecerão aqui' :
+              (canAccessAssistants ?
+                'Suas conversas e atividades aparecerão aqui' :
+                'Sua conta foi criada e está aguardando aprovação do administrador'
+              ) :
               'Faça login para acessar nossos assistentes de IA especializados'
             }
           </p>
           <button
             onClick={(e) => handleAuthRequiredAction(`/i/${slug}/chat`, e)}
-            className="inline-flex items-center px-4 py-2 rounded-lg text-white font-medium hover:shadow-md transition-all"
+            className="inline-flex items-center px-4 py-2 rounded-lg text-white font-medium hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: institution.primary_color }}
+            disabled={user && isInstitutionUser && !canAccessAssistants}
           >
-            <Icon name={user && isInstitutionUser ? "messageSquare" : "logIn"} className="w-4 h-4 mr-2" />
-            {user && isInstitutionUser ? 'Iniciar Chat' : 'Fazer Login'}
+            <Icon name={user && isInstitutionUser ? (canAccessAssistants ? "messageSquare" : "clock") : "logIn"} className="w-4 h-4 mr-2" />
+            {user && isInstitutionUser ? (canAccessAssistants ? 'Iniciar Chat' : 'Aguardar Aprovação') : 'Fazer Login'}
           </button>
         </div>
       </div>
