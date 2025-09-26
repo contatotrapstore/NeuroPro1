@@ -199,7 +199,7 @@ export const InstitutionDashboard: React.FC = () => {
       title: 'Simulador ABPSI',
       description: 'Simulador de Psicanálise para prática clínica',
       icon: 'play',
-      href: `/i/${slug}/chat/asst_9vDTodTAQIJV1mu2xPzXpBs8`,
+      href: `/i/${slug}/chat/clinreplay`,
       highlight: true,
       tags: ['Neurose Obsessiva', 'Histeria', 'Borderline']
     },

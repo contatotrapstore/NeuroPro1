@@ -276,7 +276,7 @@ function NewSessionModal({ onClose, onConfirm, assistants, selectedAssistantId, 
   const [selectedAssistant, setSelectedAssistant] = useState(selectedAssistantId || assistants[0]?.id || '');
 
   const targetAssistant = assistants.find(a => a.id === selectedAssistant);
-  const isSimulator = targetAssistant?.id === 'asst_9vDTodTAQIJV1mu2xPzXpBs8';
+  const isSimulator = targetAssistant?.openai_assistant_id === 'asst_ZuPRuYG9eqxmb6tIIcBNSSWd';
 
   // Gerar sugestão automática de nome
   const generateSuggestedTitle = () => {
@@ -557,8 +557,8 @@ export const InstitutionChat: React.FC = () => {
                           availableAssistants.find(a => a.is_primary) ||
                           availableAssistants[0];
 
-  // Verificar se é simulador
-  const isSimulator = currentAssistant?.id === 'asst_9vDTodTAQIJV1mu2xPzXpBs8';
+  // Verificar se é simulador - usar openai_assistant_id em vez de id
+  const isSimulator = currentAssistant?.openai_assistant_id === 'asst_ZuPRuYG9eqxmb6tIIcBNSSWd';
 
   // Auto-scroll para última mensagem
   useEffect(() => {
