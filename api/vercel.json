@@ -66,6 +66,10 @@
     {
       "src": "/institution-chat",
       "dest": "/institution-chat.js"
+    },
+    {
+      "src": "/debug-env",
+      "dest": "/debug-env.js"
     }
   ]
 }
