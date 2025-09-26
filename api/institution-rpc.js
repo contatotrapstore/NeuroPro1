@@ -82,6 +82,7 @@ module.exports = async function handler(req, res) {
     });
 
     console.log(`🔧 Calling RPC function: ${function_name} with params:`, params);
+    console.log('🔑 Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'NOT_PROVIDED');
 
     let result;
 
@@ -109,9 +110,11 @@ module.exports = async function handler(req, res) {
         break;
 
       case 'get_institution_subscription_status':
+        console.log(`📊 Checking subscription status for institution: ${params[0]}`);
         result = await supabase.rpc('get_institution_subscription_status', {
           p_institution_slug: params[0]
         });
+        console.log('📊 Raw RPC result:', JSON.stringify(result, null, 2));
         break;
 
       case 'create_institution_subscription':
@@ -137,13 +140,23 @@ module.exports = async function handler(req, res) {
 
     if (result.error) {
       console.error(`❌ RPC error for ${function_name}:`, result.error);
+      console.error('📊 Error details:', {
+        code: result.error.code,
+        message: result.error.message,
+        details: result.error.details,
+        hint: result.error.hint
+      });
       return res.status(400).json({
         success: false,
-        error: result.error.message || 'Erro na função RPC'
+        error: result.error.message || 'Erro na função RPC',
+        error_code: result.error.code,
+        error_details: result.error.details
       });
     }
 
     console.log(`✅ RPC success for ${function_name}:`, result.data);
+    console.log('📊 Data type:', typeof result.data);
+    console.log('📊 Data structure:', JSON.stringify(result.data, null, 2));
 
     // Handle different response types from RPC functions
     let responseData;
@@ -162,6 +175,18 @@ module.exports = async function handler(req, res) {
     if (function_name === 'get_institution_pending_count') {
       if (responseData && responseData.success && typeof responseData.count === 'number') {
         return res.status(200).json(responseData.count);
+      }
+    }
+
+    // For subscription status, ensure proper response structure
+    if (function_name === 'get_institution_subscription_status') {
+      console.log('📊 Final subscription response structure:', JSON.stringify(responseData, null, 2));
+      // If the response is already properly structured, return it directly
+      if (responseData && typeof responseData === 'object') {
+        return res.status(200).json({
+          success: true,
+          data: responseData
+        });
       }
     }
 

@@ -17,6 +17,7 @@ export const InstitutionLogin: React.FC = () => {
     userAccess,
     verifyAccess,
     refreshUserAccess,
+    checkSubscription,
     clearInstitutionCache,
     loading,
     error,
@@ -110,6 +111,14 @@ export const InstitutionLogin: React.FC = () => {
 
       toast.success(`Bem-vindo à ${institution.name}!`);
       console.log('✅ Login successful with fresh data loaded');
+
+      // Verificar assinatura explicitamente para garantir estado correto
+      console.log('🔄 Explicit subscription check after login...');
+      try {
+        await checkSubscription(slug);
+      } catch (subError) {
+        console.error('❌ Subscription check failed after login:', subError);
+      }
 
       // Aguardar o próximo useEffect redirecionar automaticamente
       // navigate será chamado quando authenticationComplete for true

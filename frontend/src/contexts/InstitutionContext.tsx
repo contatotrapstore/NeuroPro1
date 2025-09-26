@@ -319,6 +319,15 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
 
         setAuthenticationComplete(true);
         setInstitutionLoaded(true);
+
+        // Verificar assinatura automaticamente após verificação de acesso bem-sucedida
+        console.log('🔄 Auto-checking subscription after access verification...');
+        setTimeout(() => {
+          checkSubscription(slug).catch(error => {
+            console.error('❌ Auto subscription check failed:', error);
+          });
+        }, 100); // Small delay to ensure state is updated
+
         return true;
       } else {
         console.error('❌ Access verification failed:', result.error);
@@ -387,14 +396,20 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   // Função para verificar assinatura
   const checkSubscription = useCallback(async (slug: string): Promise<boolean> => {
     if (!userAccess || !userAccess.is_active) {
-      console.log('❌ checkSubscription: User not approved');
+      console.log('❌ checkSubscription: User not approved, userAccess:', userAccess);
+      setHasActiveSubscription(false);
       return false;
     }
 
     // Subadmins e admins não precisam de assinatura
     if (userAccess.role === 'subadmin' || userAccess.is_admin) {
-      console.log('✅ User is subadmin/admin - subscription check bypassed');
+      console.log('✅ User is subadmin/admin - subscription check bypassed', {
+        role: userAccess.role,
+        is_admin: userAccess.is_admin
+      });
       setHasActiveSubscription(true);
+      setSubscriptionError(null);
+      setIsCheckingSubscription(false);
       return true;
     }
 
@@ -420,13 +435,21 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       if (!result.success) {
         console.error('❌ Error checking subscription:', result.error);
         setSubscriptionError(result.error || 'Erro ao verificar assinatura');
+        setHasActiveSubscription(false);
         return false;
       }
 
-      const { has_subscription, error_type, error_message } = result.data;
+      const { has_subscription, error_type, error_message, is_admin_bypass } = result.data || result;
+
+      if (is_admin_bypass) {
+        console.log('✅ Admin bypass detected from server');
+        setHasActiveSubscription(true);
+        setSubscriptionError(null);
+        return true;
+      }
 
       if (!has_subscription) {
-        console.log('🚫 No subscription found');
+        console.log('🚫 No subscription found, error_type:', error_type);
         setSubscriptionError(error_message || 'Você precisa de uma assinatura para usar os recursos desta instituição');
         setHasActiveSubscription(false);
         return false;
@@ -434,6 +457,7 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
 
       console.log('✅ Subscription valid');
       setHasActiveSubscription(true);
+      setSubscriptionError(null);
       return true;
     } catch (error) {
       console.error('Error checking subscription:', error);
