@@ -83,11 +83,11 @@ export const InstitutionStore: React.FC = () => {
 
               <div className="flex items-center space-x-4">
                 <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
-                  <Icon name="check-circle" className="w-4 h-4" />
+                  <Icon name="checkCircle" className="w-4 h-4" />
                   <span className="text-sm font-medium">{availableAssistants.length} assistentes disponíveis</span>
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
-                  <Icon name="shield-check" className="w-4 h-4" />
+                  <Icon name="shieldCheck" className="w-4 h-4" />
                   <span className="text-sm font-medium">Acesso completo</span>
                 </div>
               </div>
@@ -245,7 +245,7 @@ export const InstitutionStore: React.FC = () => {
 
         {filteredAssistants.length === 0 ? (
           <div className="text-center py-12">
-            <Icon name="search-x" className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <Icon name="searchX" className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nenhum assistente encontrado
             </h3>
@@ -305,7 +305,7 @@ export const InstitutionStore: React.FC = () => {
                     {user && isInstitutionUser ? 'Clique para conversar' : 'Login necessário'}
                   </span>
                   <Icon
-                    name={user && isInstitutionUser ? "arrow-right" : "lock"}
+                    name={user && isInstitutionUser ? "arrowRight" : "lock"}
                     className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors"
                   />
                 </div>

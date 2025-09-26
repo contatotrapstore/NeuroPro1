@@ -485,7 +485,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-full bg-gray-50">
       {/* Sidebar - Lista de Conversas */}
       {showSidebar && (
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -560,7 +560,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
 
               {sessions.length === 0 && (
                 <div className="p-6 text-center text-gray-500">
-                  <Icon name="message-square" className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <Icon name="messageSquare" className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">Nenhuma conversa ainda</p>
                   <p className="text-xs">Inicie uma nova conversa</p>
                 </div>
@@ -582,7 +582,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 title={showSidebar ? "Fechar barra lateral" : "Abrir barra lateral"}
               >
-                <Icon name={showSidebar ? "chevron-left" : "menu"} className="w-5 h-5" />
+                <Icon name={showSidebar ? "chevronLeft" : "menu"} className="w-5 h-5" />
               </button>
 
               {currentSession ? (
@@ -636,7 +636,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors group flex items-center space-x-2"
               title="Voltar ao Dashboard"
             >
-              <Icon name="arrow-left" className="w-5 h-5 group-hover:translate-x-[-2px] transition-transform" />
+              <Icon name="arrowLeft" className="w-5 h-5 group-hover:translate-x-[-2px] transition-transform" />
               <span className="text-sm text-gray-600 group-hover:text-gray-900">Voltar</span>
             </Link>
           </div>

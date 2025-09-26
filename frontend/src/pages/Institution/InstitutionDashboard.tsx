@@ -69,13 +69,13 @@ export const InstitutionDashboard: React.FC = () => {
     {
       title: user && isInstitutionUser ? 'Progresso' : 'Especialização',
       value: user && isInstitutionUser ? '--' : 'ABPSI',
-      icon: 'trending-up',
+      icon: 'trendingUp',
       description: user && isInstitutionUser ? 'Horas de estudo' : 'Psicanálise e formação'
     },
     {
       title: user && isInstitutionUser ? 'Licença' : 'Acesso',
       value: user && isInstitutionUser ? 'Ativa' : 'Público',
-      icon: 'shield-check',
+      icon: 'shieldCheck',
       description: user && isInstitutionUser ? 'Acesso completo' : 'Navegação livre',
       isStatus: true
     }
@@ -309,7 +309,7 @@ export const InstitutionDashboard: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <Icon name={user && isInstitutionUser ? "chevron-right" : "lock"} className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Icon name={user && isInstitutionUser ? "chevronRight" : "lock"} className="w-4 h-4 text-gray-400 flex-shrink-0" />
               </div>
             ))}
           </div>
@@ -323,7 +323,7 @@ export const InstitutionDashboard: React.FC = () => {
         </h2>
 
         <div className="text-center py-12">
-          <Icon name={user && isInstitutionUser ? "clock" : "message-square"} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <Icon name={user && isInstitutionUser ? "clock" : "messageSquare"} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {user && isInstitutionUser ? 'Nenhuma atividade recente' : 'Comece sua jornada'}
           </h3>
@@ -338,7 +338,7 @@ export const InstitutionDashboard: React.FC = () => {
             className="inline-flex items-center px-4 py-2 rounded-lg text-white font-medium hover:shadow-md transition-all"
             style={{ backgroundColor: institution.primary_color }}
           >
-            <Icon name={user && isInstitutionUser ? "message-square" : "log-in"} className="w-4 h-4 mr-2" />
+            <Icon name={user && isInstitutionUser ? "messageSquare" : "logIn"} className="w-4 h-4 mr-2" />
             {user && isInstitutionUser ? 'Iniciar Chat' : 'Fazer Login'}
           </button>
         </div>
