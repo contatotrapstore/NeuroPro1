@@ -146,10 +146,11 @@ function MessageInput({ message, setMessage, onSendMessage, isLoading, placehold
       <button
         type="submit"
         disabled={!message.trim() || isLoading}
-        className="px-4 py-3 rounded-xl text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-5 py-3 rounded-xl text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
         style={{ backgroundColor: primaryColor }}
       >
-        <Icon name="send" className="w-4 h-4" />
+        <Icon name="send" className="w-5 h-5" />
+        <span className="hidden sm:inline">Enviar</span>
       </button>
     </form>
   );
@@ -1016,7 +1017,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                     </button>
 
                     {/* Action buttons */}
-                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute right-2 top-2 flex space-x-1 opacity-60 hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1024,12 +1025,12 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                           setEditingTitle(session.title);
                         }}
                         className={cn(
-                          "p-1 rounded hover:bg-black/10 transition-colors",
-                          isActive ? "text-white/80 hover:text-white" : "text-gray-500 hover:text-gray-700"
+                          "p-1.5 rounded hover:bg-black/10 transition-colors",
+                          isActive ? "text-white/90 hover:text-white" : "text-gray-600 hover:text-gray-800"
                         )}
                         title="Editar nome"
                       >
-                        <Icon name="edit2" className="w-3 h-3" />
+                        <Icon name="edit2" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -1037,12 +1038,12 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                           handleDeleteSession(session.id);
                         }}
                         className={cn(
-                          "p-1 rounded hover:bg-red-500/20 transition-colors",
-                          isActive ? "text-white/80 hover:text-red-200" : "text-gray-500 hover:text-red-600"
+                          "p-1.5 rounded hover:bg-red-500/20 transition-colors",
+                          isActive ? "text-white/90 hover:text-red-200" : "text-gray-600 hover:text-red-600"
                         )}
                         title="Excluir conversa"
                       >
-                        <Icon name="trash2" className="w-3 h-3" />
+                        <Icon name="trash2" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
