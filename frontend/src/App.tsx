@@ -29,7 +29,10 @@ import {
   InstitutionAdmin,
   InstitutionSubscription,
   InstitutionStore,
-  InstitutionSubscriptions
+  InstitutionSubscriptions,
+  InstitutionProfile,
+  InstitutionForgotPassword,
+  InstitutionRegister
 } from './pages/Institution';
 
 // Lazy loading para InstitutionDashboard
@@ -188,6 +191,8 @@ const App: React.FC = () => {
 
           {/* Institution Routes */}
           <Route path="/i/:slug/login" element={<InstitutionLogin />} />
+          <Route path="/i/:slug/register" element={<InstitutionRegister />} />
+          <Route path="/i/:slug/forgot-password" element={<InstitutionForgotPassword />} />
 
           {/* Institution Chat Routes (Fullscreen, outside layout) */}
           <Route path="/i/:slug/chat" element={
@@ -220,7 +225,7 @@ const App: React.FC = () => {
             } />
             <Route path="profile" element={
               <InstitutionProtectedRoute>
-                <div className="p-8"><h1 className="text-2xl font-bold">Perfil - Em desenvolvimento</h1></div>
+                <InstitutionProfile />
               </InstitutionProtectedRoute>
             } />
             <Route path="admin" element={

@@ -306,16 +306,27 @@ export const InstitutionLogin: React.FC = () => {
 
           {/* Links */}
           <div className="mt-6 text-center space-y-3">
-            <a
-              href="/auth/forgot-password"
-              className="text-sm hover:underline transition-colors"
+            <button
+              onClick={() => navigate(`/i/${slug}/forgot-password`)}
+              className="text-sm hover:underline transition-colors block mx-auto"
               style={{ color: institutionData.primary_color }}
             >
               Esqueceu sua senha?
-            </a>
+            </button>
 
             <div className="text-sm text-gray-600">
-              Não tem acesso?{' '}
+              Não tem conta?{' '}
+              <button
+                onClick={() => navigate(`/i/${slug}/register`)}
+                className="hover:underline transition-colors"
+                style={{ color: institutionData.primary_color }}
+              >
+                Cadastre-se
+              </button>
+            </div>
+
+            <div className="text-sm text-gray-600">
+              Precisa de ajuda?{' '}
               <a
                 href={institution?.settings?.contact?.email ? `mailto:${institution?.settings?.contact?.email}` : '#'}
                 className="hover:underline transition-colors"

@@ -6,3 +6,6 @@ export { InstitutionSubscription } from './InstitutionSubscription';
 export { InstitutionDashboard } from './InstitutionDashboard';
 export { InstitutionStore } from './InstitutionStore';
 export { InstitutionSubscriptions } from './InstitutionSubscriptions';
+export { InstitutionProfile } from './InstitutionProfile';
+export { InstitutionForgotPassword } from './InstitutionForgotPassword';
+export { InstitutionRegister } from './InstitutionRegister';

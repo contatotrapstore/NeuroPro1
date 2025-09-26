@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../contexts/InstitutionContext';
 import { InstitutionLoadingSpinner } from '../../components/ui/InstitutionLoadingSpinner';
+import { institutionApi, InstitutionStats, InstitutionUser } from '../../services/institutionApi';
 import {
   ArrowLeft,
   Users,
@@ -21,39 +22,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-interface DashboardStats {
-  total_users: number;
-  active_users_today: number;
-  new_users_this_month: number;
-  total_conversations: number;
-  conversations_today: number;
-  conversations_this_month: number;
-  avg_session_duration: number;
-  most_used_assistant: {
-    name: string;
-    usage_count: number;
-  };
-  license_status: 'active' | 'expired' | 'expiring';
-  license_info: {
-    plan_type: string;
-    valid_until?: string;
-    max_users?: number;
-  };
-}
-
-interface InstitutionUser {
-  id: string;
-  email: string;
-  role: 'student' | 'professor' | 'subadmin';
-  registration_number?: string;
-  department?: string;
-  semester?: number;
-  is_active: boolean;
-  enrolled_at: string;
-  last_access?: string;
-  total_conversations: number;
-  last_conversation_at?: string;
-}
 
 export const InstitutionAdmin: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -67,7 +35,7 @@ export const InstitutionAdmin: React.FC = () => {
   } = useInstitution();
 
   // Estados
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<InstitutionStats | null>(null);
   const [users, setUsers] = useState<InstitutionUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'reports'>('dashboard');
@@ -90,46 +58,18 @@ export const InstitutionAdmin: React.FC = () => {
   }, [institution, isAdmin]);
 
   const loadDashboardData = async () => {
+    if (!slug) return;
+
     setLoading(true);
     try {
-      // Simular dados (na implementação real, viria da API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Load real data from API
+      const [statsData, usersData] = await Promise.all([
+        institutionApi.getInstitutionStats(slug),
+        institutionApi.getInstitutionUsers(slug)
+      ]);
 
-      // Dados simulados baseados na ABPSI
-      const mockStats: DashboardStats = {
-        total_users: 1,
-        active_users_today: 1,
-        new_users_this_month: 1,
-        total_conversations: 0,
-        conversations_today: 0,
-        conversations_this_month: 0,
-        avg_session_duration: 25.5,
-        most_used_assistant: {
-          name: 'Simulador de Psicanálise ABPSI',
-          usage_count: 0
-        },
-        license_status: 'active',
-        license_info: {
-          plan_type: 'unlimited',
-          max_users: null
-        }
-      };
-
-      const mockUsers: InstitutionUser[] = [
-        {
-          id: '1',
-          email: 'gouveiarx@gmail.com',
-          role: 'subadmin',
-          registration_number: 'ADMIN001',
-          department: 'Administração',
-          is_active: true,
-          enrolled_at: new Date().toISOString(),
-          total_conversations: 0
-        }
-      ];
-
-      setStats(mockStats);
-      setUsers(mockUsers);
+      setStats(statsData);
+      setUsers(usersData);
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -140,10 +80,48 @@ export const InstitutionAdmin: React.FC = () => {
   };
 
   const exportReport = async (type: 'users' | 'conversations' | 'usage') => {
+    if (!slug) return;
+
     try {
-      toast.success(`Gerando relatório de ${type}...`);
-      // Implementar exportação real
+      toast.loading(`Gerando relatório de ${type}...`);
+
+      let blob: Blob;
+      let filename: string;
+
+      switch (type) {
+        case 'users':
+          blob = await institutionApi.exportUsersReport(slug);
+          filename = `usuarios_${institution?.name}_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'conversations':
+          blob = await institutionApi.exportConversationsReport(slug);
+          filename = `conversas_${institution?.name}_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'usage':
+          // For now, use conversations report as usage report
+          blob = await institutionApi.exportConversationsReport(slug);
+          filename = `uso_${institution?.name}_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        default:
+          throw new Error('Tipo de relatório inválido');
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss();
+      toast.success('Relatório exportado com sucesso!');
+
     } catch (error) {
+      console.error('Export error:', error);
+      toast.dismiss();
       toast.error('Erro ao gerar relatório');
     }
   };
@@ -314,9 +292,9 @@ export const InstitutionAdmin: React.FC = () => {
                   <UserCheck className="w-8 h-8 text-green-600" />
                   <div className="ml-4">
                     <p className="text-2xl font-bold text-gray-900">
-                      {stats.active_users_today}
+                      {stats.active_users}
                     </p>
-                    <p className="text-sm text-gray-600">Ativos Hoje</p>
+                    <p className="text-sm text-gray-600">Usuários Ativos</p>
                   </div>
                 </div>
               </div>
@@ -338,18 +316,18 @@ export const InstitutionAdmin: React.FC = () => {
                   <Clock className="w-8 h-8 text-orange-600" />
                   <div className="ml-4">
                     <p className="text-2xl font-bold text-gray-900">
-                      {stats.avg_session_duration}min
+                      {stats.avg_messages_per_conversation.toFixed(1)}
                     </p>
-                    <p className="text-sm text-gray-600">Sessão Média</p>
+                    <p className="text-sm text-gray-600">Mensagens por Conversa</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* License Status */}
+            {/* Institution Status */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Status da Licença
+                Status da Instituição
               </h3>
               <div className="flex items-center justify-between">
                 <div>
@@ -358,17 +336,14 @@ export const InstitutionAdmin: React.FC = () => {
                     <span className="font-medium text-green-800">Licença Ativa</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Plano: {stats.license_info.plan_type === 'unlimited' ? 'Ilimitado' : stats.license_info.plan_type}
+                    Plano: Premium Ilimitado
                   </p>
-                  {stats.license_info.max_users ? (
-                    <p className="text-sm text-gray-600">
-                      Máximo de usuários: {stats.license_info.max_users}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-600">
-                      Usuários ilimitados ✨
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-600">
+                    Assistentes especializados em Psicanálise ✨
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Usuários ativos: {stats.active_users} de {stats.total_users}
+                  </p>
                 </div>
                 <button
                   onClick={() => navigate(`/i/${slug}/subscription`)}
@@ -441,7 +416,7 @@ export const InstitutionAdmin: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {user.email}
+                            {user.email || 'Email não disponível'}
                           </div>
                           {user.registration_number && (
                             <div className="text-sm text-gray-500">
@@ -455,9 +430,17 @@ export const InstitutionAdmin: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.department || '-'}
+                        {user.role === 'student' && user.semester && (
+                          <div className="text-xs text-gray-500">
+                            {user.semester}º Semestre
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.total_conversations}
+                        -
+                        <div className="text-xs text-gray-500">
+                          Em desenvolvimento
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(user.enrolled_at).toLocaleDateString('pt-BR')}
