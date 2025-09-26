@@ -93,7 +93,7 @@ export const InstitutionDashboard: React.FC = () => {
     {
       title: 'Chat Principal',
       description: 'Converse com assistentes especializados',
-      icon: 'message-square',
+      icon: 'messageSquare',
       href: `/i/${slug}/chat`,
       highlight: false
     },

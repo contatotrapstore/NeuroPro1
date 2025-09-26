@@ -109,6 +109,11 @@ import {
   GraduationCap,
   Lightbulb,
   Puzzle,
+  Bot,
+  TrendingUp,
+  ShieldCheck,
+  LogIn,
+  SearchX,
 } from 'lucide-react';
 import { iconMap } from '../icons/AssistantIcons';
 
@@ -180,14 +185,16 @@ const uiIconMap = {
   
   // Communication
   message: MessageSquare,
+  messageSquare: MessageSquare,
   mail: Mail,
   phone: Phone,
-  
+
   // User & Account
   user: User,
   settings: Settings,
   lock: Lock,
   unlock: Unlock,
+  logIn: LogIn,
   
   // Content
   star: Star,
@@ -221,11 +228,18 @@ const uiIconMap = {
   puzzle: Puzzle,
   compass: Compass,
   shield: Shield,
+  shieldCheck: ShieldCheck,
   users: Users,
   mic: Mic,
   alertCircle: AlertCircle,
   barChart: BarChart3,
   loader: RefreshCw,
+  bot: Bot,
+  trendingUp: TrendingUp,
+  searchX: SearchX,
+  globe: Globe,
+  mapPin: MapPin,
+  externalLink: ExternalLink,
 } as const;
 
 type AssistantIconKey = keyof typeof assistantIconMap;
