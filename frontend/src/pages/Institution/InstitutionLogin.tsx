@@ -206,10 +206,42 @@ export const InstitutionLogin: React.FC = () => {
     return renderLoginForm(staticData);
   }
 
+  // Se chegou aqui, deveria ter institution, mas por segurança verificamos
+  if (!institution) {
+    console.error('❌ InstitutionLogin: institution is null, showing fallback');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <InstitutionLoadingSpinner size="lg" slug={slug} />
+          <p className="mt-4 text-gray-600">Carregando ABPSI...</p>
+        </div>
+      </div>
+    );
+  }
+
   return renderLoginForm(institution);
 
   // Função para renderizar o formulário de login
   function renderLoginForm(institutionData: any) {
+    // Verificação de segurança
+    if (!institutionData) {
+      console.error('❌ renderLoginForm: institutionData is null or undefined');
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <InstitutionLoadingSpinner size="lg" slug={slug} />
+            <p className="mt-4 text-gray-600">Carregando dados da instituição...</p>
+          </div>
+        </div>
+      );
+    }
+
+    console.log('✅ renderLoginForm: Rendering with data:', {
+      name: institutionData.name,
+      hasSettings: !!institutionData.settings,
+      hasLogo: !!institutionData.logo_url
+    });
+
     return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
@@ -255,7 +287,7 @@ export const InstitutionLogin: React.FC = () => {
 
             {institutionData.settings?.subtitle && (
               <p className="text-sm text-gray-500 mt-1">
-                {institutionData.settings.subtitle}
+                {institutionData.settings?.subtitle}
               </p>
             )}
           </div>
