@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
 
 module.exports = async function handler(req, res) {
-  console.log('🎓 Institution Chat API - OpenAI Integration - Build:', Date.now());
+  console.log('🎓 Institution Chat API - OpenAI Integration - Build 2025-09-26T19:58:30Z:', Date.now());
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
 
