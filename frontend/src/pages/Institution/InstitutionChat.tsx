@@ -719,7 +719,12 @@ Como posso ajudá-lo hoje?`,
 
   // Função para verificar assinatura antes de enviar mensagem
   const checkSubscription = async (): Promise<boolean> => {
-    if (!slug || !user) return false;
+    if (!slug || !user) {
+      console.log('❌ checkSubscription: Missing slug or user', { slug, user: !!user });
+      return false;
+    }
+
+    console.log('🔍 Checking subscription for user in institution:', { slug, userId: user.id });
 
     try {
       const { supabase } = await import('../../services/supabase');
@@ -742,24 +747,28 @@ Como posso ajudá-lo hoje?`,
       });
 
       const result = await response.json();
+      console.log('📊 Subscription check response:', result);
 
       if (!result.success) {
-        console.error('Error checking subscription:', result.error);
+        console.error('❌ Error checking subscription:', result.error);
         return false;
       }
 
       const { has_subscription, error_type, error_message, days_remaining, expires_at } = result.data;
+      console.log('🎯 Subscription status:', { has_subscription, error_type, error_message });
 
-      if (!has_subscription && error_type) {
+      if (!has_subscription) {
+        console.log('🚫 No subscription found - showing modal');
         setSubscriptionError({
-          type: error_type,
-          message: error_message,
+          type: error_type || 'NO_SUBSCRIPTION',
+          message: error_message || 'Você precisa de uma assinatura para usar os recursos desta instituição',
           daysExpired: error_type === 'SUBSCRIPTION_EXPIRED' ? Math.abs(days_remaining || 0) : undefined,
           expiredAt: expires_at
         });
         return false;
       }
 
+      console.log('✅ Subscription valid - allowing message');
       return true;
     } catch (error) {
       console.error('Error checking subscription:', error);
