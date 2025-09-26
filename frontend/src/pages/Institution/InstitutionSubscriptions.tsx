@@ -116,36 +116,42 @@ export const InstitutionSubscriptions: React.FC = () => {
             </h3>
             <div className="space-y-3">
               {subscriptionInfo.features.map((feature, index) => (
-                <div key={index} className="flex items-start">
-                  <Icon name="check-circle" className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">{feature}</span>
+                <div key={index} className="flex items-start group hover:bg-gray-50 -mx-3 px-3 py-2 rounded-lg transition-colors">
+                  <Icon name="checkCircle" className="w-4 h-4 text-green-500 mr-3 mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium">{feature}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Suporte
+          <div
+            className="rounded-xl border-2 p-6"
+            style={{
+              borderColor: `${institution.primary_color}20`,
+              background: `linear-gradient(135deg, ${institution.primary_color}05 0%, ${institution.primary_color}10 100%)`
+            }}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              Suporte ABPSI
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Precisa de ajuda ou tem dúvidas sobre sua licença?
+              Precisa de ajuda ou tem dúvidas sobre sua licença institucional?
             </p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <a
                 href={`mailto:${institution.settings?.contact?.email || 'contato@abpsi.org.br'}`}
-                className="block w-full text-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm transition-all group"
               >
-                <Icon name="mail" className="w-4 h-4 mr-2 inline" />
-                Contato por E-mail
+                <Icon name="mail" className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Contato por E-mail</span>
               </a>
               {institution?.settings?.contact?.phone && (
                 <a
                   href={`tel:${institution?.settings?.contact?.phone}`}
-                  className="block w-full text-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm transition-all group"
                 >
-                  <Icon name="phone" className="w-4 h-4 mr-2 inline" />
-                  {institution?.settings?.contact?.phone}
+                  <Icon name="phone" className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium">{institution?.settings?.contact?.phone}</span>
                 </a>
               )}
             </div>
@@ -177,11 +183,11 @@ export const InstitutionSubscriptions: React.FC = () => {
           {availableAssistants.map((assistant) => (
             <div
               key={assistant.id}
-              className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200"
+              className="flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
             >
               <AssistantIcon
                 iconType={assistant.icon}
-                className="w-10 h-10 mr-4 flex-shrink-0"
+                className="w-8 h-8 mr-3 flex-shrink-0"
                 color={assistant.color_theme || institution.primary_color}
               />
               <div className="flex-1 min-w-0">
@@ -210,52 +216,71 @@ export const InstitutionSubscriptions: React.FC = () => {
       </div>
 
       {/* Institution Info */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center space-x-4 mb-6">
-          {institution.logo_url && (
-            <img
-              src={institution.logo_url}
-              alt={`${institution.name} Logo`}
-              className="h-16 w-auto"
-            />
-          )}
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {institution.name}
-            </h2>
-            <p className="text-gray-600">
-              {institution.settings?.subtitle || 'Formação, Supervisão e Prática'}
-            </p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div
+          className="px-6 py-4 text-white"
+          style={{
+            background: `linear-gradient(135deg, ${institution.primary_color} 0%, ${institution.secondary_color || institution.primary_color} 100%)`
+          }}
+        >
+          <div className="flex items-center space-x-4">
+            {institution.logo_url && (
+              <img
+                src={institution.logo_url}
+                alt={`${institution.name} Logo`}
+                className="h-12 w-auto opacity-90"
+              />
+            )}
+            <div>
+              <h2 className="text-lg font-bold">
+                {institution.name}
+              </h2>
+              <p className="text-white/80 text-sm">
+                {institution.settings?.subtitle || 'Formação, Supervisão e Prática'}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Contato</h3>
-            <div className="space-y-1 text-sm text-gray-600">
-              <p>{institution.settings?.contact?.email || 'contato@abpsi.org.br'}</p>
-              {institution?.settings?.contact?.phone && (
-                <p>{institution?.settings?.contact?.phone}</p>
-              )}
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                <Icon name="mail" className="w-4 h-4 mr-2" style={{ color: institution.primary_color }} />
+                Contato
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p className="break-words">{institution.settings?.contact?.email || 'contato@abpsi.org.br'}</p>
+                {institution?.settings?.contact?.phone && (
+                  <p>{institution?.settings?.contact?.phone}</p>
+                )}
+              </div>
             </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Website</h3>
-            <a
-              href={institution.settings?.contact?.website || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm hover:underline"
-              style={{ color: institution.primary_color }}
-            >
-              {institution.settings?.contact?.website || 'https://abpsi.org.br'}
-            </a>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Endereço</h3>
-            <p className="text-sm text-gray-600">
-              {institution.settings?.contact?.address || 'São Paulo - SP'}
-            </p>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                <Icon name="globe" className="w-4 h-4 mr-2" style={{ color: institution.primary_color }} />
+                Website
+              </h3>
+              <a
+                href={institution.settings?.contact?.website || 'https://abpsi.org.br'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm hover:underline transition-colors inline-flex items-center"
+                style={{ color: institution.primary_color }}
+              >
+                {institution.settings?.contact?.website || 'https://abpsi.org.br'}
+                <Icon name="externalLink" className="w-3 h-3 ml-1" />
+              </a>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                <Icon name="mapPin" className="w-4 h-4 mr-2" style={{ color: institution.primary_color }} />
+                Localização
+              </h3>
+              <p className="text-sm text-gray-600">
+                {institution.settings?.contact?.address || 'São Paulo - SP'}
+              </p>
+            </div>
           </div>
         </div>
       </div>
