@@ -5,6 +5,7 @@ import { useInstitution } from '../../contexts/InstitutionContext';
 import { InstitutionLoadingSpinner } from '../../components/ui/InstitutionLoadingSpinner';
 import { AssistantIcon } from '../../components/ui/AssistantIcon';
 import { Icon } from '../../components/ui/Icon';
+import { InstitutionSubscriptionModal } from '../../components/ui/InstitutionSubscriptionModal';
 import { cn } from '../../utils/cn';
 import toast from 'react-hot-toast';
 
@@ -497,6 +498,14 @@ export const InstitutionChat: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showAssistantSelector, setShowAssistantSelector] = useState(false);
 
+  // Estados de assinatura
+  const [subscriptionError, setSubscriptionError] = useState<{
+    type: 'NO_SUBSCRIPTION' | 'SUBSCRIPTION_EXPIRED';
+    message: string;
+    daysExpired?: number;
+    expiredAt?: string;
+  } | null>(null);
+
   // Novos estados para gerenciamento avançado de sessões
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -708,6 +717,56 @@ Como posso ajudá-lo hoje?`,
     setShowNewSessionModal(true);
   }, []);
 
+  // Função para verificar assinatura antes de enviar mensagem
+  const checkSubscription = async (): Promise<boolean> => {
+    if (!slug || !user) return false;
+
+    try {
+      const { supabase } = await import('../../services/supabase');
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+
+      if (!token) {
+        console.error('No auth token available');
+        return false;
+      }
+
+      const response = await fetch('/api/check-institution-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          institution_slug: slug
+        })
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        console.error('Error checking subscription:', result.error);
+        return false;
+      }
+
+      const { has_subscription, error_type, error_message, days_remaining, expires_at } = result.data;
+
+      if (!has_subscription && error_type) {
+        setSubscriptionError({
+          type: error_type,
+          message: error_message,
+          daysExpired: error_type === 'SUBSCRIPTION_EXPIRED' ? Math.abs(days_remaining || 0) : undefined,
+          expiredAt: expires_at
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      return false;
+    }
+  };
+
   const sendMessage = async () => {
     if (!message.trim() || !currentSession || isLoading || !currentAssistant) {
       console.log('❌ sendMessage blocked:', {
@@ -716,6 +775,13 @@ Como posso ajudá-lo hoje?`,
         isLoading,
         hasAssistant: !!currentAssistant
       });
+      return;
+    }
+
+    // Verificar assinatura antes de enviar mensagem
+    const hasValidSubscription = await checkSubscription();
+    if (!hasValidSubscription) {
+      console.log('❌ Message blocked: No valid subscription');
       return;
     }
 
@@ -1312,6 +1378,19 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
           onSelect={createNewSession}
           assistants={availableAssistants}
           institution={institution}
+        />
+      )}
+
+      {/* Modal de Assinatura */}
+      {subscriptionError && (
+        <InstitutionSubscriptionModal
+          isOpen={true}
+          onClose={() => setSubscriptionError(null)}
+          institutionName={institution.name}
+          institutionSlug={slug!}
+          errorType={subscriptionError.type}
+          daysExpired={subscriptionError.daysExpired}
+          expiredAt={subscriptionError.expiredAt}
         />
       )}
     </div>

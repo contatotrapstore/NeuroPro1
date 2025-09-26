@@ -34,6 +34,7 @@ import {
   InstitutionForgotPassword,
   InstitutionRegister
 } from './pages/Institution';
+import { InstitutionCheckout } from './pages/Institution/InstitutionCheckout';
 import { InstitutionUsersManagement } from './pages/Institution/InstitutionUsersManagement';
 import { InstitutionPendingApproval } from './pages/Institution/InstitutionPendingApproval';
 
@@ -245,6 +246,11 @@ const App: React.FC = () => {
             <Route path="manage-users" element={
               <InstitutionProtectedRoute>
                 <InstitutionUsersManagement />
+              </InstitutionProtectedRoute>
+            } />
+            <Route path="checkout" element={
+              <InstitutionProtectedRoute>
+                <InstitutionCheckout />
               </InstitutionProtectedRoute>
             } />
           </Route>
