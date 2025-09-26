@@ -26,11 +26,11 @@ export const InstitutionSubscriptions: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-6">
       {/* Subscription Status */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div
-          className="px-8 py-6 text-white"
+          className="px-6 py-8 text-white"
           style={{
             background: `linear-gradient(135deg, ${institution.primary_color} 0%, ${institution.secondary_color || institution.primary_color} 100%)`
           }}

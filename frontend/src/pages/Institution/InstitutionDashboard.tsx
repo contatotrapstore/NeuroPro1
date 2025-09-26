@@ -84,22 +84,15 @@ export const InstitutionDashboard: React.FC = () => {
       icon: 'store',
       href: `/i/${slug}/store`,
       highlight: false
-    },
-    {
-      title: 'Biblioteca',
-      description: 'Materiais didáticos e recursos',
-      icon: 'book-open',
-      href: `/i/${slug}/library`,
-      highlight: false
     }
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-6">
       {/* Welcome Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div
-          className="px-8 py-6 text-white"
+          className="px-6 py-8 text-white"
           style={{
             background: `linear-gradient(135deg, ${institution.primary_color} 0%, ${institution.secondary_color || institution.primary_color} 100%)`
           }}
@@ -173,7 +166,7 @@ export const InstitutionDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {quickActions.map((action, index) => (
           <Link
             key={index}

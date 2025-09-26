@@ -202,8 +202,6 @@ const App: React.FC = () => {
             <Route path="chat/:assistantId" element={<InstitutionChat />} />
             <Route path="store" element={<InstitutionStore />} />
             <Route path="subscriptions" element={<InstitutionSubscriptions />} />
-            <Route path="library" element={<div className="p-8"><h1 className="text-2xl font-bold">Biblioteca - Em desenvolvimento</h1></div>} />
-            <Route path="reports" element={<div className="p-8"><h1 className="text-2xl font-bold">Relatórios - Em desenvolvimento</h1></div>} />
             <Route path="profile" element={<div className="p-8"><h1 className="text-2xl font-bold">Perfil - Em desenvolvimento</h1></div>} />
             <Route path="admin" element={<InstitutionAdmin />} />
             <Route path="subscription" element={<InstitutionSubscription />} />

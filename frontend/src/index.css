@@ -152,6 +152,23 @@ body {
     @apply ml-72 min-h-screen;
   }
 
+  /* Institution Layout Components */
+  .container-institution {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .card-institution {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100;
+  }
+
+  .sidebar-institution {
+    @apply fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 z-40;
+  }
+
+  .main-institution {
+    @apply ml-64 min-h-screen bg-gray-50;
+  }
+
   /* Mobile overrides */
   @media (max-width: 1023px) {
     .sidebar-fixed {
@@ -163,6 +180,14 @@ body {
     }
 
     .main-content {
+      @apply ml-0;
+    }
+
+    .sidebar-institution {
+      @apply -translate-x-full transition-transform duration-300;
+    }
+
+    .main-institution {
       @apply ml-0;
     }
   }

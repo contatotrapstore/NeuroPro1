@@ -35,13 +35,13 @@ export const InstitutionStore: React.FC = () => {
   const featuredAssistant = availableAssistants.find(a => a.is_simulator) || availableAssistants[0];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-6">
       {/* Hero Section */}
       <div
         className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
       >
         <div
-          className="px-8 py-12 text-white relative"
+          className="px-6 py-10 text-white relative"
           style={{
             background: `linear-gradient(135deg, ${institution.primary_color} 0%, ${institution.secondary_color || institution.primary_color} 100%)`
           }}
@@ -297,37 +297,6 @@ export const InstitutionStore: React.FC = () => {
         )}
       </div>
 
-      {/* Help Section */}
-      <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-        <div className="text-center">
-          <Icon name="help-circle" className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Precisa de Ajuda?
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Entre em contato conosco para suporte ou dúvidas sobre os assistentes
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href={`mailto:${institution.settings?.contact?.email || 'contato@abpsi.org.br'}`}
-              className="inline-flex items-center px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon name="mail" className="w-4 h-4 mr-2" />
-              Enviar E-mail
-            </a>
-            <a
-              href={institution.settings?.contact?.website || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 rounded-lg text-white transition-colors"
-              style={{ backgroundColor: institution.primary_color }}
-            >
-              <Icon name="external-link" className="w-4 h-4 mr-2" />
-              Site da ABPSI
-            </a>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -61,24 +61,8 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
       href: `/i/${slug}/subscriptions`,
       icon: 'card',
       description: 'Gerencie seu acesso'
-    },
-    {
-      name: 'Biblioteca',
-      href: `/i/${slug}/library`,
-      icon: 'book',
-      description: 'Materiais didáticos'
     }
   ];
-
-  // Adicionar Relatórios para subadmins
-  if (canAccessAdminPanel) {
-    navigationItems.push({
-      name: 'Relatórios',
-      href: `/i/${slug}/reports`,
-      icon: 'chart',
-      description: 'Métricas e relatórios'
-    });
-  }
 
   const isActiveRoute = (href: string) => {
     return location.pathname === href || location.pathname.startsWith(href + '/');
@@ -184,8 +168,8 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
 
       {/* Sidebar */}
       <aside className={cn(
-        "sidebar-fixed flex flex-col",
-        sidebarOpen && "open"
+        "fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 z-40 flex flex-col transition-transform duration-300 lg:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
@@ -381,7 +365,7 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
       </aside>
 
       {/* Main Content */}
-      <div className="main-content">
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200">
           <div className="px-6 py-4">
