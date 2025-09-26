@@ -318,7 +318,7 @@ npm run lint && npm run test
 - **Project Cleanup**: Comprehensive cleanup removing 18+ obsolete files, consolidating backend structure, organizing documentation in /docs folder
 - **UI Consistency**: Removed duplicate text "NeuroIA Lab" from login screen, leaving only the logo for cleaner presentation
 
-### ✅ Current Production Status (September 6, 2025)
+### ✅ Current Production Status (September 26, 2025)
 - **Platform Status**: ✅ Fully operational on Vercel with real-time chat functionality
 - **Admin Panel**: ✅ Working correctly with proper user and subscription data display
 - **AI Assistants**: ✅ All 19 assistants functional with proper icon rendering and chat integration
@@ -326,6 +326,7 @@ npm run lint && npm run test
 - **User Authentication**: ✅ Supabase Auth fully integrated with session management
 - **Database**: ✅ All tables properly configured with Row Level Security (RLS)
 - **API Endpoints**: ✅ All backend services operational on Vercel serverless functions
+- **🆕 Institutional Subscriptions**: ✅ Individual subscription system for institutional users fully operational
 
 ## Environment Configuration
 
@@ -418,6 +419,93 @@ Complete technical documentation is now centralized in the `/docs` folder. Legac
 ## System Overview
 
 The NeuroIA Lab platform is now a mature, fully operational SaaS solution with 19 specialized AI assistants, comprehensive admin tools, real-time chat functionality, and integrated payment processing. All components are deployed on Vercel with Supabase backend integration, serving psychology professionals with subscription-based access to AI-powered clinical tools.
+
+## 🎯 Sistema de Assinatura Individual para Instituições (26/09/2025)
+
+### Implementação Completa do Controle de Acesso Pago
+
+O sistema agora implementa **verificação dupla** para usuários institucionais:
+1. **Aprovação Administrativa**: Admin da instituição aprova o usuário
+2. **Assinatura Individual**: Usuário deve pagar assinatura própria para acessar IAs
+
+#### **Problema Resolvido**
+- **Antes**: Usuários acessavam IAs gratuitamente após aprovação admin
+- **Depois**: Acesso condicionado a pagamento individual obrigatório
+- **Impacto**: Modelo de negócio preservado para instituições
+
+#### **Arquitetura Técnica**
+
+**Nova Tabela de Database**:
+```sql
+-- institution_user_subscriptions
+CREATE TABLE public.institution_user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    institution_id UUID NOT NULL REFERENCES public.institutions(id) ON DELETE CASCADE,
+    subscription_type VARCHAR(20) NOT NULL DEFAULT 'monthly',
+    amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
+    status VARCHAR(20) DEFAULT 'pending',
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    UNIQUE(user_id, institution_id)
+);
+```
+
+**RPC Function de Verificação**:
+```sql
+CREATE OR REPLACE FUNCTION check_institution_user_subscription(
+  p_user_id UUID,
+  p_institution_slug TEXT
+) RETURNS JSON
+-- Verifica se usuário tem assinatura ativa para a instituição
+-- Retorna: has_subscription, error_type, error_message, expires_at
+```
+
+**Novos Endpoints API**:
+- `POST /api/check-institution-subscription` - Verificação de status de assinatura
+- `POST /api/create-institution-subscription` - Criação de nova assinatura
+
+#### **Interface do Usuário**
+
+**InstitutionDashboard.tsx** - Indicadores Visuais:
+- 🟢 **Verde "Ativa"**: Usuário com assinatura válida
+- 🟠 **Laranja "Pendente"**: Usuário precisa pagar
+- Banner de alerta laranja com call-to-action para checkout
+
+**InstitutionChat.tsx** - Bloqueio de Chat:
+- Verificação `checkSubscription()` antes de cada mensagem
+- Modal `InstitutionSubscriptionModal` quando usuário tenta usar sem pagamento
+- Bloqueio completo até pagamento ser efetuado
+
+**InstitutionRegister.tsx** - Fluxo Corrigido:
+- Botão alterado: "Fazer Login Agora" → "Ver Status da Aprovação"
+- Redirecionamento para página de pending-approval
+
+**InstitutionCheckout.tsx** - Novo Componente:
+- Página completa de checkout para assinaturas institucionais
+- Planos: Mensal (R$ 39,90), Semestral (R$ 199,00), Anual (R$ 349,00)
+
+#### **Fluxo do Usuário Atualizado**
+
+```
+1. Usuário se registra na instituição
+   ↓
+2. Aguarda aprovação do admin
+   ↓
+3. Admin aprova usuário
+   ↓
+4. Dashboard mostra "Assinatura Pendente" (🟠)
+   ↓
+5. Usuário clica "Assinar Agora" → Checkout
+   ↓
+6. Pagamento aprovado → Status "Ativa" (🟢)
+   ↓
+7. Acesso completo aos assistentes liberado
+```
+
+#### **Segurança e Validação**
+- **Database**: RLS policies + SECURITY DEFINER functions
+- **API**: Token JWT obrigatório + validação de parâmetros
+- **Frontend**: Loading states + error handling + redirecionamentos seguros
 
 ## 🚀 Sistema Institucional ABPSI (25/09/2025)
 

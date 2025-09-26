@@ -2,7 +2,7 @@
 
 Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica, incluindo as novas áreas de **Neuromodulação** e **Terapia Ocupacional**.
 
-**🚀 Versão Atual**: v3.3.0 - Sistema 100% Operacional com Admin Dashboard
+**🚀 Versão Atual**: v3.4.0 - Sistema de Assinatura Individual para Instituições
 
 ## ✅ Status do Sistema
 - 🟢 **Frontend**: 100% funcional
@@ -12,6 +12,7 @@ Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assis
 - 🟢 **Sistema de Pacotes**: 100% funcional ✨
 - 🟢 **Admin Dashboard**: 100% funcional ✨ **NOVO**
 - 🟢 **Sistema ABPSI**: 100% funcional ✨ **NOVO**
+- 🟢 **Assinaturas Institucionais**: 100% funcional ✨ **NOVO v3.4.0**
 - 🟢 **Pagamentos PIX**: 100% funcional
 - 🟡 **Pagamentos Cartão**: Temporariamente desabilitado (em correção)
 - 🟢 **Webhooks Asaas**: 100% funcional
@@ -23,6 +24,7 @@ Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assis
 - 📈 **258 assinaturas ativas** (172 usuários + 86 admin)
 - 🎯 **22 usuários pagantes únicos**
 - ⚡ **Zero erros críticos** - Sistema 100% estável
+- 🆕 **Sistema de Assinatura Individual**: Implementado para instituições
 
 ## 🧠 Sobre o Projeto
 

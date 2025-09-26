@@ -1,5 +1,52 @@
 # Changelog - NeuroIA Lab
 
+## [v3.4.0] - 2025-09-26 🎯 SISTEMA DE ASSINATURA INDIVIDUAL PARA INSTITUIÇÕES
+
+### ✅ **Sistema de Verificação Dupla Implementado**
+- **Problema Resolvido**: Usuários institucionais acessavam IAs sem pagamento após aprovação
+- **Solução**: Sistema de dupla verificação (Aprovação Admin + Assinatura Individual)
+- **Impacto**: Modelo de negócio preservado com controle total de acesso
+
+### 🔧 **Nova Arquitetura de Assinaturas Institucionais**
+- **Database**: Nova tabela `institution_user_subscriptions` para pagamentos individuais
+- **RPC Function**: `check_institution_user_subscription` com validação completa
+- **APIs**: Endpoints dedicados para verificação e criação de assinaturas institucionais
+- **Segurança**: SECURITY DEFINER functions + validação de expiração
+
+### 🎨 **Interface Completamente Renovada**
+- **Dashboard**: Indicadores visuais de status de assinatura (Verde/Laranja)
+- **Banner de Alerta**: Aviso laranja para usuários sem assinatura ativa
+- **Chat Bloqueado**: Verificação obrigatória antes de enviar mensagens
+- **Modal de Assinatura**: Feedback quando usuário tenta usar sem pagamento
+
+### 🚀 **Fluxo de Usuário Corrigido**
+- **Registro**: Botão alterado de "Fazer Login Agora" → "Ver Status da Aprovação"
+- **Aprovação**: Admin aprova usuário mas acesso ainda requer pagamento
+- **Pagamento**: Checkout institucional com planos mensais/semestrais/anuais
+- **Acesso**: Liberação completa apenas após aprovação + pagamento ativo
+
+### 📱 **Novos Componentes Criados**
+- **InstitutionCheckout**: Página completa de checkout para instituições
+- **InstitutionSubscriptionModal**: Modal de bloqueio com call-to-action
+- **Subscription Status**: Sistema de cores e badges para status visual
+
+### 🔒 **Endpoints de Verificação**
+- `POST /api/check-institution-subscription` - Verificação de assinatura ativa
+- `POST /api/create-institution-subscription` - Criação de nova assinatura
+- **Fallbacks**: Error handling robusto para todos os estados
+
+### 📊 **Experiência do Usuário Aprimorada**
+- **Estados Visuais**: Loading, erro, sucesso, pendente claramente identificados
+- **Redirecionamentos**: Fluxo inteligente baseado no status do usuário
+- **Mensagens**: Feedback claro sobre próximos passos necessários
+
+### 🎯 **Sistema ABPSI Atualizado**
+- **Assinaturas**: Todos os usuários ABPSI agora seguem o novo sistema
+- **Compatibilidade**: Sistema retroativo funciona com usuários existentes
+- **Migração**: Suporte para transição gradual de usuários aprovados
+
+---
+
 ## [v3.3.0] - 2025-09-25 🚀 SISTEMA 100% OPERACIONAL COM ADMIN DASHBOARD
 
 ### ✅ **Sistema Admin Completamente Funcional**

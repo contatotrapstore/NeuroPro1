@@ -487,6 +487,10 @@ export const InstitutionChat: React.FC = () => {
     availableAssistants,
     isInstitutionUser,
     canAccessAssistants,
+    hasActiveSubscription,
+    subscriptionError: contextSubscriptionError,
+    isCheckingSubscription,
+    checkSubscription,
     loading: institutionLoading
   } = useInstitution();
 
@@ -936,8 +940,16 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
     );
   }
 
-  // Check if user is inactive and cannot access assistants
-  if (isInstitutionUser && !canAccessAssistants) {
+  // Verificar assinatura ao carregar a página
+  React.useEffect(() => {
+    if (isInstitutionUser && userAccess?.is_active && slug && !hasActiveSubscription && !isCheckingSubscription) {
+      console.log('🔍 Checking subscription on chat page load');
+      checkSubscription(slug);
+    }
+  }, [isInstitutionUser, userAccess, slug, hasActiveSubscription, isCheckingSubscription, checkSubscription]);
+
+  // Check if user is inactive (not approved)
+  if (isInstitutionUser && !userAccess?.is_active) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full">
@@ -967,6 +979,64 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
               </button>
               <p className="text-xs text-gray-400">
                 Precisa de ajuda? Entre em contato com o administrador da instituição.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is approved but has no subscription
+  if (isInstitutionUser && userAccess?.is_active && !canAccessAssistants) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center border border-red-200">
+            <div
+              className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center text-white"
+              style={{ backgroundColor: '#dc2626' }}
+            >
+              <Icon name="creditCard" className="w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Assinatura Necessária
+            </h1>
+            <div className="bg-blue-50 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-900">Licença Institucional</span>
+                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                  Inativa
+                </span>
+              </div>
+              <p className="text-xs text-blue-700 mb-3">
+                Institucional ABPSI - Academia Brasileira de Psicanálise
+              </p>
+              <p className="text-sm text-gray-600">
+                Para acessar os assistentes de IA, você precisa de uma assinatura ativa.
+              </p>
+            </div>
+            {contextSubscriptionError && (
+              <p className="text-sm text-red-600 mb-6 bg-red-50 p-3 rounded-lg">
+                {contextSubscriptionError}
+              </p>
+            )}
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate(`/i/${slug}/subscription`)}
+                className="w-full px-6 py-3 rounded-xl text-white font-semibold transition-all"
+                style={{ backgroundColor: institution.primary_color }}
+              >
+                Assinar Agora
+              </button>
+              <button
+                onClick={() => navigate(`/i/${slug}`)}
+                className="w-full px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all"
+              >
+                Voltar ao Dashboard
+              </button>
+              <p className="text-xs text-gray-400">
+                Já tem uma assinatura? Aguarde alguns minutos para ativação.
               </p>
             </div>
           </div>

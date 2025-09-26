@@ -71,9 +71,15 @@ interface InstitutionContextType {
   authenticationComplete: boolean;
   institutionLoaded: boolean;
 
+  // Estados de assinatura
+  hasActiveSubscription: boolean;
+  subscriptionError: string | null;
+  isCheckingSubscription: boolean;
+
   // Funções
   loadInstitution: (slug: string) => Promise<boolean>;
   verifyAccess: (token: string, slug: string) => Promise<boolean>;
+  checkSubscription: (slug: string) => Promise<boolean>;
   clearContext: () => void;
   setAuthenticationComplete: (complete: boolean) => void;
 
@@ -81,7 +87,7 @@ interface InstitutionContextType {
   hasPermission: (permission: string) => boolean;
   isInstitutionUser: boolean;
   canAccessAdminPanel: boolean;
-  canAccessAssistants: boolean; // Added helper for assistant access
+  canAccessAssistants: boolean; // Verificação dupla: aprovação + pagamento
   getPrimaryAssistant: () => InstitutionAssistant | null;
   getSimulatorAssistant: () => InstitutionAssistant | null;
 }
@@ -145,6 +151,11 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   const [institutionLoaded, setInstitutionLoaded] = useState(false);
   const [isLoadingInstitution, setIsLoadingInstitution] = useState(false);
   const [isVerifyingAccess, setIsVerifyingAccess] = useState(false);
+
+  // Estados de assinatura
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
 
   // Função para carregar dados básicos da instituição (público) - Otimizada com cache e dados estáticos
   const loadInstitution = useCallback(async (slug: string): Promise<boolean> => {
@@ -326,6 +337,9 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     setInstitutionLoaded(false);
     setIsLoadingInstitution(false);
     setIsVerifyingAccess(false);
+    setHasActiveSubscription(false);
+    setSubscriptionError(null);
+    setIsCheckingSubscription(false);
     console.log('🧹 Institution context cleared');
   };
 
@@ -335,10 +349,71 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     return userAccess.permissions[permission] === true;
   };
 
+  // Função para verificar assinatura
+  const checkSubscription = useCallback(async (slug: string): Promise<boolean> => {
+    if (!userAccess || !userAccess.is_active) {
+      console.log('❌ checkSubscription: User not approved');
+      return false;
+    }
+
+    setIsCheckingSubscription(true);
+    setSubscriptionError(null);
+
+    try {
+      const { supabase } = await import('../services/supabase');
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+
+      if (!token) {
+        console.error('No auth token available');
+        setSubscriptionError('Token de autenticação não disponível');
+        return false;
+      }
+
+      const response = await fetch('/api/check-institution-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          institution_slug: slug
+        })
+      });
+
+      const result = await response.json();
+      console.log('📊 Subscription check response:', result);
+
+      if (!result.success) {
+        console.error('❌ Error checking subscription:', result.error);
+        setSubscriptionError(result.error || 'Erro ao verificar assinatura');
+        return false;
+      }
+
+      const { has_subscription, error_type, error_message } = result.data;
+
+      if (!has_subscription) {
+        console.log('🚫 No subscription found');
+        setSubscriptionError(error_message || 'Você precisa de uma assinatura para usar os recursos desta instituição');
+        setHasActiveSubscription(false);
+        return false;
+      }
+
+      console.log('✅ Subscription valid');
+      setHasActiveSubscription(true);
+      return true;
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setSubscriptionError('Erro interno ao verificar assinatura');
+      return false;
+    } finally {
+      setIsCheckingSubscription(false);
+    }
+  }, [userAccess]);
+
   // Computed properties
   const isInstitutionUser = !!userAccess;
   const canAccessAdminPanel = userAccess?.is_admin || false;
-  const canAccessAssistants = userAccess?.is_active || false; // Only active users can access assistants
+  const canAccessAssistants = (userAccess?.is_active || false) && hasActiveSubscription; // Dupla verificação: aprovação + pagamento
 
   // Helper para obter assistente principal
   const getPrimaryAssistant = (): InstitutionAssistant | null => {
@@ -412,8 +487,12 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     error,
     authenticationComplete,
     institutionLoaded,
+    hasActiveSubscription,
+    subscriptionError,
+    isCheckingSubscription,
     loadInstitution,
     verifyAccess,
+    checkSubscription,
     clearContext,
     setAuthenticationComplete,
     hasPermission,

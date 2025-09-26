@@ -7,8 +7,9 @@
 **Nome Completo**: Academia Brasileira de Psicanálise
 **Slug**: `abpsi`
 **URL de Acesso**: https://www.neuroialab.com.br/i/abpsi
-**Status**: ✅ **ATIVO e OPERACIONAL**
+**Status**: ✅ **ATIVO e OPERACIONAL com Sistema de Assinatura Individual**
 **Data de Implementação**: 25/09/2025
+**Atualização v3.4.0**: 26/09/2025 - Sistema de pagamento individual implementado
 
 ## 🎨 Identidade Visual
 
@@ -46,6 +47,48 @@
 - Dante - Consultor em Psicanálise Aplicada
 - Clara - Orientadora de Supervisão Clínica
 
+## 💰 Sistema de Assinatura Individual (v3.4.0)
+
+### 🎯 Verificação Dupla Implementada
+
+**IMPORTANTE**: A partir de 26/09/2025, o acesso aos assistentes de IA na ABPSI requer **dupla verificação**:
+
+1. **✅ Aprovação Administrativa**: Subadmin aprova o usuário
+2. **🆕 Assinatura Individual**: Usuário deve pagar assinatura própria
+
+### Fluxo do Usuário ABPSI
+
+```
+1. Usuário registra em /i/abpsi/register
+   ↓
+2. Aguarda aprovação de gouveiarx@gmail.com
+   ↓
+3. Admin aprova usuário no painel
+   ↓
+4. Dashboard mostra "Assinatura Pendente" 🟠
+   ↓
+5. Usuário clica "Assinar Agora" → /i/abpsi/checkout
+   ↓
+6. Pagamento via PIX (R$ 39,90/mês)
+   ↓
+7. Status muda para "Ativa" 🟢
+   ↓
+8. Acesso ao Simulador de Psicanálise liberado
+```
+
+### Preços ABPSI
+
+- **Mensal**: R$ 39,90
+- **Semestral**: R$ 199,00 (economia de 17%)
+- **Anual**: R$ 349,00 (economia de 26%)
+
+### Interface com Indicadores Visuais
+
+**Dashboard (/i/abpsi)**:
+- 🟢 **"Assinatura Ativa"**: Usuário pode usar o Simulador
+- 🟠 **"Assinatura Pendente"**: Banner laranja com botão "Assinar Agora"
+- 🔒 **Chat Bloqueado**: Modal aparece quando tenta usar sem pagamento
+
 ## 👥 Usuários e Administração
 
 ### Administrador Principal
@@ -55,6 +98,7 @@
 - **Status**: Ativo
 - **Registro**: ADMIN001
 - **Departamento**: Administração
+- **🆕 Responsabilidade**: Aprovar usuários (pagamento é responsabilidade individual)
 
 ### Permissões do Subadmin
 ```javascript
@@ -64,7 +108,8 @@
   manage_assistants: false,  // Não pode alterar assistentes
   manage_settings: false,    // Não pode alterar configurações gerais
   view_conversations: true,  // Ver conversas dos usuários
-  export_data: true          // Exportar dados e relatórios
+  export_data: true,         // Exportar dados e relatórios
+  approve_users: true        // ✅ Aprovar usuários (pagamento separado)
 }
 ```
 
@@ -230,12 +275,16 @@ O sistema possui fallback robusto para validação de tokens:
 
 ## 📊 Métricas e Status
 
-### Status Atual (25/09/2025)
+### Status Atual (26/09/2025) - v3.4.0
 - ✅ **Login Funcional**: Zero erros de autenticação
 - ✅ **Logo Visível**: Exibição correta em todas as telas
 - ✅ **APIs Operacionais**: Todos endpoints respondendo
 - ✅ **Acesso Controlado**: Apenas Simulador habilitado
 - ✅ **Admin Configurado**: gouveiarx@gmail.com como subadmin
+- ✅ **🆕 Sistema de Assinatura**: Verificação dupla (aprovação + pagamento)
+- ✅ **🆕 Interface Visual**: Dashboard com indicadores de status de assinatura
+- ✅ **🆕 Chat Bloqueado**: Acesso condicionado ao pagamento
+- ✅ **🆕 Checkout ABPSI**: Fluxo completo de pagamento institucional
 
 ### Database Status
 ```sql
