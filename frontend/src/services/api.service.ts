@@ -21,13 +21,9 @@ export class ApiService {
        window.location.hostname !== '127.0.0.1' && 
        window.location.hostname !== '');
     
-    // Em produção, usar URL direta do backend (sem /api)
-    if (isProduction) {
-      this.baseURL = 'https://neuro-pro-backend-phi.vercel.app';
-    } else {
-      // Em desenvolvimento, usar proxy local
-      this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
-    }
+    // Usar caminho relativo /api para produção e desenvolvimento
+    // Isso garante que use o mesmo deployment/backend para tudo
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
     
     console.log('🌍 API Base URL configurada:', {
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'servidor',
