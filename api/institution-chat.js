@@ -364,26 +364,54 @@ module.exports = async function handler(req, res) {
       console.log('⏳ Waiting for response...');
       let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
       let attempts = 0;
-      const maxAttempts = 30; // 30 seconds max
+      const maxAttempts = 60; // 60 seconds for completion
+      const startTime = Date.now();
+      const maxTimeMs = 60000; // 60 seconds maximum
 
-      while (runStatus.status === 'running' || runStatus.status === 'queued') {
-        if (attempts >= maxAttempts) {
-          throw new Error('Timeout waiting for assistant response');
+      console.log('⏳ Waiting for run completion...', {
+        initialStatus: runStatus.status,
+        runId: run.id,
+        maxAttempts: maxAttempts
+      });
+
+      // Status que indicam processamento
+      const processingStatuses = ['queued', 'in_progress', 'running'];
+      const finalStatuses = ['completed', 'failed', 'cancelled', 'expired', 'requires_action'];
+
+      // Early exit if already completed
+      if (finalStatuses.includes(runStatus.status)) {
+        console.log('✅ Run already completed on first check:', runStatus.status);
+      } else {
+        while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts && (Date.now() - startTime) < maxTimeMs) {
+          // Progressive backoff: 300ms, 500ms, 750ms, 1000ms (max)
+          const delayMs = Math.min(300 + (attempts * 100), 1000);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+
+          runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
+          attempts++;
+
+          if (attempts % 10 === 0) {
+            console.log(`⏳ Still waiting... attempt ${attempts}/${maxAttempts}, status: ${runStatus.status}`);
+          }
         }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
-        attempts++;
       }
+
+      console.log('🏁 Polling finished:', {
+        finalStatus: runStatus.status,
+        totalAttempts: attempts,
+        elapsedTime: Math.round((Date.now() - startTime) / 1000) + 's'
+      });
 
       if (runStatus.status === 'failed') {
         console.error('❌ OpenAI run failed:', runStatus.last_error);
-        throw new Error('Falha na execução do assistente: ' + runStatus.last_error?.message);
-      }
-
-      if (runStatus.status !== 'completed') {
-        console.error('❌ Unexpected run status:', runStatus.status);
-        throw new Error('Status inesperado do assistente: ' + runStatus.status);
+        throw new Error('Falha na execução do assistente: ' + JSON.stringify(runStatus.last_error || 'Unknown error'));
+      } else if (runStatus.status !== 'completed') {
+        console.error('⚠️ Run did not complete:', {
+          status: runStatus.status,
+          elapsedTime: Math.round((Date.now() - startTime) / 1000) + 's',
+          attempts: attempts
+        });
+        throw new Error(`OpenAI run timed out or stuck in status: ${runStatus.status} after ${Math.round((Date.now() - startTime) / 1000)}s`);
       }
 
       // Get assistant response
