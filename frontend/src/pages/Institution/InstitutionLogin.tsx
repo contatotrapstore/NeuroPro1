@@ -52,12 +52,12 @@ export const InstitutionLogin: React.FC = () => {
       authenticationComplete &&
       isInstitutionUser
     ) {
-      // Verificar se usuário está ativo (aprovado)
-      if (canAccessAssistants) {
+      // Verificar se usuário está aprovado pelo admin (independente de assinatura)
+      if (userAccess?.is_active) {
         console.log('✅ User authenticated and approved, redirecting to dashboard...');
         navigate(`/i/${slug}`, { replace: true });
       } else {
-        console.log('⏳ User authenticated but inactive, redirecting to pending approval...');
+        console.log('⏳ User authenticated but not approved, redirecting to pending approval...');
         toast.success('Login realizado! Aguardando aprovação do administrador.');
         navigate(`/i/${slug}/pending-approval`, { replace: true });
       }
@@ -68,7 +68,7 @@ export const InstitutionLogin: React.FC = () => {
     institutionLoaded,
     authenticationComplete,
     isInstitutionUser,
-    canAccessAssistants,
+    userAccess,
     navigate,
     slug
   ]);
