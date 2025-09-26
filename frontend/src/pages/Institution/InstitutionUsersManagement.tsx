@@ -83,7 +83,37 @@ export const InstitutionUsersManagement: React.FC = () => {
       const result = await response.json();
 
       if (result.success) {
-        toast.success('Usuário aprovado com sucesso!');
+        toast.success('Usuário aprovado com sucesso!', {
+          duration: 6000,
+          icon: '✅'
+        });
+
+        // Show comprehensive guidance for admin
+        setTimeout(() => {
+          toast.success('💡 IMPORTANTE: Informe ao usuário aprovado que deve:', {
+            duration: 10000,
+            style: {
+              background: '#3b82f6',
+              color: 'white',
+              fontSize: '14px',
+              maxWidth: '400px'
+            }
+          });
+        }, 1000);
+
+        setTimeout(() => {
+          toast.success('1️⃣ Fazer logout completo do sistema\n2️⃣ Fazer login novamente\n3️⃣ Verificar se tem assinatura ativa para usar a IA', {
+            duration: 12000,
+            style: {
+              background: '#059669',
+              color: 'white',
+              fontSize: '13px',
+              maxWidth: '450px',
+              whiteSpace: 'pre-line'
+            }
+          });
+        }, 2500);
+
         // Update local state
         setUsers(prev => prev.map(u =>
           u.id === userId ? { ...u, is_active: true } : u

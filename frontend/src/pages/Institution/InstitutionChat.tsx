@@ -165,6 +165,8 @@ interface AssistantSelectorModalProps {
 }
 
 function AssistantSelectorModal({ onClose, onSelect, assistants, institution }: AssistantSelectorModalProps) {
+  const { canAccessAssistants } = useInstitution();
+
   const handleSelect = (assistantId: string) => {
     onSelect(assistantId);
     onClose();
@@ -198,16 +200,27 @@ function AssistantSelectorModal({ onClose, onSelect, assistants, institution }: 
                 <button
                   key={assistant.id}
                   onClick={() => handleSelect(assistant.id)}
-                  className="flex items-start p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-left"
+                  className={cn(
+                    "flex items-start p-4 rounded-xl border transition-all text-left relative",
+                    canAccessAssistants
+                      ? "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                      : "border-orange-200 bg-orange-50/30"
+                  )}
                 >
                   <AssistantIcon
                     iconType={assistant.icon}
-                    className="w-12 h-12 mr-4 flex-shrink-0"
+                    className={cn(
+                      "w-12 h-12 mr-4 flex-shrink-0",
+                      !canAccessAssistants && "opacity-60"
+                    )}
                     color={assistant.color_theme || institution.primary_color}
                   />
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className={cn(
+                        "font-semibold",
+                        canAccessAssistants ? "text-gray-900" : "text-gray-600"
+                      )}>
                         {assistant.name}
                       </h3>
                       {assistant.is_primary && (
@@ -220,12 +233,26 @@ function AssistantSelectorModal({ onClose, onSelect, assistants, institution }: 
                           Simulador
                         </span>
                       )}
+                      {!canAccessAssistants && (
+                        <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-medium">
+                          Assinar para usar
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">
+                    <p className={cn(
+                      "text-sm line-clamp-2",
+                      canAccessAssistants ? "text-gray-600" : "text-gray-500"
+                    )}>
                       {assistant.description}
                     </p>
                   </div>
-                  <Icon name="chevron-right" className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+                  <Icon
+                    name={canAccessAssistants ? "chevron-right" : "lock"}
+                    className={cn(
+                      "w-5 h-5 flex-shrink-0 ml-2",
+                      canAccessAssistants ? "text-gray-400" : "text-orange-500"
+                    )}
+                  />
                 </button>
               );
             })}
@@ -612,6 +639,12 @@ export const InstitutionChat: React.FC = () => {
   };
 
   const createNewSession = useCallback(async (selectedAssistantId?: string, customTitle?: string) => {
+    // Se não tem assinatura ativa, redirecionar para checkout
+    if (!canAccessAssistants) {
+      navigate(`/i/${slug}/checkout`);
+      return;
+    }
+
     const targetAssistant = selectedAssistantId
       ? availableAssistants.find(a => a.id === selectedAssistantId)
       : currentAssistant;

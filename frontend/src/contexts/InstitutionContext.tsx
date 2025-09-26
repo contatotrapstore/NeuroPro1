@@ -77,10 +77,21 @@ interface InstitutionContextType {
   isCheckingSubscription: boolean;
 
   // Funções
-  loadInstitution: (slug: string) => Promise<boolean>;
+  loadInstitution: (slug: string, bypassCache?: boolean) => Promise<boolean>;
   verifyAccess: (token: string, slug: string) => Promise<boolean>;
   checkSubscription: (slug: string) => Promise<boolean>;
+  createSubscription: (
+    slug: string,
+    planType?: 'monthly' | 'semester' | 'annual',
+    paymentMethod?: 'pix' | 'credit_card'
+  ) => Promise<{ success: boolean; subscription_id?: string; error?: string }>;
+  activateSubscription: (
+    subscriptionId: string,
+    paymentId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  refreshUserAccess: (token: string, slug: string) => Promise<boolean>;
   clearContext: () => void;
+  clearInstitutionCache: (slug: string) => void;
   setAuthenticationComplete: (complete: boolean) => void;
 
   // Helpers
@@ -158,7 +169,7 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
 
   // Função para carregar dados básicos da instituição (público) - Otimizada com cache e dados estáticos
-  const loadInstitution = useCallback(async (slug: string): Promise<boolean> => {
+  const loadInstitution = useCallback(async (slug: string, bypassCache: boolean = false): Promise<boolean> => {
     // Se já está carregando ou já carregou esta instituição, retornar
     if (isLoadingInstitution || (institution?.slug === slug)) {
       console.log('🔄 InstitutionContext: Institution already loading or loaded, skipping...');
@@ -191,8 +202,8 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       setAvailableAssistants([]);
     }
 
-    // 2. Tentar carregar do cache
-    const cached = getCachedInstitution(slug);
+    // 2. Tentar carregar do cache (a menos que bypassCache seja true)
+    const cached = !bypassCache ? getCachedInstitution(slug) : null;
     if (cached) {
       console.log('📱 Using cached institution data:', cached.name);
       setInstitution(cached);
@@ -326,6 +337,30 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     }
   }, [isVerifyingAccess]);
 
+  // Função para limpar cache de instituição específica
+  const clearInstitutionCache = useCallback((slug: string) => {
+    try {
+      localStorage.removeItem(`${CACHE_KEY}_${slug}`);
+      console.log(`🧹 Cache cleared for institution: ${slug}`);
+    } catch (error) {
+      console.warn('Error clearing institution cache:', error);
+    }
+  }, []);
+
+  // Função para forçar recarga de dados do usuário
+  const refreshUserAccess = useCallback(async (token: string, slug: string): Promise<boolean> => {
+    console.log('🔄 Refreshing user access data...');
+
+    // Limpar cache primeiro
+    clearInstitutionCache(slug);
+
+    // Recarregar instituição sem cache
+    await loadInstitution(slug, true);
+
+    // Verificar acesso novamente
+    return verifyAccess(token, slug);
+  }, [clearInstitutionCache, loadInstitution, verifyAccess]);
+
   // Função para limpar contexto
   const clearContext = () => {
     setInstitution(null);
@@ -360,23 +395,15 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     setSubscriptionError(null);
 
     try {
-      const { supabase } = await import('../services/supabase');
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-
-      if (!token) {
-        console.error('No auth token available');
-        setSubscriptionError('Token de autenticação não disponível');
-        return false;
-      }
-
-      const response = await fetch('/api/check-institution-subscription', {
+      const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${(await import('../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
         },
         body: JSON.stringify({
-          institution_slug: slug
+          function_name: 'get_institution_subscription_status',
+          params: [slug]
         })
       });
 
@@ -409,6 +436,93 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       setIsCheckingSubscription(false);
     }
   }, [userAccess]);
+
+  // Função para criar nova assinatura
+  const createSubscription = useCallback(async (
+    slug: string,
+    planType: 'monthly' | 'semester' | 'annual' = 'monthly',
+    paymentMethod: 'pix' | 'credit_card' = 'pix'
+  ): Promise<{ success: boolean; subscription_id?: string; error?: string }> => {
+    try {
+      const response = await fetch('/api/institution-rpc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await import('../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+        },
+        body: JSON.stringify({
+          function_name: 'create_institution_subscription',
+          params: [
+            (await import('../services/supabase')).supabase.auth.getUser().then(r => r.data.user?.id),
+            slug,
+            planType,
+            paymentMethod,
+            47.00 // Preço fixo mensal
+          ]
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        return {
+          success: true,
+          subscription_id: result.data.subscription_id
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Erro ao criar assinatura'
+        };
+      }
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      return {
+        success: false,
+        error: 'Erro interno ao criar assinatura'
+      };
+    }
+  }, []);
+
+  // Função para ativar assinatura após pagamento
+  const activateSubscription = useCallback(async (
+    subscriptionId: string,
+    paymentId: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/institution-rpc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await import('../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+        },
+        body: JSON.stringify({
+          function_name: 'activate_institution_subscription',
+          params: [subscriptionId, paymentId]
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Atualizar estado local
+        setHasActiveSubscription(true);
+        setSubscriptionError(null);
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Erro ao ativar assinatura'
+        };
+      }
+    } catch (error) {
+      console.error('Error activating subscription:', error);
+      return {
+        success: false,
+        error: 'Erro interno ao ativar assinatura'
+      };
+    }
+  }, []);
 
   // Computed properties
   const isInstitutionUser = !!userAccess;
@@ -493,7 +607,11 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     loadInstitution,
     verifyAccess,
     checkSubscription,
+    createSubscription,
+    activateSubscription,
+    refreshUserAccess,
     clearContext,
+    clearInstitutionCache,
     setAuthenticationComplete,
     hasPermission,
     isInstitutionUser,

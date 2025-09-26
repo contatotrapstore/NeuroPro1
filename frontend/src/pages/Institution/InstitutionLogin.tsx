@@ -15,6 +15,8 @@ export const InstitutionLogin: React.FC = () => {
   const {
     institution,
     verifyAccess,
+    refreshUserAccess,
+    clearInstitutionCache,
     loading,
     error,
     isInstitutionUser,
@@ -96,8 +98,9 @@ export const InstitutionLogin: React.FC = () => {
         throw new Error('Sessão não criada');
       }
 
-      // Verificar se usuário tem acesso à instituição
-      const hasAccess = await verifyAccess(authResult.session.access_token, slug);
+      // Forçar recarga de dados para garantir status atualizado após login
+      console.log('🔄 Forcing fresh user data after login...');
+      const hasAccess = await refreshUserAccess(authResult.session.access_token, slug);
 
       if (!hasAccess) {
         toast.error('Você não tem acesso a esta instituição');
@@ -105,6 +108,8 @@ export const InstitutionLogin: React.FC = () => {
       }
 
       toast.success(`Bem-vindo à ${institution.name}!`);
+      console.log('✅ Login successful with fresh data loaded');
+
       // Aguardar o próximo useEffect redirecionar automaticamente
       // navigate será chamado quando authenticationComplete for true
 
