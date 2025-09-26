@@ -171,10 +171,21 @@ module.exports = async function handler(req, res) {
       responseData = result.data;
     }
 
-    // For get_institution_pending_count, return the count directly
+    // For get_institution_pending_count, return consistent structure
     if (function_name === 'get_institution_pending_count') {
       if (responseData && responseData.success && typeof responseData.count === 'number') {
-        return res.status(200).json(responseData.count);
+        console.log(`📊 Returning pending count: ${responseData.count}`);
+        return res.status(200).json({
+          success: true,
+          data: responseData.count
+        });
+      } else {
+        console.error('❌ Invalid pending count response:', responseData);
+        return res.status(200).json({
+          success: false,
+          data: 0,
+          error: 'Erro ao buscar contagem de usuários pendentes'
+        });
       }
     }
 

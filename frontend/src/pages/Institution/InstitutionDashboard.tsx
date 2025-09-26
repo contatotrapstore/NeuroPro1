@@ -11,6 +11,7 @@ export const InstitutionDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
+  const [fetchError, setFetchError] = useState<boolean>(false);
 
   // Verificação de segurança do contexto
   const context = useInstitution();
@@ -49,8 +50,16 @@ export const InstitutionDashboard: React.FC = () => {
 
   // Fetch pending users count if admin
   useEffect(() => {
+    // Circuit breaker: stop trying if already failed
+    if (fetchError) {
+      console.log('🛑 Pending count fetch disabled due to previous error');
+      return;
+    }
+
     const fetchPendingCount = async () => {
       if (!canManageUsers || !slug) return;
+
+      console.log('📊 Fetching pending users count for:', { canManageUsers, slug });
 
       try {
         const response = await fetch('/api/institution-rpc', {
@@ -65,17 +74,42 @@ export const InstitutionDashboard: React.FC = () => {
           })
         });
 
+        console.log('📊 Pending count response status:', response.status);
         const result = await response.json();
-        if (result.success && typeof result.data === 'number') {
+        console.log('📊 Pending count response data:', result);
+
+        if (!response.ok) {
+          console.error('❌ HTTP error fetching pending count:', response.status, result);
+          setFetchError(true);
+          return;
+        }
+
+        // Handle both old and new response formats for smooth transition
+        if (typeof result === 'number') {
+          // Backend returns number directly (old format)
+          console.log('📊 Using old format (number):', result);
+          setPendingUsersCount(result);
+        } else if (result.success && typeof result.data === 'number') {
+          // Backend returns object with success/data (new format)
+          console.log('📊 Using new format (object):', result.data);
           setPendingUsersCount(result.data);
+        } else if (result.success === false) {
+          // Backend returned error
+          console.warn('⚠️ Backend error fetching pending count:', result.error);
+          setFetchError(true);
+        } else {
+          // Unexpected format
+          console.error('❌ Unexpected response format:', result);
+          setFetchError(true);
         }
       } catch (error) {
-        console.error('Error fetching pending count:', error);
+        console.error('❌ Network error fetching pending count:', error);
+        setFetchError(true);
       }
     };
 
     fetchPendingCount();
-  }, [canManageUsers, slug]);
+  }, [canManageUsers, slug]); // Note: fetchError NOT in dependencies to prevent re-trigger
 
   // Função para lidar com ações que exigem autenticação
   const handleAuthRequiredAction = (targetPath: string, e?: React.MouseEvent) => {
