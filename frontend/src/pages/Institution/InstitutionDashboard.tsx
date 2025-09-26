@@ -142,8 +142,12 @@ export const InstitutionDashboard: React.FC = () => {
       return;
     }
 
-    // Check if user has subscription for chat access
-    if (targetPath.includes('/chat') && !isCheckingSubscription && !hasActiveSubscription) {
+    // Check if user has subscription for chat access (skip check for admins and subadmins)
+    if (targetPath.includes('/chat') &&
+        !isCheckingSubscription &&
+        !hasActiveSubscription &&
+        userAccess?.role !== 'subadmin' &&
+        !userAccess?.is_admin) {
       navigate(`/i/${slug}/checkout`);
       return;
     }
@@ -174,15 +178,18 @@ export const InstitutionDashboard: React.FC = () => {
     {
       title: user && isInstitutionUser ? 'Assinatura' : 'Acesso',
       value: user && isInstitutionUser
-        ? (isCheckingSubscription ? 'Verificando...' : (hasActiveSubscription ? 'Ativa' : 'Pendente'))
+        ? (userAccess?.role === 'subadmin' || userAccess?.is_admin ? 'Admin' :
+           (isCheckingSubscription ? 'Verificando...' : (hasActiveSubscription ? 'Ativa' : 'Pendente')))
         : 'Público',
       icon: user && isInstitutionUser ? 'creditCard' : 'shieldCheck',
       description: user && isInstitutionUser
-        ? (isCheckingSubscription ? 'Verificando status...' : (hasActiveSubscription ? 'Acesso completo às IAs' : 'Pagamento necessário'))
+        ? (userAccess?.role === 'subadmin' || userAccess?.is_admin ? 'Acesso administrativo' :
+           (isCheckingSubscription ? 'Verificando status...' : (hasActiveSubscription ? 'Acesso completo às IAs' : 'Pagamento necessário')))
         : 'Navegação livre',
       isStatus: true,
       statusColor: user && isInstitutionUser
-        ? (isCheckingSubscription ? 'gray' : (hasActiveSubscription ? 'green' : 'orange'))
+        ? (userAccess?.role === 'subadmin' || userAccess?.is_admin ? 'green' :
+           (isCheckingSubscription ? 'gray' : (hasActiveSubscription ? 'green' : 'orange')))
         : 'blue'
     }
   ];
@@ -263,8 +270,9 @@ export const InstitutionDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Subscription Warning Banner */}
-      {user && isInstitutionUser && !isCheckingSubscription && !hasActiveSubscription && (
+      {/* Subscription Warning Banner - only for regular users (not admins/subadmins) */}
+      {user && isInstitutionUser && !isCheckingSubscription && !hasActiveSubscription &&
+       userAccess?.role !== 'subadmin' && !userAccess?.is_admin && (
         <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-400 rounded-xl p-6 shadow-sm">
           <div className="flex items-start space-x-4">
             <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
