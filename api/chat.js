@@ -375,6 +375,15 @@ module.exports = async function handler(req, res) {
         threadId: conversation.thread_id
       });
 
+      // DEBUG: Verificar acesso à OPENAI_API_KEY no chat.js
+      console.log('🔑 CHAT.JS OPENAI DEBUG:', {
+        has_key: !!process.env.OPENAI_API_KEY,
+        key_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+        key_starts_with: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 15) + '...' : 'N/A',
+        all_openai_keys: Object.keys(process.env).filter(key => key.toLowerCase().includes('openai')),
+        function_name: 'chat.js'
+      });
+
       // Validate OpenAI configuration before proceeding
       if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('placeholder')) {
         console.log('⚠️ OpenAI API key not configured, skipping AI response');
