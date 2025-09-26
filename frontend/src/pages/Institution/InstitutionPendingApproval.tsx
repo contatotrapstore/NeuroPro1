@@ -120,7 +120,7 @@ export const InstitutionPendingApproval: React.FC = () => {
             <div className="text-sm text-gray-600 space-y-1">
               <p><span className="font-medium">Status:</span> Aguardando aprovação</p>
               <p><span className="font-medium">Papel:</span> {userAccess?.role === 'student' ? 'Estudante' : 'Usuário'}</p>
-              <p><span className="font-medium">Solicitado em:</span> {userAccess?.joined_at ? new Date(userAccess.joined_at).toLocaleDateString('pt-BR') : 'Hoje'}</p>
+              <p><span className="font-medium">Solicitado em:</span> {userAccess?.joined_at ? new Date(userAccess?.joined_at).toLocaleDateString('pt-BR') : 'Hoje'}</p>
             </div>
           </div>
 
