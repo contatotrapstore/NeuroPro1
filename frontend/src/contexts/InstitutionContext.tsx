@@ -418,7 +418,7 @@ export const useInstitution = (): InstitutionContextType => {
 
 // Hook especializado para verificar acesso a instituições - Corrigido para evitar loops
 export const useInstitutionAuth = (slug?: string) => {
-  const { verifyAccess, loadInstitution, isInstitutionUser, canAccessAdminPanel, error, institution } = useInstitution();
+  const { verifyAccess, loadInstitution, isInstitutionUser, canAccessAdminPanel, error, institution, institutionLoaded } = useInstitution();
   const [authChecked, setAuthChecked] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
