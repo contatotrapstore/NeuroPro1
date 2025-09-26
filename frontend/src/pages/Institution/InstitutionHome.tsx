@@ -28,7 +28,7 @@ export const InstitutionHome: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <InstitutionLoadingSpinner size="lg" institution={institution} />
+          <InstitutionLoadingSpinner size="lg" institution={institution} slug={slug} />
           <p className="mt-4 text-gray-600">Carregando portal...</p>
         </div>
       </div>

@@ -29,14 +29,13 @@ export const InstitutionLogin: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCompletedCheck, setHasCompletedCheck] = useState(false);
 
-  // Reset authentication state when component mounts or slug changes
+  // Verificar estado inicial apenas uma vez quando o componente carrega
   useEffect(() => {
-    if (slug) {
-      setAuthenticationComplete(false);
-      setHasCompletedCheck(false);
-      console.log(`🔄 InstitutionLogin: Reset for slug ${slug}`);
+    if (slug && !hasCompletedCheck) {
+      console.log(`🔄 InstitutionLogin: Initial check for slug ${slug}`);
+      setHasCompletedCheck(true);
     }
-  }, [slug, setAuthenticationComplete]);
+  }, [slug, hasCompletedCheck]);
 
   // Redirecionar se já logado e tem acesso completo (prevenção de loop)
   useEffect(() => {

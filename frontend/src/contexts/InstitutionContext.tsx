@@ -341,7 +341,8 @@ export const useInstitutionAuth = (slug?: string) => {
       if (!slug || isChecking) return;
 
       // Se já temos a instituição carregada e verificada para este slug, considerar OK
-      if (institution?.slug === slug && authChecked) {
+      if (institution?.slug === slug && authChecked && institutionLoaded) {
+        console.log('✅ InstitutionContext: Already loaded and verified for this slug, skipping...');
         return;
       }
 

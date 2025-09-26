@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { InstitutionProvider } from './contexts/InstitutionContext';
 import ModernLayout from './components/layout/ModernLayout';
-import { InstitutionLayout } from './components/layout/InstitutionLayout';
 import InstitutionModernLayout from './components/layout/InstitutionModernLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import PublicRoute from './components/layout/PublicRoute';

@@ -5,7 +5,6 @@ import { useInstitution } from '../../contexts/InstitutionContext';
 import { Icon } from '../ui/Icon';
 import { InstitutionLoadingSpinner } from '../ui/InstitutionLoadingSpinner';
 import { cn } from '../../utils/cn';
-import { Button } from '../ui/Button';
 
 interface InstitutionModernLayoutProps {
   children?: React.ReactNode;
@@ -21,7 +20,6 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
     userAccess,
     loading,
     error,
-    isInstitutionUser,
     canAccessAdminPanel,
     authenticationComplete,
     institutionLoaded
@@ -118,7 +116,7 @@ const InstitutionModernLayout: React.FC<InstitutionModernLayoutProps> = ({ child
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <InstitutionLoadingSpinner size="lg" institution={institution} />
+          <InstitutionLoadingSpinner size="lg" institution={institution} slug={slug} />
           <p className="mt-4 text-gray-600">Carregando portal...</p>
         </div>
       </div>

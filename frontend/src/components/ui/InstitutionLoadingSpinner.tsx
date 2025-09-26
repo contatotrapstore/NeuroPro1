@@ -2,6 +2,8 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 import Logo from '../../assets/Logo.png';
+import { getInstitutionStaticData } from '../../config/institutions';
+import { useParams } from 'react-router-dom';
 
 const spinnerVariants = cva(
   "animate-spin flex items-center justify-center",
@@ -30,16 +32,24 @@ export interface InstitutionLoadingSpinnerProps
     primary_color: string;
   };
   color?: string;
+  slug?: string;
 }
 
 export const InstitutionLoadingSpinner = React.forwardRef<
   HTMLDivElement,
   InstitutionLoadingSpinnerProps
->(({ className, size, text, institution, color, ...props }, ref) => {
+>(({ className, size, text, institution, color, slug, ...props }, ref) => {
+  const { slug: routeSlug } = useParams<{ slug: string }>();
+  const currentSlug = slug || routeSlug;
+
+  // Tentar obter dados estáticos se a instituição não foi carregada
+  const staticData = currentSlug ? getInstitutionStaticData(currentSlug) : null;
+  const fallbackInstitution = institution || staticData;
+
   // Determinar qual logo usar
-  const logoUrl = institution?.logo_url || Logo;
-  const spinnerColor = color || institution?.primary_color || '#c39c49';
-  const institutionName = institution?.name || 'NeuroIA Lab';
+  const logoUrl = fallbackInstitution?.logo_url || Logo;
+  const spinnerColor = color || fallbackInstitution?.primary_color || '#c39c49';
+  const institutionName = fallbackInstitution?.name || 'NeuroIA Lab';
 
   if (text) {
     return (
@@ -49,7 +59,7 @@ export const InstitutionLoadingSpinner = React.forwardRef<
         {...props}
       >
         <div className={spinnerVariants({ size })}>
-          {institution?.logo_url ? (
+          {fallbackInstitution?.logo_url ? (
             <img
               src={logoUrl}
               alt={`${institutionName} - Carregando...`}
@@ -77,7 +87,7 @@ export const InstitutionLoadingSpinner = React.forwardRef<
       className={cn(spinnerVariants({ size }), className)}
       {...props}
     >
-      {institution?.logo_url ? (
+      {fallbackInstitution?.logo_url ? (
         <img
           src={logoUrl}
           alt={`${institutionName} - Carregando...`}
@@ -102,7 +112,8 @@ InstitutionLoadingSpinner.displayName = "InstitutionLoadingSpinner";
 // Loading States for institutional components
 export const InstitutionPageLoader = ({
   message = "Carregando...",
-  institution
+  institution,
+  slug
 }: {
   message?: string;
   institution?: {
@@ -110,7 +121,14 @@ export const InstitutionPageLoader = ({
     logo_url?: string;
     primary_color: string;
   };
-}) => (
+  slug?: string;
+}) => {
+  const { slug: routeSlug } = useParams<{ slug: string }>();
+  const currentSlug = slug || routeSlug;
+  const staticData = currentSlug ? getInstitutionStaticData(currentSlug) : null;
+  const fallbackInstitution = institution || staticData;
+
+  return (
   <div className="fixed inset-0 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center z-50">
     <div className="text-center px-8 py-12">
       {/* Logo com animação suave */}
@@ -119,22 +137,22 @@ export const InstitutionPageLoader = ({
           className="w-full h-full rounded-2xl shadow-lg flex items-center justify-center p-3 animate-spin"
           style={{
             animationDuration: '3s',
-            backgroundColor: institution?.primary_color ? institution.primary_color + '15' : '#f3f4f6'
+            backgroundColor: fallbackInstitution?.primary_color ? fallbackInstitution.primary_color + '15' : '#f3f4f6'
           }}
         >
-          {institution?.logo_url ? (
+          {fallbackInstitution?.logo_url ? (
             <img
-              src={institution.logo_url}
-              alt={`${institution.name} - Carregando...`}
+              src={fallbackInstitution.logo_url}
+              alt={`${fallbackInstitution.name} - Carregando...`}
               className="w-full h-full object-contain"
             />
-          ) : institution ? (
+          ) : fallbackInstitution ? (
             <div
               className="w-full h-full rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: institution.primary_color }}
+              style={{ backgroundColor: fallbackInstitution.primary_color }}
             >
               <span className="text-white font-bold text-xl">
-                {institution.name.charAt(0)}
+                {fallbackInstitution.name.charAt(0)}
               </span>
             </div>
           ) : (
@@ -145,7 +163,7 @@ export const InstitutionPageLoader = ({
 
       {/* Título elegante */}
       <h2 className="text-2xl font-bold text-gray-900 mb-3">
-        {institution?.name || 'NeuroIA Lab'}
+        {fallbackInstitution?.name || 'NeuroIA Lab'}
       </h2>
 
       {/* Mensagem de carregamento */}
@@ -158,15 +176,16 @@ export const InstitutionPageLoader = ({
         <div
           className="h-full rounded-full animate-loading-bar"
           style={{
-            background: institution?.primary_color
-              ? `linear-gradient(to right, ${institution.primary_color}, ${institution.primary_color}CC)`
+            background: fallbackInstitution?.primary_color
+              ? `linear-gradient(to right, ${fallbackInstitution.primary_color}, ${fallbackInstitution.primary_color}CC)`
               : 'linear-gradient(to right, #c39c49, #c39c49CC)'
           }}
         ></div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export const InstitutionCardLoader = ({
   className,
