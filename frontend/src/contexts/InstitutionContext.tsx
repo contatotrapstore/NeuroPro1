@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import type { User } from '@supabase/supabase-js';
+import { getInstitutionStaticData } from '../config/institutions';
 
 export interface Institution {
   id: string;
@@ -89,6 +90,47 @@ interface InstitutionProviderProps {
   children: React.ReactNode;
 }
 
+// Cache helpers
+const CACHE_KEY = 'neurolab_institution_cache';
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas em ms
+
+interface CachedInstitution {
+  data: Institution;
+  timestamp: number;
+}
+
+const getCachedInstitution = (slug: string): Institution | null => {
+  try {
+    const cached = localStorage.getItem(`${CACHE_KEY}_${slug}`);
+    if (!cached) return null;
+
+    const parsedCache: CachedInstitution = JSON.parse(cached);
+    const isExpired = Date.now() - parsedCache.timestamp > CACHE_DURATION;
+
+    if (isExpired) {
+      localStorage.removeItem(`${CACHE_KEY}_${slug}`);
+      return null;
+    }
+
+    return parsedCache.data;
+  } catch (error) {
+    console.warn('Error reading institution cache:', error);
+    return null;
+  }
+};
+
+const setCachedInstitution = (slug: string, institution: Institution) => {
+  try {
+    const cache: CachedInstitution = {
+      data: institution,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(`${CACHE_KEY}_${slug}`, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('Error saving institution cache:', error);
+  }
+};
+
 export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ children }) => {
   const [institution, setInstitution] = useState<Institution | null>(null);
   const [userAccess, setUserAccess] = useState<UserAccess | null>(null);
@@ -100,7 +142,7 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   const [isLoadingInstitution, setIsLoadingInstitution] = useState(false);
   const [isVerifyingAccess, setIsVerifyingAccess] = useState(false);
 
-  // Função para carregar dados básicos da instituição (público) - Memorizada para evitar loops
+  // Função para carregar dados básicos da instituição (público) - Otimizada com cache e dados estáticos
   const loadInstitution = useCallback(async (slug: string): Promise<boolean> => {
     // Se já está carregando ou já carregou esta instituição, retornar
     if (isLoadingInstitution || (institution?.slug === slug)) {
@@ -109,13 +151,41 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     }
 
     setIsLoadingInstitution(true);
-    setLoading(true);
     setError(null);
 
     console.log(`🔄 InstitutionContext: Loading institution ${slug}...`);
 
+    // 1. Primeiro, tentar carregar dados estáticos para exibição imediata
+    const staticData = getInstitutionStaticData(slug);
+    if (staticData) {
+      console.log('📦 Using static data for immediate display:', staticData.name);
+      const staticInstitution: Institution = {
+        id: `static_${staticData.slug}`,
+        name: staticData.name,
+        slug: staticData.slug,
+        logo_url: staticData.logo_url,
+        primary_color: staticData.primary_color,
+        secondary_color: staticData.secondary_color,
+        settings: staticData.settings || {}
+      };
+      setInstitution(staticInstitution);
+      setInstitutionLoaded(true);
+      setLoading(false);
+    }
+
+    // 2. Tentar carregar do cache
+    const cached = getCachedInstitution(slug);
+    if (cached) {
+      console.log('📱 Using cached institution data:', cached.name);
+      setInstitution(cached);
+      setInstitutionLoaded(true);
+      setLoading(false);
+      setIsLoadingInstitution(false);
+      return true;
+    }
+
+    // 3. Carregar do servidor em background (não bloqueia a UI)
     try {
-      // Use the simplified endpoint with query parameter
       const response = await fetch(`/api/institution-auth?slug=${slug}`, {
         method: 'GET',
         headers: {
@@ -129,22 +199,35 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       console.log('📊 Institution load result:', result);
 
       if (result.success && result.data.institution) {
-        console.log('✅ Institution loaded successfully:', {
+        console.log('✅ Institution loaded from server:', {
           name: result.data.institution.name,
           logo_url: result.data.institution.logo_url,
           primary_color: result.data.institution.primary_color
         });
-        setInstitution(result.data.institution);
+
+        const serverInstitution = result.data.institution;
+        setInstitution(serverInstitution);
+        setCachedInstitution(slug, serverInstitution);
         setInstitutionLoaded(true);
         return true;
       } else {
         console.error('❌ Failed to load institution:', result.error);
+        // Se falhou mas já temos dados estáticos, considerar sucesso
+        if (staticData) {
+          console.log('📦 Falling back to static data after server error');
+          return true;
+        }
         setError(result.error || 'Instituição não encontrada');
         setInstitutionLoaded(false);
         return false;
       }
     } catch (error) {
       console.error('💥 Error loading institution:', error);
+      // Se falhou mas já temos dados estáticos, considerar sucesso
+      if (staticData) {
+        console.log('📦 Falling back to static data after network error');
+        return true;
+      }
       setError('Erro ao carregar informações da instituição');
       setInstitutionLoaded(false);
       return false;

@@ -6,6 +6,7 @@ import { InstitutionLoadingSpinner } from '../../components/ui/InstitutionLoadin
 import { cn } from '../../utils/cn';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
+import { getInstitutionStaticData } from '../../config/institutions';
 
 export const InstitutionLogin: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -19,7 +20,8 @@ export const InstitutionLogin: React.FC = () => {
     isInstitutionUser,
     authenticationComplete,
     institutionLoaded,
-    setAuthenticationComplete
+    setAuthenticationComplete,
+    loadInstitution
   } = useInstitution();
 
   const [formData, setFormData] = useState({
@@ -27,46 +29,27 @@ export const InstitutionLogin: React.FC = () => {
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasCompletedCheck, setHasCompletedCheck] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [initialLoadStarted, setInitialLoadStarted] = useState(false);
 
-  // Verificar estado inicial apenas uma vez quando o componente carrega
+  // Carregar instituição automaticamente quando componente monta
   useEffect(() => {
-    if (slug && !hasCompletedCheck) {
-      console.log(`🔄 InstitutionLogin: Initial check for slug ${slug}`);
-      setHasCompletedCheck(true);
-
-      // Timeout de segurança para prevenir loops infinitos
-      const timeout = setTimeout(() => {
-        console.warn('⚠️ InstitutionLogin: Loading timeout reached, forcing login form display');
-        setHasTimedOut(true);
-        setHasCompletedCheck(true);
-      }, 10000); // 10 segundos
-
-      setLoadingTimeout(timeout);
+    if (slug && !initialLoadStarted) {
+      console.log(`🔄 InstitutionLogin: Starting institution load for ${slug}`);
+      setInitialLoadStarted(true);
+      loadInstitution(slug);
     }
+  }, [slug, loadInstitution, initialLoadStarted]);
 
-    return () => {
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout);
-      }
-    };
-  }, [slug, hasCompletedCheck, user, authenticationComplete, loadingTimeout]);
-
-  // Redirecionar se já logado e tem acesso completo (prevenção de loop)
+  // Redirecionar se já logado e tem acesso completo
   useEffect(() => {
-    // Só redirecionar se temos tudo necessário e ainda não completamos a verificação
     if (
       user &&
       institution &&
       institutionLoaded &&
       authenticationComplete &&
-      isInstitutionUser &&
-      !hasCompletedCheck
+      isInstitutionUser
     ) {
       console.log('✅ User authenticated and has access, redirecting to dashboard...');
-      setHasCompletedCheck(true);
       navigate(`/i/${slug}`, { replace: true });
     }
   }, [
@@ -75,7 +58,6 @@ export const InstitutionLogin: React.FC = () => {
     institutionLoaded,
     authenticationComplete,
     isInstitutionUser,
-    hasCompletedCheck,
     navigate,
     slug
   ]);
@@ -132,24 +114,28 @@ export const InstitutionLogin: React.FC = () => {
     }
   };
 
-  if ((loading || authLoading) && !hasTimedOut) {
-    console.log('🔄 InstitutionLogin: Showing loading spinner', {
-      loading,
-      authLoading,
-      hasTimedOut,
-      hasInstitution: !!institution
-    });
+  // Mostrar loading spinner apenas durante carregamento inicial da auth
+  if (authLoading && !user) {
+    console.log('🔄 InstitutionLogin: Loading auth state...');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <InstitutionLoadingSpinner size="lg" institution={institution} slug={slug} />
-          <p className="mt-4 text-gray-600">Carregando portal da ABPSI...</p>
+          <p className="mt-4 text-gray-600">Carregando...</p>
         </div>
       </div>
     );
   }
 
-  if (error && !institution) {
+  // Se não há dados da instituição, tentar carregar dados estáticos
+  if (!institution) {
+    const staticData = getInstitutionStaticData(slug || '');
+    if (staticData) {
+      console.log('📦 InstitutionLogin: Using static data for login form');
+      return renderLoginForm(staticData);
+    }
+
+    // Se não há dados estáticos, mostrar erro
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full">
@@ -161,7 +147,7 @@ export const InstitutionLogin: React.FC = () => {
               Instituição não encontrada
             </h1>
             <p className="text-gray-600 mb-8">
-              {error}
+              {error || 'Não foi possível carregar os dados da instituição.'}
             </p>
             <a
               href="/"
@@ -170,50 +156,6 @@ export const InstitutionLogin: React.FC = () => {
               Voltar ao Início
             </a>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!institution && !hasTimedOut) {
-    console.log('🔄 InstitutionLogin: No institution data, showing spinner');
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <InstitutionLoadingSpinner size="lg" institution={institution} slug={slug} />
-          <p className="mt-4 text-gray-600">Carregando ABPSI...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Se houve timeout e ainda não há institution, usar dados estáticos
-  if (!institution && hasTimedOut) {
-    console.log('⚠️ InstitutionLogin: Timeout reached, using static fallback for ABPSI');
-    const staticData = {
-      name: 'ABPSI',
-      slug: 'abpsi',
-      logo_url: '/assets/institutions/abpsi/logo.png',
-      primary_color: '#c39c49',
-      secondary_color: '#d4af6a',
-      settings: {
-        theme: {
-          gradient: 'linear-gradient(135deg, #c39c4915 0%, #c39c4905 100%)'
-        }
-      }
-    };
-    // Usar dados estáticos como se fosse a institution carregada
-    return renderLoginForm(staticData);
-  }
-
-  // Se chegou aqui, deveria ter institution, mas por segurança verificamos
-  if (!institution) {
-    console.error('❌ InstitutionLogin: institution is null, showing fallback');
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <InstitutionLoadingSpinner size="lg" slug={slug} />
-          <p className="mt-4 text-gray-600">Carregando ABPSI...</p>
         </div>
       </div>
     );
