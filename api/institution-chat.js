@@ -44,18 +44,7 @@ module.exports = async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-    const openaiApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
 
-    // Log environment variables for debugging
-    console.log('🔍 Environment Variables Check:', {
-      SUPABASE_URL: supabaseUrl ? '✅ SET' : '❌ MISSING',
-      SUPABASE_ANON_KEY: supabaseAnonKey ? '✅ SET' : '❌ MISSING',
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✅ SET' : '❌ MISSING',
-      VITE_OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY ? '✅ SET (fallback)' : '❌ MISSING',
-      openaiApiKey: openaiApiKey ? '✅ RESOLVED' : '❌ NOT RESOLVED',
-      keySource: process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' :
-                 process.env.VITE_OPENAI_API_KEY ? 'VITE_OPENAI_API_KEY' : 'NONE'
-    });
 
     // Validate only essential Supabase variables early
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -224,7 +213,7 @@ module.exports = async function handler(req, res) {
     });
 
     // Validate OpenAI configuration before using
-    if (!openaiApiKey) {
+    if (!process.env.OPENAI_API_KEY) {
       console.error('❌ OpenAI API key not configured - cannot provide AI responses');
       return res.status(500).json({
         success: false,
@@ -235,7 +224,7 @@ module.exports = async function handler(req, res) {
 
     // Initialize OpenAI client (lazy loading)
     console.log('🤖 Initializing OpenAI client...');
-    const openai = new OpenAI({ apiKey: openaiApiKey });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // Handle OpenAI thread
     let currentThreadId = thread_id;
