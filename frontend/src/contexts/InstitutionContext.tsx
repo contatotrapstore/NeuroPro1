@@ -320,13 +320,8 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
         setAuthenticationComplete(true);
         setInstitutionLoaded(true);
 
-        // Verificar assinatura automaticamente após verificação de acesso bem-sucedida
-        console.log('🔄 Auto-checking subscription after access verification...');
-        setTimeout(() => {
-          checkSubscription(slug).catch(error => {
-            console.error('❌ Auto subscription check failed:', error);
-          });
-        }, 100); // Small delay to ensure state is updated
+        // Note: subscription check is now handled by useEffect that reacts to userAccess changes
+        console.log('✅ Access verification complete - userAccess will trigger subscription check');
 
         return true;
       } else {
@@ -554,6 +549,59 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       };
     }
   }, []);
+
+  // useEffect para bypass automático de admins/subadmins - resolve problema de closure
+  useEffect(() => {
+    console.log('🔄 useEffect: userAccess changed:', {
+      hasUserAccess: !!userAccess,
+      isActive: userAccess?.is_active,
+      role: userAccess?.role,
+      isAdmin: userAccess?.is_admin
+    });
+
+    if (!userAccess) {
+      console.log('❌ No userAccess - resetting subscription state');
+      setHasActiveSubscription(false);
+      setSubscriptionError(null);
+      setIsCheckingSubscription(false);
+      return;
+    }
+
+    if (!userAccess.is_active) {
+      console.log('❌ User not approved by admin - no subscription check needed');
+      setHasActiveSubscription(false);
+      setSubscriptionError(null);
+      setIsCheckingSubscription(false);
+      return;
+    }
+
+    // Bypass automático para admins/subadmins
+    if (userAccess.role === 'subadmin' || userAccess.is_admin) {
+      console.log('✅ ADMIN BYPASS ACTIVATED - User is admin/subadmin', {
+        role: userAccess.role,
+        is_admin: userAccess.is_admin,
+        hasActiveSubscription: 'will be set to TRUE'
+      });
+      setHasActiveSubscription(true);
+      setSubscriptionError(null);
+      setIsCheckingSubscription(false);
+      return;
+    }
+
+    // Para usuários normais, verificar assinatura
+    console.log('🔄 Normal user - will check subscription', {
+      role: userAccess.role,
+      is_admin: userAccess.is_admin
+    });
+
+    // Chamar checkSubscription para usuários normais
+    // Note: não precisamos passar slug porque já está em context
+    if (institution?.slug) {
+      checkSubscription(institution.slug).catch(error => {
+        console.error('❌ Subscription check failed for normal user:', error);
+      });
+    }
+  }, [userAccess, institution?.slug, checkSubscription]); // Dependências: userAccess e slug
 
   // Computed properties
   const isInstitutionUser = !!userAccess;
