@@ -247,25 +247,48 @@ module.exports = async function handler(req, res) {
       is_simulator: targetAssistant.is_simulator
     });
 
-    // Validate OpenAI configuration before using
-    console.log('🔑 OpenAI API Key validation:', {
-      has_key: !!process.env.OPENAI_API_KEY,
-      key_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
-      key_starts_with: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'N/A'
+    // DETAILED Environment Variables Debug
+    console.log('🔑 DETAILED ENV DEBUG:', {
+      has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+      has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
+      OPENAI_API_KEY_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+      OPENAI_API_KEY_starts: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'N/A',
+      VITE_OPENAI_API_KEY_length: process.env.VITE_OPENAI_API_KEY ? process.env.VITE_OPENAI_API_KEY.length : 0,
+      VITE_OPENAI_API_KEY_starts: process.env.VITE_OPENAI_API_KEY ? process.env.VITE_OPENAI_API_KEY.substring(0, 10) + '...' : 'N/A',
+      env_keys_containing_openai: Object.keys(process.env).filter(key => key.toLowerCase().includes('openai')),
+      all_env_keys_count: Object.keys(process.env).length,
+      vercel_env: process.env.VERCEL_ENV,
+      node_env: process.env.NODE_ENV
     });
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('❌ OpenAI API key not configured - cannot provide AI responses');
+    // Try multiple OpenAI key variations
+    const openaiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
+
+    console.log('🔑 Final OpenAI Key Selection:', {
+      selected_key_exists: !!openaiKey,
+      selected_key_length: openaiKey ? openaiKey.length : 0,
+      selected_key_starts: openaiKey ? openaiKey.substring(0, 10) + '...' : 'N/A',
+      is_placeholder: openaiKey ? openaiKey.includes('placeholder') : false
+    });
+
+    if (!openaiKey || openaiKey.includes('placeholder')) {
+      console.error('❌ OpenAI API key not configured properly - cannot provide AI responses');
+      console.error('Environment debugging info logged above ☝️');
       return res.status(500).json({
         success: false,
         error: 'Serviço de IA temporariamente indisponível. Entre em contato com o suporte.',
-        error_type: 'OPENAI_CONFIG_MISSING'
+        error_type: 'OPENAI_CONFIG_MISSING',
+        debug: {
+          has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+          has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
+          env_keys_containing_openai: Object.keys(process.env).filter(key => key.toLowerCase().includes('openai'))
+        }
       });
     }
 
     // Initialize OpenAI client (lazy loading)
     console.log('🤖 Initializing OpenAI client...');
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: openaiKey });
 
     // Handle OpenAI thread
     let currentThreadId = thread_id;
