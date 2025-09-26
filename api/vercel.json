@@ -62,6 +62,10 @@
     {
       "src": "/webhooks/asaas",
       "dest": "/webhook-asaas.js"
+    },
+    {
+      "src": "/institution-chat",
+      "dest": "/institution-chat.js"
     }
   ]
 }
