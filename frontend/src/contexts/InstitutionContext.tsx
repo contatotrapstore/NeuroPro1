@@ -129,7 +129,11 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       console.log('📊 Institution load result:', result);
 
       if (result.success && result.data.institution) {
-        console.log('✅ Institution loaded successfully:', result.data.institution.name);
+        console.log('✅ Institution loaded successfully:', {
+          name: result.data.institution.name,
+          logo_url: result.data.institution.logo_url,
+          primary_color: result.data.institution.primary_color
+        });
         setInstitution(result.data.institution);
         setInstitutionLoaded(true);
         return true;

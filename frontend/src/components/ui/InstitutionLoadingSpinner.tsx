@@ -61,6 +61,16 @@ export const InstitutionLoadingSpinner = React.forwardRef<
   // Se há erro na imagem ou não há URL válida, usar fallback baseado em texto
   const shouldUseTextFallback = imageError || !fallbackInstitution?.logo_url || fallbackInstitution?.logo_url === '';
 
+  // Log para debug
+  console.log('🖼️ InstitutionLoadingSpinner:', {
+    currentSlug,
+    hasStaticData: !!staticData,
+    hasFallbackInstitution: !!fallbackInstitution,
+    logoUrl: fallbackInstitution?.logo_url,
+    shouldUseTextFallback,
+    imageError
+  });
+
   if (text) {
     return (
       <div

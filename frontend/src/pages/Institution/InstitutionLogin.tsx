@@ -133,11 +133,17 @@ export const InstitutionLogin: React.FC = () => {
   };
 
   if ((loading || authLoading) && !hasTimedOut) {
+    console.log('🔄 InstitutionLogin: Showing loading spinner', {
+      loading,
+      authLoading,
+      hasTimedOut,
+      hasInstitution: !!institution
+    });
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <InstitutionLoadingSpinner size="lg" institution={institution} />
-          <p className="mt-4 text-gray-600">Carregando...</p>
+          <InstitutionLoadingSpinner size="lg" institution={institution} slug={slug} />
+          <p className="mt-4 text-gray-600">Carregando portal da ABPSI...</p>
         </div>
       </div>
     );
@@ -169,30 +175,57 @@ export const InstitutionLogin: React.FC = () => {
     );
   }
 
-  if (!institution) {
+  if (!institution && !hasTimedOut) {
+    console.log('🔄 InstitutionLogin: No institution data, showing spinner');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <InstitutionLoadingSpinner size="lg" institution={institution} />
+        <div className="text-center">
+          <InstitutionLoadingSpinner size="lg" institution={institution} slug={slug} />
+          <p className="mt-4 text-gray-600">Carregando ABPSI...</p>
+        </div>
       </div>
     );
   }
 
-  return (
+  // Se houve timeout e ainda não há institution, usar dados estáticos
+  if (!institution && hasTimedOut) {
+    console.log('⚠️ InstitutionLogin: Timeout reached, using static fallback for ABPSI');
+    const staticData = {
+      name: 'ABPSI',
+      slug: 'abpsi',
+      logo_url: '/assets/institutions/abpsi/logo.png',
+      primary_color: '#c39c49',
+      secondary_color: '#d4af6a',
+      settings: {
+        theme: {
+          gradient: 'linear-gradient(135deg, #c39c4915 0%, #c39c4905 100%)'
+        }
+      }
+    };
+    // Usar dados estáticos como se fosse a institution carregada
+    return renderLoginForm(staticData);
+  }
+
+  return renderLoginForm(institution);
+
+  // Função para renderizar o formulário de login
+  function renderLoginForm(institutionData: any) {
+    return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
       style={{
-        background: institution.settings.theme?.gradient || `linear-gradient(135deg, ${institution.primary_color}15 0%, ${institution.primary_color}05 100%)`
+        background: institutionData.settings?.theme?.gradient || `linear-gradient(135deg, ${institutionData.primary_color}15 0%, ${institutionData.primary_color}05 100%)`
       }}
     >
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           {/* Header com Logo */}
           <div className="text-center mb-8">
-            {institution.logo_url ? (
+            {institutionData.logo_url ? (
               <>
                 <img
-                  src={institution.logo_url}
-                  alt={`${institution.name} Logo`}
+                  src={institutionData.logo_url}
+                  alt={`${institutionData.name} Logo`}
                   className="h-24 w-auto mx-auto mb-6"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -204,25 +237,25 @@ export const InstitutionLogin: React.FC = () => {
               <>
                 <div
                   className="h-16 w-16 mx-auto mb-4 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: institution.primary_color }}
+                  style={{ backgroundColor: institutionData.primary_color }}
                 >
                   <span className="text-white font-bold text-2xl">
-                    {institution.name.charAt(0)}
+                    {institutionData.name.charAt(0)}
                   </span>
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  {institution.name}
+                  {institutionData.name}
                 </h1>
               </>
             )}
 
             <p className="text-gray-600">
-              {institution.settings.welcome_message || 'Entre com suas credenciais'}
+              {institutionData.settings?.welcome_message || 'Entre com suas credenciais'}
             </p>
 
-            {institution.settings.subtitle && (
+            {institutionData.settings?.subtitle && (
               <p className="text-sm text-gray-500 mt-1">
-                {institution.settings.subtitle}
+                {institutionData.settings.subtitle}
               </p>
             )}
           </div>
@@ -245,7 +278,7 @@ export const InstitutionLogin: React.FC = () => {
                   "focus:border-transparent"
                 )}
                 style={{
-                  '--tw-ring-color': institution.primary_color
+                  '--tw-ring-color': institutionData.primary_color
                 } as React.CSSProperties}
                 placeholder="seu.email@exemplo.com"
                 disabled={isSubmitting}
@@ -268,7 +301,7 @@ export const InstitutionLogin: React.FC = () => {
                   "focus:border-transparent"
                 )}
                 style={{
-                  '--tw-ring-color': institution.primary_color
+                  '--tw-ring-color': institutionData.primary_color
                 } as React.CSSProperties}
                 placeholder="••••••••"
                 disabled={isSubmitting}
@@ -284,8 +317,8 @@ export const InstitutionLogin: React.FC = () => {
                 "disabled:hover:translate-y-0 disabled:hover:shadow-none"
               )}
               style={{
-                backgroundColor: institution.primary_color,
-                boxShadow: `0 4px 15px ${institution.primary_color}30`
+                backgroundColor: institutionData.primary_color,
+                boxShadow: `0 4px 15px ${institutionData.primary_color}30`
               }}
             >
               {isSubmitting ? (
@@ -304,7 +337,7 @@ export const InstitutionLogin: React.FC = () => {
             <a
               href="/auth/forgot-password"
               className="text-sm hover:underline transition-colors"
-              style={{ color: institution.primary_color }}
+              style={{ color: institutionData.primary_color }}
             >
               Esqueceu sua senha?
             </a>
@@ -314,7 +347,7 @@ export const InstitutionLogin: React.FC = () => {
               <a
                 href={institution.settings.contact?.email ? `mailto:${institution.settings.contact.email}` : '#'}
                 className="hover:underline transition-colors"
-                style={{ color: institution.primary_color }}
+                style={{ color: institutionData.primary_color }}
               >
                 Entre em contato
               </a>
@@ -330,7 +363,7 @@ export const InstitutionLogin: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline"
-                style={{ color: institution.primary_color }}
+                style={{ color: institutionData.primary_color }}
               >
                 NeuroIA Lab
               </a>
@@ -339,5 +372,6 @@ export const InstitutionLogin: React.FC = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  }
 };

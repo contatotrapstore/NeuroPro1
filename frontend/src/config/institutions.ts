@@ -12,7 +12,7 @@ export const INSTITUTION_STATIC_DATA: Record<string, InstitutionStaticData> = {
   abpsi: {
     slug: 'abpsi',
     name: 'ABPSI',
-    logo_url: '', // URL inválida removida - usar fallback baseado em texto
+    logo_url: '/assets/institutions/abpsi/logo.png', // Logo local da ABPSI
     primary_color: '#c39c49',
     secondary_color: '#d4af6a',
     website_url: 'https://abpsicanalise.org',
