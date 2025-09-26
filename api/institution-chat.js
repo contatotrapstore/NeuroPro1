@@ -47,10 +47,21 @@ module.exports = async function handler(req, res) {
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey || !openaiApiKey) {
-      console.error('❌ Missing environment variables');
+      const missing = [];
+      if (!supabaseUrl) missing.push('SUPABASE_URL');
+      if (!supabaseAnonKey) missing.push('SUPABASE_ANON_KEY');
+      if (!openaiApiKey) missing.push('OPENAI_API_KEY');
+
+      console.error('❌ Missing environment variables:', missing.join(', '));
+      console.error('🔍 Environment check:', {
+        SUPABASE_URL: supabaseUrl ? 'SET' : 'MISSING',
+        SUPABASE_ANON_KEY: supabaseAnonKey ? 'SET' : 'MISSING',
+        OPENAI_API_KEY: openaiApiKey ? 'SET' : 'MISSING'
+      });
+
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'Configuração do servidor incompleta. Variáveis faltando: ' + missing.join(', ')
       });
     }
 
@@ -116,13 +127,31 @@ module.exports = async function handler(req, res) {
     });
 
     // Verify user has access to this institution and is active
+    console.log('🔍 Verifying institution access for:', {
+      user_id: user.id,
+      institution_slug,
+      user_email: user.email
+    });
+
     const { data: accessData, error: accessError } = await userClient
       .rpc('verify_institution_access', {
         p_institution_slug: institution_slug
       });
 
+    console.log('🔍 Institution access verification result:', {
+      success: accessData?.success,
+      has_data: !!accessData?.data,
+      error: accessError,
+      raw_response: JSON.stringify(accessData, null, 2)
+    });
+
     if (accessError || !accessData?.success) {
-      console.error('❌ Institution access verification failed:', accessError);
+      console.error('❌ Institution access verification failed:', {
+        error: accessError,
+        data: accessData,
+        institution_slug,
+        user_id: user.id
+      });
       return res.status(403).json({
         success: false,
         error: 'Acesso negado à instituição'
@@ -155,10 +184,27 @@ module.exports = async function handler(req, res) {
 
     // Find the assistant in available assistants for this institution
     const availableAssistants = accessData.data?.available_assistants || [];
+
+    console.log('🔍 Assistant search details:', {
+      requested_assistant_id: assistant_id,
+      total_available_assistants: availableAssistants.length,
+      available_assistants: availableAssistants.map(a => ({
+        id: a.id,
+        name: a.name,
+        openai_assistant_id: a.openai_assistant_id,
+        is_simulator: a.is_simulator
+      }))
+    });
+
     const targetAssistant = availableAssistants.find(a => a.openai_assistant_id === assistant_id);
 
     if (!targetAssistant) {
-      console.error('❌ Assistant not available for this institution:', assistant_id);
+      console.error('❌ Assistant not available for this institution:', {
+        requested_assistant_id: assistant_id,
+        institution_slug,
+        available_assistant_ids: availableAssistants.map(a => a.openai_assistant_id),
+        available_assistant_names: availableAssistants.map(a => a.name)
+      });
       return res.status(404).json({
         success: false,
         error: 'Assistente não disponível para esta instituição'

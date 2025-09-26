@@ -412,11 +412,23 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     setSubscriptionError(null);
 
     try {
+      // ✅ Resolve Promise before using in template string
+      const supabaseModule = await import('../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.error('❌ No access token available for subscription check');
+        setSubscriptionError('Token de acesso não disponível');
+        setHasActiveSubscription(false);
+        return false;
+      }
+
       const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           function_name: 'get_institution_subscription_status',
@@ -470,16 +482,39 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     paymentMethod: 'pix' | 'credit_card' = 'pix'
   ): Promise<{ success: boolean; subscription_id?: string; error?: string }> => {
     try {
+      // ✅ Resolve Promises before using in template string and params
+      const supabaseModule = await import('../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      const user = await supabaseModule.supabase.auth.getUser();
+      const userId = user.data.user?.id;
+
+      if (!token) {
+        console.error('❌ No access token available for subscription creation');
+        return {
+          success: false,
+          error: 'Token de acesso não disponível'
+        };
+      }
+
+      if (!userId) {
+        console.error('❌ No user ID available for subscription creation');
+        return {
+          success: false,
+          error: 'ID do usuário não disponível'
+        };
+      }
+
       const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           function_name: 'create_institution_subscription',
           params: [
-            (await import('../services/supabase')).supabase.auth.getUser().then(r => r.data.user?.id),
+            userId,
             slug,
             planType,
             paymentMethod,
@@ -516,11 +551,24 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
     paymentId: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
+      // ✅ Resolve Promise before using in template string
+      const supabaseModule = await import('../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.error('❌ No access token available for subscription activation');
+        return {
+          success: false,
+          error: 'Token de acesso não disponível'
+        };
+      }
+
       const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           function_name: 'activate_institution_subscription',

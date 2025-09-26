@@ -35,11 +35,22 @@ export const InstitutionUsersManagement: React.FC = () => {
 
     setLoading(true);
     try {
+      // ✅ Resolve Promise before using in template string
+      const supabaseModule = await import('../../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.error('❌ No access token available for fetching users');
+        toast.error('Token de acesso não disponível');
+        return;
+      }
+
       const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('../../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           function_name: 'get_institution_users',
@@ -68,11 +79,22 @@ export const InstitutionUsersManagement: React.FC = () => {
 
     setActionLoading(userId);
     try {
+      // ✅ Resolve Promise before using in template string
+      const supabaseModule = await import('../../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.error('❌ No access token available for approving user');
+        toast.error('Token de acesso não disponível');
+        return;
+      }
+
       const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('../../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           function_name: 'approve_institution_user',
@@ -135,11 +157,22 @@ export const InstitutionUsersManagement: React.FC = () => {
 
     setActionLoading(userId);
     try {
+      // ✅ Resolve Promise before using in template string
+      const supabaseModule = await import('../../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.error('❌ No access token available for rejecting user');
+        toast.error('Token de acesso não disponível');
+        return;
+      }
+
       const response = await fetch('/api/institution-rpc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('../../services/supabase')).supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           function_name: 'reject_institution_user',
