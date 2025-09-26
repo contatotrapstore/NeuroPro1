@@ -131,6 +131,26 @@ const setCachedInstitution = (slug: string, institution: Institution) => {
   }
 };
 
+// Public assistants available for all users (for subscription)
+const getPublicAssistants = (slug: string): InstitutionAssistant[] => {
+  if (slug === 'abpsi') {
+    return [
+      {
+        id: 'asst_9vDTodTAQIJV1mu2xPzXpBs8',
+        name: 'Simulador de Psicanálise',
+        description: 'Simulador avançado para prática clínica em psicanálise. Simule casos de Neurose Obsessiva, Histeria e Borderline com feedback especializado.',
+        icon: 'play',
+        color_theme: '#c39c49',
+        openai_assistant_id: 'asst_9vDTodTAQIJV1mu2xPzXpBs8',
+        is_simulator: true,
+        is_primary: false,
+        display_order: 1
+      }
+    ];
+  }
+  return [];
+};
+
 export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ children }) => {
   const [institution, setInstitution] = useState<Institution | null>(null);
   const [userAccess, setUserAccess] = useState<UserAccess | null>(null);
@@ -171,6 +191,13 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       setInstitution(staticInstitution);
       setInstitutionLoaded(true);
       setLoading(false);
+
+      // Load public assistants for all users
+      const publicAssistants = getPublicAssistants(slug);
+      if (publicAssistants.length > 0) {
+        console.log('📦 Loading public assistants:', publicAssistants.map(a => a.name));
+        setAvailableAssistants(publicAssistants);
+      }
     }
 
     // 2. Tentar carregar do cache
@@ -181,6 +208,14 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       setInstitutionLoaded(true);
       setLoading(false);
       setIsLoadingInstitution(false);
+
+      // Load public assistants for all users
+      const publicAssistants = getPublicAssistants(slug);
+      if (publicAssistants.length > 0) {
+        console.log('📱 Loading public assistants for cached data:', publicAssistants.map(a => a.name));
+        setAvailableAssistants(publicAssistants);
+      }
+
       return true;
     }
 
@@ -209,6 +244,14 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
         setInstitution(serverInstitution);
         setCachedInstitution(slug, serverInstitution);
         setInstitutionLoaded(true);
+
+        // Load public assistants for all users
+        const publicAssistants = getPublicAssistants(slug);
+        if (publicAssistants.length > 0) {
+          console.log('📡 Loading public assistants for server data:', publicAssistants.map(a => a.name));
+          setAvailableAssistants(publicAssistants);
+        }
+
         return true;
       } else {
         console.error('❌ Failed to load institution:', result.error);
@@ -273,7 +316,28 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
         console.log('✅ Access verified successfully');
         setInstitution(result.data.institution);
         setUserAccess(result.data.user_access);
-        setAvailableAssistants(result.data.available_assistants || []);
+
+        // Merge authenticated assistants with public assistants
+        const authenticatedAssistants = result.data.available_assistants || [];
+        const publicAssistants = getPublicAssistants(slug);
+
+        // Create a map to avoid duplicates (authenticated assistants take priority)
+        const assistantMap = new Map();
+
+        // Add public assistants first
+        publicAssistants.forEach(assistant => {
+          assistantMap.set(assistant.id, assistant);
+        });
+
+        // Add/override with authenticated assistants
+        authenticatedAssistants.forEach(assistant => {
+          assistantMap.set(assistant.id, assistant);
+        });
+
+        const mergedAssistants = Array.from(assistantMap.values()).sort((a, b) => a.display_order - b.display_order);
+        console.log('🔗 Merged assistants for authenticated user:', mergedAssistants.map(a => a.name));
+        setAvailableAssistants(mergedAssistants);
+
         setAuthenticationComplete(true);
         setInstitutionLoaded(true);
         return true;
