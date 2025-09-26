@@ -125,7 +125,7 @@ function MessageInput({ message, setMessage, onSendMessage, isLoading, placehold
   }, [message]);
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-end space-x-3">
+    <form onSubmit={handleSubmit} className="flex items-stretch space-x-3">
       <div className="flex-1">
         <textarea
           ref={textareaRef}
@@ -146,7 +146,7 @@ function MessageInput({ message, setMessage, onSendMessage, isLoading, placehold
       <button
         type="submit"
         disabled={!message.trim() || isLoading}
-        className="px-5 py-3 rounded-xl text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+        className="px-5 py-3 rounded-xl text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-end min-h-[48px] flex items-center justify-center space-x-2"
         style={{ backgroundColor: primaryColor }}
       >
         <Icon name="send" className="w-5 h-5" />
@@ -504,6 +504,7 @@ export const InstitutionChat: React.FC = () => {
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [selectedAssistantForNew, setSelectedAssistantForNew] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -818,6 +819,18 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
     }
   }, [currentAssistant, institutionLoading, assistantId, currentSession, createNewSession]);
 
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdownId) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdownId]);
+
   if (institutionLoading || !institution || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -958,7 +971,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                           className="w-8 h-8 flex-shrink-0"
                           color={sessionAssistant?.color_theme || institution.primary_color}
                         />
-                        <div className="flex-1 min-w-0 pr-8"> {/* Add padding-right for buttons */}
+                        <div className="flex-1 min-w-0 pr-10"> {/* Add padding-right for dropdown */}
                           {editingSessionId === session.id ? (
                             <input
                               type="text"
@@ -1016,35 +1029,52 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                       </div>
                     </button>
 
-                    {/* Action buttons */}
-                    <div className="absolute right-2 top-2 flex space-x-1 opacity-60 hover:opacity-100 transition-opacity">
+                    {/* Dropdown Menu */}
+                    <div className="absolute right-3 top-3 relative">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setEditingSessionId(session.id);
-                          setEditingTitle(session.title);
+                          setOpenDropdownId(openDropdownId === session.id ? null : session.id);
                         }}
                         className={cn(
-                          "p-1.5 rounded hover:bg-black/10 transition-colors",
-                          isActive ? "text-white/90 hover:text-white" : "text-gray-600 hover:text-gray-800"
+                          "p-2 rounded-full hover:bg-black/10 transition-all duration-200 opacity-70 hover:opacity-100",
+                          isActive ? "text-white/90 hover:text-white hover:bg-white/20" : "text-gray-700 hover:text-gray-900 hover:bg-gray-200",
+                          openDropdownId === session.id && "opacity-100 bg-black/10"
                         )}
-                        title="Editar nome"
+                        title="Mais opções"
                       >
-                        <Icon name="edit2" className="w-4 h-4" />
+                        <Icon name="moreVertical" className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSession(session.id);
-                        }}
-                        className={cn(
-                          "p-1.5 rounded hover:bg-red-500/20 transition-colors",
-                          isActive ? "text-white/90 hover:text-red-200" : "text-gray-600 hover:text-red-600"
-                        )}
-                        title="Excluir conversa"
-                      >
-                        <Icon name="trash2" className="w-4 h-4" />
-                      </button>
+
+                      {/* Dropdown Menu */}
+                      {openDropdownId === session.id && (
+                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[160px] animate-in fade-in-0 zoom-in-95 duration-200">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingSessionId(session.id);
+                              setEditingTitle(session.title);
+                              setOpenDropdownId(null);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-3 font-medium"
+                          >
+                            <Icon name="edit2" className="w-4 h-4 text-gray-500" />
+                            <span>Editar nome</span>
+                          </button>
+                          <div className="h-px bg-gray-100 mx-1"></div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSession(session.id);
+                              setOpenDropdownId(null);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3 font-medium"
+                          >
+                            <Icon name="trash2" className="w-4 h-4 text-red-500" />
+                            <span>Excluir conversa</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

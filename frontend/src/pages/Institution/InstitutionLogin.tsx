@@ -18,6 +18,7 @@ export const InstitutionLogin: React.FC = () => {
     loading,
     error,
     isInstitutionUser,
+    canAccessAssistants,
     authenticationComplete,
     institutionLoaded,
     setAuthenticationComplete,
@@ -40,7 +41,7 @@ export const InstitutionLogin: React.FC = () => {
     }
   }, [slug, loadInstitution, initialLoadStarted]);
 
-  // Redirecionar se já logado e tem acesso completo
+  // Redirecionar após login baseado no status do usuário
   useEffect(() => {
     if (
       user &&
@@ -49,8 +50,15 @@ export const InstitutionLogin: React.FC = () => {
       authenticationComplete &&
       isInstitutionUser
     ) {
-      console.log('✅ User authenticated and has access, redirecting to dashboard...');
-      navigate(`/i/${slug}`, { replace: true });
+      // Verificar se usuário está ativo (aprovado)
+      if (canAccessAssistants) {
+        console.log('✅ User authenticated and approved, redirecting to dashboard...');
+        navigate(`/i/${slug}`, { replace: true });
+      } else {
+        console.log('⏳ User authenticated but inactive, redirecting to pending approval...');
+        toast.success('Login realizado! Aguardando aprovação do administrador.');
+        navigate(`/i/${slug}/pending-approval`, { replace: true });
+      }
     }
   }, [
     user,
@@ -58,6 +66,7 @@ export const InstitutionLogin: React.FC = () => {
     institutionLoaded,
     authenticationComplete,
     isInstitutionUser,
+    canAccessAssistants,
     navigate,
     slug
   ]);

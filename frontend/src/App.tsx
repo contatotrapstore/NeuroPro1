@@ -34,6 +34,8 @@ import {
   InstitutionForgotPassword,
   InstitutionRegister
 } from './pages/Institution';
+import { InstitutionUsersManagement } from './pages/Institution/InstitutionUsersManagement';
+import { InstitutionPendingApproval } from './pages/Institution/InstitutionPendingApproval';
 
 // Lazy loading para InstitutionDashboard
 const InstitutionDashboard = React.lazy(() =>
@@ -193,6 +195,7 @@ const App: React.FC = () => {
           <Route path="/i/:slug/login" element={<InstitutionLogin />} />
           <Route path="/i/:slug/register" element={<InstitutionRegister />} />
           <Route path="/i/:slug/forgot-password" element={<InstitutionForgotPassword />} />
+          <Route path="/i/:slug/pending-approval" element={<InstitutionPendingApproval />} />
 
           {/* Institution Chat Routes (Fullscreen, outside layout) */}
           <Route path="/i/:slug/chat" element={
@@ -239,6 +242,11 @@ const App: React.FC = () => {
               </InstitutionProtectedRoute>
             } />
             <Route path="home" element={<InstitutionHome />} />
+            <Route path="manage-users" element={
+              <InstitutionProtectedRoute>
+                <InstitutionUsersManagement />
+              </InstitutionProtectedRoute>
+            } />
           </Route>
 
           {/* Default Redirects */}
