@@ -531,6 +531,17 @@ export class ApiService {
       card_data: paymentData.card_data
     });
   }
+
+  // Institution chat methods - Centralized API for institution chat
+  async sendInstitutionMessage(data: {
+    assistant_id: string;
+    message: string;
+    thread_id?: string;
+    institution_slug: string;
+    session_id: string;
+  }): Promise<ApiResponse<any>> {
+    return this.post('/institution-chat', data, { skipCache: true });
+  }
 }
 
 // Export singleton instance

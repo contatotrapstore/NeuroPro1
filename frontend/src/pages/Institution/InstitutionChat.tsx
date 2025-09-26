@@ -8,6 +8,7 @@ import { Icon } from '../../components/ui/Icon';
 import { InstitutionSubscriptionModal } from '../../components/ui/InstitutionSubscriptionModal';
 import { cn } from '../../utils/cn';
 import toast from 'react-hot-toast';
+import { apiService } from '../../services/api.service';
 
 // Components internos
 interface MessageBubbleProps {
@@ -807,38 +808,16 @@ Como posso ajudá-lo hoje?`,
     setIsLoading(true);
 
     try {
-      // 🤖 Integração com OpenAI real via institution-chat API
-      console.log('🤖 Calling OpenAI assistant via institution-chat API...');
+      // 🤖 Integração com OpenAI real via institution-chat API usando apiService centralizado
+      console.log('🤖 Calling OpenAI assistant via apiService.sendInstitutionMessage...');
 
-      const supabaseModule = await import('../../services/supabase');
-      const session = await supabaseModule.supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-
-      if (!token) {
-        throw new Error('Token de acesso não disponível');
-      }
-
-      const response = await fetch('/api/institution-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          assistant_id: currentAssistant.openai_assistant_id || currentAssistant.id,
-          message: userMessage.content,
-          thread_id: currentSession.thread_id,
-          institution_slug: slug,
-          session_id: currentSession.id
-        })
+      const result = await apiService.sendInstitutionMessage({
+        assistant_id: currentAssistant.openai_assistant_id || currentAssistant.id,
+        message: userMessage.content,
+        thread_id: currentSession.thread_id,
+        institution_slug: slug!,
+        session_id: currentSession.id
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
 
       if (!result.success) {
         throw new Error(result.error || 'Falha na resposta da API');

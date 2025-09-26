@@ -261,6 +261,22 @@ module.exports = async function handler(req, res) {
       node_env: process.env.NODE_ENV
     });
 
+    // 🔍 COMPLETE ENV DEBUG - Show ALL environment variables for comparison with chat.js
+    console.log('🔍 ALL ENV VARS COMPARISON:', {
+      total_count: Object.keys(process.env).length,
+      function_name: 'institution-chat.js',
+      sorted_keys: Object.keys(process.env).sort(),
+      supabase_keys: Object.keys(process.env).filter(k => k.toLowerCase().includes('supabase')),
+      vercel_keys: Object.keys(process.env).filter(k => k.toLowerCase().includes('vercel')),
+      openai_related_keys: Object.keys(process.env).filter(k => k.toLowerCase().includes('openai')),
+      all_openai_values: Object.keys(process.env)
+        .filter(k => k.toLowerCase().includes('openai'))
+        .reduce((acc, key) => {
+          acc[key] = process.env[key] ? `${process.env[key].substring(0, 10)}...` : 'undefined';
+          return acc;
+        }, {})
+    });
+
     // Validate OpenAI configuration (graceful fallback like chat.js)
     console.log('🔑 OpenAI API Key validation:', {
       has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
