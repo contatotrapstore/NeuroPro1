@@ -499,6 +499,7 @@ interface ChatSession {
   id: string;
   title: string;
   assistant_id: string;
+  thread_id?: string; // OpenAI thread ID for maintaining context
   messages: Message[];
   created_at: Date;
   updated_at: Date;
@@ -545,6 +546,7 @@ export const InstitutionChat: React.FC = () => {
   const [editingTitle, setEditingTitle] = useState('');
   const [selectedAssistantForNew, setSelectedAssistantForNew] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -805,32 +807,55 @@ Como posso ajudá-lo hoje?`,
     setIsLoading(true);
 
     try {
-      // Simular resposta da IA (aqui você integraria com a API real)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 🤖 Integração com OpenAI real via institution-chat API
+      console.log('🤖 Calling OpenAI assistant via institution-chat API...');
 
-      let assistantResponse = '';
+      const supabaseModule = await import('../../services/supabase');
+      const session = await supabaseModule.supabase.auth.getSession();
+      const token = session.data.session?.access_token;
 
-      if (isSimulator) {
-        // Respostas específicas do simulador
-        const responses = [
-          "Hmm... *pausa longa* É interessante você mencionar isso. Me faz lembrar de quando eu era criança e minha mãe sempre dizia... *hesita*",
-          "Eu tenho pensado muito nisso que você falou na última sessão. Na verdade, tenho tido uns sonhos estranhos...",
-          "*olha para o lado* Não sei se consigo falar sobre isso hoje. Está muito difícil... Você acha que é importante mesmo?",
-          "Doutor, posso te fazer uma pergunta? Você já passou por algo parecido? *transferência*",
-          "*resistência* Não vejo como isso vai me ajudar. Já tentei terapia antes e nunca funcionou...",
-        ];
-        assistantResponse = responses[Math.floor(Math.random() * responses.length)];
+      if (!token) {
+        throw new Error('Token de acesso não disponível');
+      }
 
-        // Adicionar feedback técnico ocasionalmente
-        if (Math.random() > 0.7) {
-          assistantResponse += "\n\n---\n**💡 Feedback Técnico:** Note a manifestação de resistência/transferência nesta fala. Como você manejaria isso na técnica psicanalítica?";
-        }
-      } else {
-        assistantResponse = `Obrigado pela sua questão sobre "${userMessage.content.substring(0, 50)}${userMessage.content.length > 50 ? '...' : ''}".
+      const response = await fetch('/api/institution-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          assistant_id: currentAssistant.openai_assistant_id || currentAssistant.id,
+          message: userMessage.content,
+          thread_id: currentSession.thread_id,
+          institution_slug: slug,
+          session_id: currentSession.id
+        })
+      });
 
-Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psicanalítica. Vou elaborar uma resposta detalhada considerando os aspectos técnicos e teóricos relevantes.
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
 
-*Esta é uma resposta simulada - na implementação real, isso seria processado pela IA especializada.*`;
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Falha na resposta da API');
+      }
+
+      console.log('✅ OpenAI response received:', {
+        thread_id: result.data.thread_id,
+        assistant: result.data.assistant_name,
+        tokens: result.data.usage?.total_tokens
+      });
+
+      const assistantResponse = result.data.response;
+      const newThreadId = result.data.thread_id;
+
+      // Update session with thread_id if new
+      if (newThreadId && !currentSession.thread_id) {
+        updatedSessionWithUser.thread_id = newThreadId;
       }
 
       const assistantMessage: Message = {
@@ -844,6 +869,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
       // Em vez de buscar em sessions (que pode estar desatualizado devido ao closure)
       const updatedSessionWithAssistant = {
         ...updatedSessionWithUser,
+        thread_id: newThreadId || updatedSessionWithUser.thread_id, // Preserve thread_id
         messages: [...updatedSessionWithUser.messages, assistantMessage],
         updated_at: new Date()
       };
@@ -1063,13 +1089,24 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                        style={{ borderColor: institution.primary_color }}></div>
                 )}
               </div>
-              <button
-                onClick={() => handleOpenNewSessionModal()}
-                className="px-3 py-1.5 text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
-                style={{ backgroundColor: institution.primary_color }}
-              >
-                Nova Conversa
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleOpenNewSessionModal()}
+                  className="px-3 py-1.5 text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
+                  style={{ backgroundColor: institution.primary_color }}
+                >
+                  Nova Conversa
+                </button>
+                {sessions.length > 0 && (
+                  <button
+                    onClick={() => setShowClearAllConfirm(true)}
+                    className="px-2 py-1.5 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                    title="Limpar todas as conversas"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1167,11 +1204,11 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
                           setOpenDropdownId(openDropdownId === session.id ? null : session.id);
                         }}
                         className={cn(
-                          "p-2 rounded-full hover:bg-black/10 transition-all duration-200 opacity-70 hover:opacity-100",
+                          "p-2 rounded-full hover:bg-black/10 transition-all duration-200 opacity-60 hover:opacity-100",
                           isActive ? "text-white/90 hover:text-white hover:bg-white/20" : "text-gray-700 hover:text-gray-900 hover:bg-gray-200",
                           openDropdownId === session.id && "opacity-100 bg-black/10"
                         )}
-                        title="Mais opções"
+                        title="Opções da conversa (clique para ver)"
                       >
                         <Icon name="moreVertical" className="w-5 h-5" />
                       </button>
@@ -1443,6 +1480,80 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
           assistants={availableAssistants}
           institution={institution}
         />
+      )}
+
+      {/* Modal de Confirmação para Limpar Todas as Conversas */}
+      {showClearAllConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Limpar Todas as Conversas
+                </h2>
+                <button
+                  onClick={() => setShowClearAllConfirm(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Icon name="x" className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: '#fee2e2' }}
+                >
+                  <Icon name="trash2" className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">
+                    Tem certeza que deseja excluir todas as conversas?
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Esta ação não pode ser desfeita.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3 mb-6">
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  {sessions.length} conversa{sessions.length !== 1 ? 's' : ''} será{sessions.length !== 1 ? 'ão' : ''} excluída{sessions.length !== 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Todas as mensagens e histórico de contexto serão perdidos permanentemente
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowClearAllConfirm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Clear all sessions
+                    setSessions([]);
+                    setCurrentSession(null);
+                    saveSessionsToStorage([]);
+                    setShowClearAllConfirm(false);
+                    console.log('🗑️ All sessions cleared');
+                    toast.success('Todas as conversas foram excluídas');
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  Sim, Excluir Tudo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de Assinatura */}
