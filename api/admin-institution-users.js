@@ -147,10 +147,21 @@ module.exports = async function handler(req, res) {
 
         // Try to use RPC function first
         try {
+          console.log('🔧 Attempting RPC call with institutionId:', institutionId);
+
           const { data: usersData, error: rpcError } = await supabase
             .rpc('get_institution_users_with_details', {
               institution_id_param: institutionId
             });
+
+          console.log('🔧 RPC call completed:', {
+            hasData: !!usersData,
+            dataLength: usersData ? usersData.length : 0,
+            hasError: !!rpcError,
+            errorMessage: rpcError?.message,
+            errorCode: rpcError?.code,
+            errorDetails: rpcError?.details
+          });
 
           if (!rpcError && usersData) {
             console.log('✅ Institution users fetched via RPC with real data:', {
@@ -169,11 +180,22 @@ module.exports = async function handler(req, res) {
                 count: usersData.length
               }
             });
+          } else if (rpcError) {
+            console.error('❌ RPC function returned error:', {
+              message: rpcError.message,
+              code: rpcError.code,
+              details: rpcError.details,
+              hint: rpcError.hint
+            });
+          } else {
+            console.log('⚠️ RPC function returned no data, falling back to basic query');
           }
 
-          console.log('⚠️ RPC function not available, falling back to basic data');
         } catch (rpcFallbackError) {
-          console.log('⚠️ RPC function failed, falling back to basic data:', rpcFallbackError.message);
+          console.error('❌ RPC function threw exception:', {
+            message: rpcFallbackError.message,
+            stack: rpcFallbackError.stack
+          });
         }
 
         // Fallback: Buscar usuários da instituição

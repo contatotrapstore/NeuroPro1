@@ -355,36 +355,81 @@ module.exports = async function handler(req, res) {
         let assistantsCount = { count: 0 };
 
         try {
-          // Contagem de usuários (pode não existir tabela)
+          // Contagem de usuários TOTAIS (não só ativos)
           const userResult = await supabase
             .from('institution_users')
             .select('id', { count: 'exact' })
-            .eq('institution_id', institution.id)
-            .eq('is_active', true);
+            .eq('institution_id', institution.id);
+            // Removido .eq('is_active', true) para contar todos os usuários
+
+          console.log(`📊 ${institution.name} - Users query result:`, {
+            count: userResult.count,
+            error: userResult.error?.message
+          });
 
           if (!userResult.error) {
             usersCount = userResult;
+          } else {
+            console.error(`❌ ${institution.name} - Users query error:`, userResult.error);
           }
         } catch (error) {
-          console.log(`⚠️ institution_users table not found for ${institution.name}`);
+          console.error(`❌ ${institution.name} - institution_users table error:`, error.message);
         }
 
         try {
-          // Contagem de assistentes
+          // Contagem de assistentes habilitados
           const assistantResult = await supabase
             .from('institution_assistants')
             .select('id', { count: 'exact' })
             .eq('institution_id', institution.id)
             .eq('is_enabled', true);
 
+          console.log(`📊 ${institution.name} - Assistants query result:`, {
+            count: assistantResult.count,
+            error: assistantResult.error?.message
+          });
+
           if (!assistantResult.error) {
             assistantsCount = assistantResult;
+          } else {
+            console.error(`❌ ${institution.name} - Assistants query error:`, assistantResult.error);
           }
         } catch (error) {
-          console.log(`⚠️ institution_assistants table query failed for ${institution.name}`);
+          console.error(`❌ ${institution.name} - institution_assistants table error:`, error.message);
         }
 
-        // Conversas deixaremos como 0 por enquanto para simplificar
+        try {
+          // Contagem de conversas - buscar usuários da instituição e suas conversas
+          const { data: institutionUserIds, error: userIdsError } = await supabase
+            .from('institution_users')
+            .select('user_id')
+            .eq('institution_id', institution.id);
+
+          if (!userIdsError && institutionUserIds && institutionUserIds.length > 0) {
+            const userIds = institutionUserIds.map(u => u.user_id);
+
+            const conversationResult = await supabase
+              .from('conversations')
+              .select('id', { count: 'exact' })
+              .in('user_id', userIds);
+
+            console.log(`📊 ${institution.name} - Conversations query result:`, {
+              userIds: userIds.length,
+              count: conversationResult.count,
+              error: conversationResult.error?.message
+            });
+
+            if (!conversationResult.error) {
+              conversationsCount = conversationResult;
+            } else {
+              console.error(`❌ ${institution.name} - Conversations query error:`, conversationResult.error);
+            }
+          } else {
+            console.log(`📊 ${institution.name} - No users found for conversations query`);
+          }
+        } catch (error) {
+          console.error(`❌ ${institution.name} - conversations calculation error:`, error.message);
+        }
 
         return {
           ...institution,
