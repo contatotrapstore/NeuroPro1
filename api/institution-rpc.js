@@ -108,6 +108,29 @@ module.exports = async function handler(req, res) {
         result = await supabase.rpc('get_institution_pending_count', { p_institution_slug: params[0] });
         break;
 
+      case 'get_institution_subscription_status':
+        result = await supabase.rpc('get_institution_subscription_status', {
+          p_institution_slug: params[0]
+        });
+        break;
+
+      case 'create_institution_subscription':
+        result = await supabase.rpc('create_institution_subscription', {
+          p_user_id: params[0],
+          p_institution_slug: params[1],
+          p_plan_type: params[2],
+          p_payment_method: params[3],
+          p_amount: params[4]
+        });
+        break;
+
+      case 'activate_institution_subscription':
+        result = await supabase.rpc('activate_institution_subscription', {
+          p_subscription_id: params[0],
+          p_payment_id: params[1]
+        });
+        break;
+
       default:
         return res.status(400).json({ success: false, error: 'Função não encontrada' });
     }
