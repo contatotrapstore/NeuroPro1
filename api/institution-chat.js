@@ -44,20 +44,26 @@ module.exports = async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-    const openaiApiKey = process.env.OPENAI_API_KEY; // Backend usa direto, sem fallback VITE_*
+    const openaiApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey || !openaiApiKey) {
+    // Log environment variables for debugging
+    console.log('🔍 Environment Variables Check:', {
+      SUPABASE_URL: supabaseUrl ? '✅ SET' : '❌ MISSING',
+      SUPABASE_ANON_KEY: supabaseAnonKey ? '✅ SET' : '❌ MISSING',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✅ SET' : '❌ MISSING',
+      VITE_OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY ? '✅ SET (fallback)' : '❌ MISSING',
+      openaiApiKey: openaiApiKey ? '✅ RESOLVED' : '❌ NOT RESOLVED',
+      keySource: process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' :
+                 process.env.VITE_OPENAI_API_KEY ? 'VITE_OPENAI_API_KEY' : 'NONE'
+    });
+
+    // Validate only essential Supabase variables early
+    if (!supabaseUrl || !supabaseAnonKey) {
       const missing = [];
       if (!supabaseUrl) missing.push('SUPABASE_URL');
       if (!supabaseAnonKey) missing.push('SUPABASE_ANON_KEY');
-      if (!openaiApiKey) missing.push('OPENAI_API_KEY');
 
-      console.error('❌ Missing environment variables:', missing.join(', '));
-      console.error('🔍 Environment check:', {
-        SUPABASE_URL: supabaseUrl ? 'SET' : 'MISSING',
-        SUPABASE_ANON_KEY: supabaseAnonKey ? 'SET' : 'MISSING',
-        OPENAI_API_KEY: openaiApiKey ? 'SET' : 'MISSING'
-      });
+      console.error('❌ Missing essential environment variables:', missing.join(', '));
 
       return res.status(500).json({
         success: false,
@@ -66,7 +72,7 @@ module.exports = async function handler(req, res) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
-    const openai = new OpenAI({ apiKey: openaiApiKey });
+    // OpenAI will be initialized later when needed (lazy loading)
 
     // Extract and validate authentication
     const authHeader = req.headers.authorization;
@@ -216,6 +222,20 @@ module.exports = async function handler(req, res) {
       openai_id: targetAssistant.openai_assistant_id,
       is_simulator: targetAssistant.is_simulator
     });
+
+    // Validate OpenAI configuration before using
+    if (!openaiApiKey) {
+      console.error('❌ OpenAI API key not configured - cannot provide AI responses');
+      return res.status(500).json({
+        success: false,
+        error: 'Serviço de IA temporariamente indisponível. Entre em contato com o suporte.',
+        error_type: 'OPENAI_CONFIG_MISSING'
+      });
+    }
+
+    // Initialize OpenAI client (lazy loading)
+    console.log('🤖 Initializing OpenAI client...');
+    const openai = new OpenAI({ apiKey: openaiApiKey });
 
     // Handle OpenAI thread
     let currentThreadId = thread_id;
