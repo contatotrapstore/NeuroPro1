@@ -391,6 +391,13 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
       return false;
     }
 
+    // Subadmins e admins não precisam de assinatura
+    if (userAccess.role === 'subadmin' || userAccess.is_admin) {
+      console.log('✅ User is subadmin/admin - subscription check bypassed');
+      setHasActiveSubscription(true);
+      return true;
+    }
+
     setIsCheckingSubscription(true);
     setSubscriptionError(null);
 
@@ -527,7 +534,8 @@ export const InstitutionProvider: React.FC<InstitutionProviderProps> = ({ childr
   // Computed properties
   const isInstitutionUser = !!userAccess;
   const canAccessAdminPanel = userAccess?.is_admin || false;
-  const canAccessAssistants = (userAccess?.is_active || false) && hasActiveSubscription; // Dupla verificação: aprovação + pagamento
+  const canAccessAssistants = (userAccess?.is_active || false) &&
+    (userAccess?.role === 'subadmin' || userAccess?.is_admin || hasActiveSubscription); // Subadmins isentos de assinatura
 
   // Helper para obter assistente principal
   const getPrimaryAssistant = (): InstitutionAssistant | null => {

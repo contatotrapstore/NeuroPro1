@@ -920,9 +920,15 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
     );
   }
 
-  // Verificar assinatura ao carregar a página
+  // Verificar assinatura ao carregar a página (exceto para subadmins/admins)
   React.useEffect(() => {
-    if (isInstitutionUser && userAccess?.is_active && slug && !hasActiveSubscription && !isCheckingSubscription) {
+    if (isInstitutionUser &&
+        userAccess?.is_active &&
+        slug &&
+        !hasActiveSubscription &&
+        !isCheckingSubscription &&
+        userAccess?.role !== 'subadmin' &&
+        !userAccess?.is_admin) {
       console.log('🔍 Checking subscription on chat page load');
       checkSubscription(slug);
     }
