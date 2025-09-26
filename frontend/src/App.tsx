@@ -188,6 +188,19 @@ const App: React.FC = () => {
 
           {/* Institution Routes */}
           <Route path="/i/:slug/login" element={<InstitutionLogin />} />
+
+          {/* Institution Chat Routes (Fullscreen, outside layout) */}
+          <Route path="/i/:slug/chat" element={
+            <InstitutionProtectedRoute>
+              <InstitutionChat />
+            </InstitutionProtectedRoute>
+          } />
+          <Route path="/i/:slug/chat/:assistantId" element={
+            <InstitutionProtectedRoute>
+              <InstitutionChat />
+            </InstitutionProtectedRoute>
+          } />
+
           <Route path="/i/:slug" element={<InstitutionConditionalLayout />}>
             <Route index element={
               <Suspense fallback={<div className="p-8 text-center"><div className="animate-spin h-8 w-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>Carregando dashboard...</div>}>
@@ -200,16 +213,6 @@ const App: React.FC = () => {
               </Suspense>
             } />
             <Route path="store" element={<InstitutionStore />} />
-            <Route path="chat" element={
-              <InstitutionProtectedRoute>
-                <InstitutionChat />
-              </InstitutionProtectedRoute>
-            } />
-            <Route path="chat/:assistantId" element={
-              <InstitutionProtectedRoute>
-                <InstitutionChat />
-              </InstitutionProtectedRoute>
-            } />
             <Route path="subscriptions" element={
               <InstitutionProtectedRoute>
                 <InstitutionSubscriptions />

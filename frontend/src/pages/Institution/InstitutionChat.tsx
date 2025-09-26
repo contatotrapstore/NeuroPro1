@@ -485,7 +485,7 @@ Como especialista da ABPSI, posso orientá-lo com base na teoria e prática psic
   }
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar - Lista de Conversas */}
       {showSidebar && (
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
