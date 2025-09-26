@@ -362,7 +362,7 @@ module.exports = async function handler(req, res) {
 
       // Poll for completion
       console.log('⏳ Waiting for response...');
-      let runStatus = await openai.beta.threads.runs.retrieve(currentThreadId, run.id);
+      let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
       let attempts = 0;
       const maxAttempts = 30; // 30 seconds max
 
@@ -372,7 +372,7 @@ module.exports = async function handler(req, res) {
         }
 
         await new Promise(resolve => setTimeout(resolve, 1000));
-        runStatus = await openai.beta.threads.runs.retrieve(currentThreadId, run.id);
+        runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
         attempts++;
       }
 
