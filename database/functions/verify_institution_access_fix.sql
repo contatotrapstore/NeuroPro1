@@ -75,7 +75,7 @@ BEGIN
     ), '[]'::json) INTO v_assistants
     FROM institution_assistants ia
     WHERE ia.institution_id = v_institution_id
-      AND ia.is_enabled = true
+      AND ia.is_active = true
       AND v_access_record.is_active = true; -- Only show assistants if user is active/approved
 
     -- Return success with all data

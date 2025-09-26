@@ -140,6 +140,23 @@ module.exports = async function handler(req, res) {
       raw_response: JSON.stringify(accessData, null, 2)
     });
 
+    // Debug RPC result in detail
+    if (accessData?.data?.available_assistants) {
+      console.log('🎯 Available assistants from RPC:', {
+        count: accessData.data.available_assistants.length,
+        assistants: accessData.data.available_assistants.map(a => ({
+          id: a.id,
+          name: a.name,
+          openai_assistant_id: a.openai_assistant_id,
+          assistant_id: a.assistant_id, // FK to assistants table
+          is_simulator: a.is_simulator,
+          is_primary: a.is_primary
+        }))
+      });
+    } else {
+      console.log('❌ No available_assistants in RPC response');
+    }
+
     if (accessError || !accessData?.success) {
       console.error('❌ Institution access verification failed:', {
         error: accessError,
@@ -191,7 +208,25 @@ module.exports = async function handler(req, res) {
       }))
     });
 
+    console.log('🎯 Frontend sent assistant_id:', assistant_id);
+    console.log('🎯 Looking for match in field: openai_assistant_id');
+
     const targetAssistant = availableAssistants.find(a => a.openai_assistant_id === assistant_id);
+
+    console.log('🔍 Assistant search result:', {
+      found: !!targetAssistant,
+      target_assistant: targetAssistant ? {
+        id: targetAssistant.id,
+        name: targetAssistant.name,
+        openai_assistant_id: targetAssistant.openai_assistant_id,
+        is_simulator: targetAssistant.is_simulator
+      } : null,
+      comparison_details: availableAssistants.map(a => ({
+        id: a.id,
+        openai_assistant_id: a.openai_assistant_id,
+        matches_requested: a.openai_assistant_id === assistant_id
+      }))
+    });
 
     if (!targetAssistant) {
       console.error('❌ Assistant not available for this institution:', {
@@ -213,6 +248,12 @@ module.exports = async function handler(req, res) {
     });
 
     // Validate OpenAI configuration before using
+    console.log('🔑 OpenAI API Key validation:', {
+      has_key: !!process.env.OPENAI_API_KEY,
+      key_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+      key_starts_with: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'N/A'
+    });
+
     if (!process.env.OPENAI_API_KEY) {
       console.error('❌ OpenAI API key not configured - cannot provide AI responses');
       return res.status(500).json({
