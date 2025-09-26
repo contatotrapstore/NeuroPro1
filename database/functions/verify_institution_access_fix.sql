@@ -59,23 +59,26 @@ BEGIN
     WHERE id = v_user_id;
 
     -- Get available assistants for this institution (only show for active users)
-    -- Use data from institution_assistants directly since assistants table doesn't have matching records
+    -- JOIN with assistants table to get proper OpenAI IDs and ensure assistants exist
     SELECT COALESCE(json_agg(
         json_build_object(
             'id', ia.id,
-            'name', COALESCE(ia.custom_name, 'Assistente ABPSI'),
-            'description', COALESCE(ia.custom_description, 'Assistente especializado em psicanálise'),
-            'icon', 'brain',  -- default icon
-            'color_theme', '#6366F1',  -- default color
-            'openai_assistant_id', ia.assistant_id,
-            'is_simulator', CASE WHEN ia.assistant_id = 'asst_9vDTodTAQIJV1mu2xPzXpBs8' THEN true ELSE false END,
+            'name', COALESCE(ia.custom_name, a.name),
+            'description', COALESCE(ia.custom_description, a.description),
+            'icon', COALESCE(a.icon, 'brain'),
+            'color_theme', COALESCE(a.color_theme, '#6366F1'),
+            'openai_assistant_id', a.openai_assistant_id,
+            'is_simulator', COALESCE(a.name LIKE '%Simulador%' OR a.name LIKE '%ClinReplay%' OR a.name LIKE '%Treinador%', false),
             'is_primary', COALESCE(ia.is_default, false),
             'display_order', COALESCE(ia.display_order, 999)
         ) ORDER BY COALESCE(ia.display_order, 999)
     ), '[]'::json) INTO v_assistants
     FROM institution_assistants ia
+    JOIN assistants a ON ia.assistant_id = a.id
     WHERE ia.institution_id = v_institution_id
-      AND ia.is_active = true
+      AND ia.is_enabled = true
+      AND a.is_active = true
+      AND a.openai_assistant_id IS NOT NULL
       AND v_access_record.is_active = true; -- Only show assistants if user is active/approved
 
     -- Return success with all data
