@@ -7,13 +7,27 @@ import { cn } from '../../utils/cn';
 
 export const InstitutionDashboard: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+
+  // Verificação de segurança do contexto
+  const context = useInstitution();
+  if (!context) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   const {
     institution,
     userAccess,
     availableAssistants,
     getPrimaryAssistant,
     getSimulatorAssistant
-  } = useInstitution();
+  } = context;
 
   if (!institution) return null;
 

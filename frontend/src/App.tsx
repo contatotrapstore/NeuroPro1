@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { InstitutionProvider } from './contexts/InstitutionContext';
@@ -27,10 +27,14 @@ import {
   InstitutionChat,
   InstitutionAdmin,
   InstitutionSubscription,
-  InstitutionDashboard,
   InstitutionStore,
   InstitutionSubscriptions
 } from './pages/Institution';
+
+// Lazy loading para InstitutionDashboard
+const InstitutionDashboard = React.lazy(() =>
+  import('./pages/Institution/InstitutionDashboard').then(module => ({ default: module.InstitutionDashboard }))
+);
 import './index.css';
 
 const App: React.FC = () => {
@@ -184,8 +188,16 @@ const App: React.FC = () => {
           {/* Institution Routes */}
           <Route path="/i/:slug/login" element={<InstitutionLogin />} />
           <Route path="/i/:slug" element={<InstitutionModernLayout />}>
-            <Route index element={<InstitutionDashboard />} />
-            <Route path="dashboard" element={<InstitutionDashboard />} />
+            <Route index element={
+              <Suspense fallback={<div className="p-8 text-center"><div className="animate-spin h-8 w-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>Carregando dashboard...</div>}>
+                <InstitutionDashboard />
+              </Suspense>
+            } />
+            <Route path="dashboard" element={
+              <Suspense fallback={<div className="p-8 text-center"><div className="animate-spin h-8 w-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>Carregando dashboard...</div>}>
+                <InstitutionDashboard />
+              </Suspense>
+            } />
             <Route path="chat" element={<InstitutionChat />} />
             <Route path="chat/:assistantId" element={<InstitutionChat />} />
             <Route path="store" element={<InstitutionStore />} />
