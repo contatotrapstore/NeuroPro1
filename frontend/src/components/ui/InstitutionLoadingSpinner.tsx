@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 import Logo from '../../assets/Logo.png';
@@ -41,6 +41,7 @@ export const InstitutionLoadingSpinner = React.forwardRef<
 >(({ className, size, text, institution, color, slug, ...props }, ref) => {
   const { slug: routeSlug } = useParams<{ slug: string }>();
   const currentSlug = slug || routeSlug;
+  const [imageError, setImageError] = useState(false);
 
   // Tentar obter dados estáticos se a instituição não foi carregada
   const staticData = currentSlug ? getInstitutionStaticData(currentSlug) : null;
@@ -51,6 +52,15 @@ export const InstitutionLoadingSpinner = React.forwardRef<
   const spinnerColor = color || fallbackInstitution?.primary_color || '#c39c49';
   const institutionName = fallbackInstitution?.name || 'NeuroIA Lab';
 
+  // Função para tratar erro de carregamento da imagem
+  const handleImageError = () => {
+    console.warn(`Failed to load institution logo: ${logoUrl}`);
+    setImageError(true);
+  };
+
+  // Se há erro na imagem ou não há URL válida, usar fallback baseado em texto
+  const shouldUseTextFallback = imageError || !fallbackInstitution?.logo_url || fallbackInstitution?.logo_url === '';
+
   if (text) {
     return (
       <div
@@ -59,11 +69,12 @@ export const InstitutionLoadingSpinner = React.forwardRef<
         {...props}
       >
         <div className={spinnerVariants({ size })}>
-          {fallbackInstitution?.logo_url ? (
+          {!shouldUseTextFallback ? (
             <img
               src={logoUrl}
               alt={`${institutionName} - Carregando...`}
               className="w-full h-full object-contain"
+              onError={handleImageError}
             />
           ) : (
             <div
@@ -87,11 +98,12 @@ export const InstitutionLoadingSpinner = React.forwardRef<
       className={cn(spinnerVariants({ size }), className)}
       {...props}
     >
-      {fallbackInstitution?.logo_url ? (
+      {!shouldUseTextFallback ? (
         <img
           src={logoUrl}
           alt={`${institutionName} - Carregando...`}
           className="w-full h-full object-contain"
+          onError={handleImageError}
         />
       ) : (
         <div
@@ -127,6 +139,16 @@ export const InstitutionPageLoader = ({
   const currentSlug = slug || routeSlug;
   const staticData = currentSlug ? getInstitutionStaticData(currentSlug) : null;
   const fallbackInstitution = institution || staticData;
+  const [imageError, setImageError] = useState(false);
+
+  // Função para tratar erro de carregamento da imagem
+  const handleImageError = () => {
+    console.warn(`Failed to load institution logo in page loader`);
+    setImageError(true);
+  };
+
+  // Se há erro na imagem ou não há URL válida, usar fallback baseado em texto
+  const shouldUseTextFallback = imageError || !fallbackInstitution?.logo_url || fallbackInstitution?.logo_url === '';
 
   return (
   <div className="fixed inset-0 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center z-50">
@@ -140,11 +162,12 @@ export const InstitutionPageLoader = ({
             backgroundColor: fallbackInstitution?.primary_color ? fallbackInstitution.primary_color + '15' : '#f3f4f6'
           }}
         >
-          {fallbackInstitution?.logo_url ? (
+          {!shouldUseTextFallback ? (
             <img
               src={fallbackInstitution.logo_url}
               alt={`${fallbackInstitution.name} - Carregando...`}
               className="w-full h-full object-contain"
+              onError={handleImageError}
             />
           ) : fallbackInstitution ? (
             <div

@@ -12,11 +12,11 @@ export const INSTITUTION_STATIC_DATA: Record<string, InstitutionStaticData> = {
   abpsi: {
     slug: 'abpsi',
     name: 'ABPSI',
-    logo_url: 'https://abpsi.org.br/wp-content/uploads/2023/04/logo-abpsi-horizontal-colorida-1.png',
+    logo_url: '', // URL inválida removida - usar fallback baseado em texto
     primary_color: '#c39c49',
     secondary_color: '#d4af6a',
-    website_url: 'https://abpsi.org.br',
-    contact_email: 'contato@abpsi.org.br'
+    website_url: 'https://abpsicanalise.org',
+    contact_email: 'contato@abpsicanalise.org'
   }
 };
 

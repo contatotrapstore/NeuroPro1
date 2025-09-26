@@ -28,14 +28,31 @@ export const InstitutionLogin: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCompletedCheck, setHasCompletedCheck] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
 
   // Verificar estado inicial apenas uma vez quando o componente carrega
   useEffect(() => {
     if (slug && !hasCompletedCheck) {
       console.log(`🔄 InstitutionLogin: Initial check for slug ${slug}`);
       setHasCompletedCheck(true);
+
+      // Timeout de segurança para prevenir loops infinitos
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ InstitutionLogin: Loading timeout reached, forcing login form display');
+        setHasTimedOut(true);
+        setHasCompletedCheck(true);
+      }, 10000); // 10 segundos
+
+      setLoadingTimeout(timeout);
     }
-  }, [slug, hasCompletedCheck]);
+
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    };
+  }, [slug, hasCompletedCheck, user, authenticationComplete, loadingTimeout]);
 
   // Redirecionar se já logado e tem acesso completo (prevenção de loop)
   useEffect(() => {
@@ -115,7 +132,7 @@ export const InstitutionLogin: React.FC = () => {
     }
   };
 
-  if (loading || authLoading) {
+  if ((loading || authLoading) && !hasTimedOut) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
