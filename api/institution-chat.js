@@ -261,34 +261,37 @@ module.exports = async function handler(req, res) {
       node_env: process.env.NODE_ENV
     });
 
-    // Try multiple OpenAI key variations
-    const openaiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
-
-    console.log('🔑 Final OpenAI Key Selection:', {
-      selected_key_exists: !!openaiKey,
-      selected_key_length: openaiKey ? openaiKey.length : 0,
-      selected_key_starts: openaiKey ? openaiKey.substring(0, 10) + '...' : 'N/A',
-      is_placeholder: openaiKey ? openaiKey.includes('placeholder') : false
+    // Validate OpenAI configuration (graceful fallback like chat.js)
+    console.log('🔑 OpenAI API Key validation:', {
+      has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+      has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
+      key_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+      key_starts_with: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'N/A',
+      env_keys_containing_openai: Object.keys(process.env).filter(key => key.toLowerCase().includes('openai'))
     });
 
-    if (!openaiKey || openaiKey.includes('placeholder')) {
-      console.error('❌ OpenAI API key not configured properly - cannot provide AI responses');
-      console.error('Environment debugging info logged above ☝️');
-      return res.status(500).json({
-        success: false,
-        error: 'Serviço de IA temporariamente indisponível. Entre em contato com o suporte.',
-        error_type: 'OPENAI_CONFIG_MISSING',
-        debug: {
-          has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
-          has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
-          env_keys_containing_openai: Object.keys(process.env).filter(key => key.toLowerCase().includes('openai'))
+    // Use same validation logic as chat.js - graceful fallback instead of hard failure
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('placeholder')) {
+      console.log('⚠️ OpenAI API key not configured for institution chat, returning friendly message');
+      return res.status(200).json({
+        success: true,
+        data: {
+          response: 'Olá! O assistente de IA está temporariamente indisponível. Nossa equipe está trabalhando para restaurar o serviço. Tente novamente em alguns minutos.',
+          thread_id: 'mock-thread-' + Date.now(),
+          assistant_name: targetAssistant.name,
+          is_simulator: targetAssistant.is_simulator,
+          usage: {
+            total_tokens: 0,
+            prompt_tokens: 0,
+            completion_tokens: 0
+          }
         }
       });
     }
 
     // Initialize OpenAI client (lazy loading)
     console.log('🤖 Initializing OpenAI client...');
-    const openai = new OpenAI({ apiKey: openaiKey });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // Handle OpenAI thread
     let currentThreadId = thread_id;
