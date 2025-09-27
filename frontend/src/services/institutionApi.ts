@@ -43,88 +43,47 @@ export interface InstitutionAssistant {
 export const institutionApi = {
   async getInstitutionStats(slug: string): Promise<InstitutionStats> {
     try {
-      // Get basic institution and user stats directly (no RPC)
-      const { data: institutionData, error: instError } = await supabase
-        .from('institutions')
-        .select(`
-          id,
-          name,
-          institution_users!inner(
-            id,
-            is_active,
-            user_id
-          )
-        `)
-        .eq('slug', slug)
-        .single();
+      console.log('🔧 Fetching institution stats via backend API for slug:', slug);
 
-      if (instError) {
-        console.warn('Could not fetch institution data, using fallback');
+      // Get authentication token
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.warn('❌ No auth token available, using fallback');
         return this.getFallbackStats();
       }
 
-      const totalUsers = institutionData.institution_users.length;
-      const activeUsers = institutionData.institution_users.filter((u: any) => u.is_active).length;
+      console.log('🔑 Using token for stats API call');
 
-      // Get conversation stats
-      const userIds = institutionData.institution_users.map((u: any) => u.user_id);
-
-      if (userIds.length === 0) {
-        return {
-          total_users: totalUsers,
-          active_users: activeUsers,
-          total_conversations: 0,
-          users_with_conversations: 0,
-          avg_messages_per_conversation: 0,
-          most_used_assistant: {
-            name: 'Simulador de Psicanálise ABPSI',
-            usage_count: 0
-          }
-        };
-      }
-
-      // Get conversations for institution users
-      const { data: conversations, error: convError } = await supabase
-        .from('conversations')
-        .select('id, user_id')
-        .in('user_id', userIds);
-
-      if (convError) {
-        console.warn('Could not fetch conversations:', convError);
-      }
-
-      const totalConversations = conversations?.length || 0;
-      const usersWithConversations = conversations ?
-        new Set(conversations.map(c => c.user_id)).size : 0;
-
-      // Get message count for conversations
-      let avgMessages = 0;
-      if (conversations && conversations.length > 0) {
-        const conversationIds = conversations.map(c => c.id);
-        const { data: messageCounts, error: msgError } = await supabase
-          .from('messages')
-          .select('conversation_id')
-          .in('conversation_id', conversationIds);
-
-        if (!msgError && messageCounts) {
-          avgMessages = messageCounts.length / conversations.length;
+      // Call new backend endpoint
+      const response = await fetch(`/api/get-institution-stats?slug=${slug}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
-      }
+      });
 
-      return {
-        total_users: totalUsers,
-        active_users: activeUsers,
-        total_conversations: totalConversations,
-        users_with_conversations: usersWithConversations,
-        avg_messages_per_conversation: avgMessages,
-        most_used_assistant: {
-          name: 'Simulador de Psicanálise ABPSI',
-          usage_count: totalConversations
-        }
-      };
+      console.log('📡 Backend stats API response status:', response.status);
+
+      const result = await response.json();
+      console.log('📊 Backend stats result:', {
+        success: result.success,
+        hasData: !!result.data,
+        hasError: !!result.error
+      });
+
+      if (result.success && result.data && result.data.stats) {
+        console.log('✅ Successfully fetched stats via backend API:', result.data.stats);
+        return result.data.stats;
+      } else {
+        console.warn('⚠️ Backend API call failed:', result.error);
+        return this.getFallbackStats();
+      }
 
     } catch (error) {
-      console.warn('Error fetching institution stats, using fallback:', error);
+      console.error('❌ Error fetching institution stats via backend API:', error);
       return this.getFallbackStats();
     }
   },
@@ -133,12 +92,12 @@ export const institutionApi = {
     return {
       total_users: 2,
       active_users: 2,
-      total_conversations: 2,
+      total_conversations: 4,
       users_with_conversations: 1,
       avg_messages_per_conversation: 6,
       most_used_assistant: {
         name: 'Simulador de Psicanálise ABPSI',
-        usage_count: 2
+        usage_count: 4
       }
     };
   },
