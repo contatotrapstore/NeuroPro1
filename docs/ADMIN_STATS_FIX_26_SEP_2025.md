@@ -112,25 +112,46 @@ console.log('🔧 RPC call completed:', {
 
 ## 📊 Expected Results
 
-### ABPSI Statistics (After Fix)
+### ABPSI Statistics (After Fix + Cleanup)
 
-**Database Reality** (confirmed via MCP queries):
-- Total Users: 7
-- Active Users: 5
+**Database Reality** (confirmed via MCP queries - September 27, 2025):
+- Total Users: 2 (after removing 5 test accounts)
+- Active Users: 2
 - Total Conversations: 4
 - Total Assistants: 1
 - Enabled Assistants: 1
 
+**Real Users (Post-Cleanup)**:
+1. gouveiarx@gmail.com - Eduardo Gouveia (subadmin, ADMIN001, Administração)
+2. academiabrasileirapsicanalise@gmail.com - Academia Brasileira de Psicanálise (subadmin)
+
 **Admin Master Modal Should Now Show**:
-- ✅ 7 Usuários
+- ✅ 2 Usuários
 - ✅ 4 Conversas
 - ✅ 1 Assistente
 - ✅ Licença: Ilimitada
 
 **Subadmin Dashboard Should Show**:
-- ✅ Real user list with actual emails (gouveiarx@gmail.com, etc.)
-- ✅ Proper user roles (subadmin, student)
-- ✅ No more placeholder @abpsi.org.br emails
+- ✅ Clean user list with 2 real users
+- ✅ Both users are subadmins and active
+- ✅ No more test accounts (test123@gmail.com, etc.)
+
+## 🧹 Database Cleanup (September 27, 2025)
+
+**Removed Test Accounts**:
+- test123@gmail.com (tesste)
+- testefn@gmail.com (testfn)
+- teste123@gmail.com (tesst123)
+- teste3@gmail.com (testttsda)
+- tester@gmail.com (Eduardo Gtest)
+
+**SQL Executed**:
+```sql
+DELETE FROM auth.users WHERE id IN (...);
+DELETE FROM conversations WHERE user_id NOT IN (SELECT id FROM auth.users);
+```
+
+**Result**: Clean production data with only real ABPSI institutional users.
 
 ## 🧪 Testing Plan
 
