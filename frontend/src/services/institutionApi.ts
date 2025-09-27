@@ -145,60 +145,70 @@ export const institutionApi = {
 
   async getInstitutionUsers(slug: string): Promise<InstitutionUser[]> {
     try {
-      const { data, error } = await supabase
-        .from('institutions')
-        .select(`
-          id,
-          institution_users!inner(
-            id,
-            user_id,
-            role,
-            registration_number,
-            department,
-            semester,
-            is_active,
-            enrolled_at,
-            last_access,
-            notes
-          )
-        `)
-        .eq('slug', slug)
-        .single();
+      console.log('🔧 Fetching institution users via RPC for slug:', slug);
 
-      if (error) {
-        console.warn('Could not fetch institution users, using fallback');
+      // Get authentication token
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.warn('❌ No auth token available, using fallback');
         return this.getFallbackUsers();
       }
 
-      // Try to get emails from profiles table if it exists
-      // If not, fallback to generic email display
-      const userIds = data.institution_users.map((u: any) => u.user_id);
-      const emailMap = new Map();
+      console.log('🔑 Using token (first 20 chars):', token.substring(0, 20) + '...');
 
-      try {
-        // Try to fetch from user_profiles view first
-        const { data: profiles, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('id, email')
-          .in('id', userIds);
+      // Call RPC via API (same pattern as InstitutionUsersManagement)
+      const response = await fetch('/api/institution-rpc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          function_name: 'get_institution_users',
+          params: [slug]
+        })
+      });
 
-        if (!profileError && profiles) {
-          profiles.forEach(profile => {
-            emailMap.set(profile.id, profile.email);
-          });
-        }
-      } catch (profileError) {
-        // user_profiles view doesn't exist or no access, continue without emails
-        console.warn('Could not fetch from user_profiles view');
+      console.log('📡 RPC response status:', response.status);
+
+      const result = await response.json();
+      console.log('📊 RPC result:', {
+        success: result.success,
+        dataLength: result.data?.length,
+        hasError: !!result.error
+      });
+
+      if (result.success && result.data) {
+        console.log('✅ Successfully fetched', result.data.length, 'users via RPC');
+        console.log('📋 Sample user:', result.data[0] ? {
+          email: result.data[0].email,
+          role: result.data[0].role,
+          is_active: result.data[0].is_active
+        } : 'No users');
+
+        // Transform RPC result to match InstitutionUser interface
+        return result.data.map((user: any) => ({
+          id: user.id,
+          user_id: user.id,  // RPC returns 'id' as user_id
+          email: user.email,
+          role: user.role,
+          registration_number: user.registration_number,
+          department: user.department,
+          semester: user.semester,
+          is_active: user.is_active,
+          enrolled_at: user.enrolled_at,
+          last_access: user.last_access,
+          notes: user.notes || null
+        }));
+      } else {
+        console.warn('⚠️ RPC call failed or returned no data:', result.error);
+        return this.getFallbackUsers();
       }
 
-      return data.institution_users.map((user: any) => ({
-        ...user,
-        email: emailMap.get(user.user_id) || `${user.role}_${user.registration_number || user.id.substring(0, 8)}`
-      }));
-
     } catch (error) {
-      console.warn('Error fetching institution users, using fallback:', error);
+      console.error('❌ Error fetching institution users via RPC:', error);
       return this.getFallbackUsers();
     }
   },
