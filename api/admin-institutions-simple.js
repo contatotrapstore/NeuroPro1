@@ -109,7 +109,22 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Configure Supabase client with appropriate settings for admin operations
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    // Log which key type is being used for debugging
+    console.log(`🔧 Admin API using: ${supabaseServiceKey ? 'SERVICE_ROLE_KEY' : 'ANON_KEY (limited)'}`);
+
+    // Warning if using ANON_KEY - stats may show 0 due to RLS
+    if (!supabaseServiceKey) {
+      console.warn('⚠️  WARNING: Using ANON_KEY - statistics may show 0 due to Row Level Security policies');
+      console.warn('🔑 Configure SUPABASE_SERVICE_ROLE_KEY in Vercel environment for accurate admin statistics');
+    }
 
     // Supabase client ready
 
@@ -350,8 +365,10 @@ module.exports = async function handler(req, res) {
 
           if (!userResult.error) {
             usersCount = userResult;
+            console.log(`✅ ${institution.name} - Users query successful: ${userResult.count} users found`);
           } else {
-            console.error(`Users query error for ${institution.name}:`, userResult.error);
+            console.error(`❌ ${institution.name} - Users query failed:`, userResult.error);
+            console.error(`🔑 Key type: ${supabaseServiceKey ? 'SERVICE_ROLE' : 'ANON'} - Institution ID: ${institution.id}`);
           }
         } catch (error) {
           console.error(`❌ ${institution.name} - institution_users table error:`, error.message);
@@ -391,8 +408,10 @@ module.exports = async function handler(req, res) {
 
             if (!conversationResult.error) {
               conversationsCount = conversationResult;
+              console.log(`✅ ${institution.name} - Conversations query successful: ${conversationResult.count} conversations found for ${userIds.length} users`);
             } else {
-              console.error(`Conversations query error for ${institution.name}:`, conversationResult.error);
+              console.error(`❌ ${institution.name} - Conversations query failed:`, conversationResult.error);
+              console.error(`🔑 Key type: ${supabaseServiceKey ? 'SERVICE_ROLE' : 'ANON'} - User IDs: ${userIds.slice(0,2).join(', ')}...`);
             }
           }
         } catch (error) {
