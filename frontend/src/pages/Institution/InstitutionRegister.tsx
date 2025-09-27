@@ -254,15 +254,15 @@ export const InstitutionRegister: React.FC = () => {
                   <div
                     className="rounded-lg p-4 border"
                     style={{
-                      backgroundColor: '#fbbf2415',
-                      borderColor: '#fbbf2440'
+                      backgroundColor: institutionData.primary_color + '15',
+                      borderColor: institutionData.primary_color + '40'
                     }}
                   >
-                    <p className="text-sm font-medium" style={{ color: '#f59e0b' }}>
-                      ⏳ Aguardando aprovação do administrador
+                    <p className="text-sm font-medium" style={{ color: institutionData.primary_color }}>
+                      ✅ Conta aprovada automaticamente!
                     </p>
-                    <p className="text-sm mt-2" style={{ color: '#f59e0b' }}>
-                      Seu acesso será liberado após a aprovação. Você receberá um email quando isso acontecer.
+                    <p className="text-sm mt-2" style={{ color: institutionData.primary_color }}>
+                      Agora você pode assinar e começar a usar os assistentes de IA especializados.
                     </p>
                   </div>
                 </div>
@@ -274,7 +274,7 @@ export const InstitutionRegister: React.FC = () => {
                     if (needsEmailConfirmation) {
                       navigate(`/i/${slug}/login`);
                     } else {
-                      navigate(`/i/${slug}/pending-approval`);
+                      navigate(`/i/${slug}/checkout`);
                     }
                   }}
                   className="w-full px-6 py-3 rounded-xl text-white font-semibold transition-all transform hover:-translate-y-0.5 hover:shadow-lg"
@@ -283,7 +283,7 @@ export const InstitutionRegister: React.FC = () => {
                     boxShadow: `0 4px 15px ${institutionData.primary_color}30`
                   }}
                 >
-                  {needsEmailConfirmation ? 'Ir para Login' : 'Ver Status da Aprovação'}
+                  {needsEmailConfirmation ? 'Ir para Login' : 'Assinar Agora'}
                 </button>
               </div>
             </div>

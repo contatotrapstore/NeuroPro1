@@ -58,7 +58,7 @@ BEGIN
     FROM auth.users
     WHERE id = v_user_id;
 
-    -- Get available assistants for this institution (only show for active users)
+    -- Get available assistants for this institution (show for all users)
     -- JOIN with assistants table to get proper OpenAI IDs and ensure assistants exist
     SELECT COALESCE(json_agg(
         json_build_object(
@@ -78,8 +78,7 @@ BEGIN
     WHERE ia.institution_id = v_institution_id
       AND ia.is_enabled = true
       AND a.is_active = true
-      AND a.openai_assistant_id IS NOT NULL
-      AND v_access_record.is_active = true; -- Only show assistants if user is active/approved
+      AND a.openai_assistant_id IS NOT NULL;
 
     -- Return success with all data
     RETURN json_build_object(

@@ -228,11 +228,10 @@ module.exports = async function handler(req, res) {
           institutions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.name :
           null;
 
-        // Buscar total de usuários institucionais
+        // Buscar total de usuários institucionais (todos os registrados)
         const { count: totalUsers } = await supabase
           .from('institution_users')
-          .select('id', { count: 'exact' })
-          .eq('is_active', true);
+          .select('id', { count: 'exact' });
 
         // Buscar estatísticas por instituição
         const institutionsStats = [];
@@ -241,22 +240,19 @@ module.exports = async function handler(req, res) {
             const { count: userCount } = await supabase
               .from('institution_users')
               .select('id', { count: 'exact' })
-              .eq('institution_id', institution.id)
-              .eq('is_active', true);
+              .eq('institution_id', institution.id);
 
             const { count: studentCount } = await supabase
               .from('institution_users')
               .select('id', { count: 'exact' })
               .eq('institution_id', institution.id)
-              .eq('role', 'student')
-              .eq('is_active', true);
+              .eq('role', 'student');
 
             const { count: professorCount } = await supabase
               .from('institution_users')
               .select('id', { count: 'exact' })
               .eq('institution_id', institution.id)
-              .eq('role', 'professor')
-              .eq('is_active', true);
+              .eq('role', 'professor');
 
             const { count: adminCount } = await supabase
               .from('institution_admins')
@@ -355,12 +351,12 @@ module.exports = async function handler(req, res) {
         let assistantsCount = { count: 0 };
 
         try {
-          // Contagem de usuários TOTAIS (não só ativos)
+          // Contagem de usuários TOTAIS (todos os registrados)
           const userResult = await supabase
             .from('institution_users')
             .select('id', { count: 'exact' })
             .eq('institution_id', institution.id);
-            // Removido .eq('is_active', true) para contar todos os usuários
+            // Conta TODOS os usuários registrados na instituição
 
           console.log(`📊 ${institution.name} - Users query result:`, {
             count: userResult.count,

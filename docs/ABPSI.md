@@ -49,31 +49,27 @@
 
 ## 💰 Sistema de Assinatura Individual (v3.4.0)
 
-### 🎯 Verificação Dupla Implementada
+### 🎯 Sistema de Registro Automático (Atualizado - 27/09/2025)
 
-**IMPORTANTE**: A partir de 26/09/2025, o acesso aos assistentes de IA na ABPSI requer **dupla verificação**:
+**MUDANÇA IMPORTANTE**: A partir de 27/09/2025, o sistema de aprovação manual foi removido:
 
-1. **✅ Aprovação Administrativa**: Subadmin aprova o usuário
-2. **🆕 Assinatura Individual**: Usuário deve pagar assinatura própria
+1. ~~❌ Aprovação Administrativa~~: **REMOVIDO** - Não é mais necessário
+2. **✅ Assinatura Individual**: Usuário deve pagar assinatura própria (mantido)
 
-### Fluxo do Usuário ABPSI
+### Fluxo do Usuário ABPSI (Novo)
 
 ```
 1. Usuário registra em /i/abpsi/register
    ↓
-2. Aguarda aprovação de gouveiarx@gmail.com
+2. ✅ APROVADO AUTOMATICAMENTE (sem espera)
    ↓
-3. Admin aprova usuário no painel
+3. Redirecionamento automático para /i/abpsi/checkout
    ↓
-4. Dashboard mostra "Assinatura Pendente" 🟠
+4. Pagamento via PIX (R$ 39,90/mês)
    ↓
-5. Usuário clica "Assinar Agora" → /i/abpsi/checkout
+5. Status muda para "Ativa" 🟢
    ↓
-6. Pagamento via PIX (R$ 39,90/mês)
-   ↓
-7. Status muda para "Ativa" 🟢
-   ↓
-8. Acesso ao Simulador de Psicanálise liberado
+6. Acesso ao Simulador de Psicanálise liberado
 ```
 
 ### Preços ABPSI
@@ -98,7 +94,7 @@
 - **Status**: Ativo
 - **Registro**: ADMIN001
 - **Departamento**: Administração
-- **🆕 Responsabilidade**: Aprovar usuários (pagamento é responsabilidade individual)
+- **🆕 Responsabilidade**: ~~Aprovar usuários~~ (REMOVIDO - aprovação automática)
 
 ### Permissões do Subadmin
 ```javascript
@@ -109,7 +105,7 @@
   manage_settings: false,    // Não pode alterar configurações gerais
   view_conversations: true,  // Ver conversas dos usuários
   export_data: true,         // Exportar dados e relatórios
-  approve_users: true        // ✅ Aprovar usuários (pagamento separado)
+  approve_users: false       // ❌ Aprovação removida (automática agora)
 }
 ```
 

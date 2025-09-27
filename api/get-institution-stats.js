@@ -111,12 +111,12 @@ module.exports = async function handler(req, res) {
     let assistantsCount = { count: 0 };
 
     try {
-      // Contagem de usuários TOTAIS (não só ativos)
+      // Contagem de usuários TOTAIS (todos os registrados)
       const userResult = await supabase
         .from('institution_users')
         .select('id', { count: 'exact' })
         .eq('institution_id', institution.id);
-        // Removido .eq('is_active', true) para contar todos os usuários
+        // Conta TODOS os usuários registrados na instituição
 
       console.log(`📊 ${institution.name} - Users query result:`, {
         count: userResult.count,
@@ -130,6 +130,23 @@ module.exports = async function handler(req, res) {
       }
     } catch (error) {
       console.error(`❌ ${institution.name} - institution_users table error:`, error.message);
+    }
+
+    // Contagem separada de usuários ativos (com is_active = true)
+    let activeUsersCount = { count: 0 };
+    try {
+      const activeUserResult = await supabase
+        .from('institution_users')
+        .select('id', { count: 'exact' })
+        .eq('institution_id', institution.id)
+        .eq('is_active', true);
+
+      if (!activeUserResult.error) {
+        activeUsersCount = activeUserResult;
+      }
+      console.log(`📊 ${institution.name} - Active users:`, activeUsersCount.count);
+    } catch (error) {
+      console.error(`❌ ${institution.name} - active users calculation error:`, error.message);
     }
 
     try {
@@ -190,11 +207,38 @@ module.exports = async function handler(req, res) {
     // ============================================
     // BUILD RESPONSE
     // ============================================
+    // Calcular quantos usuários únicos têm conversas
+    let usersWithConversationsCount = 0;
+    try {
+      if (conversationsCount.count > 0) {
+        const { data: institutionUserIds, error: userIdsError } = await supabase
+          .from('institution_users')
+          .select('user_id')
+          .eq('institution_id', institution.id);
+
+        if (!userIdsError && institutionUserIds && institutionUserIds.length > 0) {
+          const userIds = institutionUserIds.map(u => u.user_id);
+
+          const { data: usersWithConvs, error: convUsersError } = await supabase
+            .from('conversations')
+            .select('user_id')
+            .in('user_id', userIds);
+
+          if (!convUsersError && usersWithConvs) {
+            const uniqueUsers = new Set(usersWithConvs.map(c => c.user_id));
+            usersWithConversationsCount = uniqueUsers.size;
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ ${institution.name} - users with conversations calculation error:`, error.message);
+    }
+
     const stats = {
       total_users: usersCount.count || 0,
-      active_users: usersCount.count || 0, // Assumption: all users are active for now
+      active_users: activeUsersCount.count || 0, // Usuários realmente ativos
       total_conversations: conversationsCount.count || 0,
-      users_with_conversations: conversationsCount.count > 0 ? 1 : 0, // Simplified
+      users_with_conversations: usersWithConversationsCount, // Contagem real de usuários únicos com conversas
       avg_messages_per_conversation: conversationsCount.count > 0 ? 6 : 0, // Default average
       most_used_assistant: {
         name: 'Simulador de Psicanálise ABPSI',
