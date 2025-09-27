@@ -1,5 +1,68 @@
 # Changelog - NeuroIA Lab
 
+## [v3.4.1] - 2025-09-27 🚀 SISTEMA DE AUTO-APROVAÇÃO ABPSI + LIMPEZA DE ARQUIVOS
+
+### ✅ **Sistema de Auto-Aprovação Implementado**
+- **Mudança Crítica**: Removido sistema de aprovação manual para usuários ABPSI
+- **Novo Fluxo**: Registro → ✅ Auto-Aprovação → Checkout → Acesso aos Assistentes
+- **Migration 024**: Triggers automáticos para aprovação instantânea
+- **Frontend**: Redirecionamento direto para checkout após registro
+
+### 🔧 **Correções de Estatísticas Implementadas**
+- **Problema Resolvido**: Dashboard mostrando 0 usuários quando ABPSI tinha 2 usuários
+- **APIs Corrigidas**: `get-institution-stats.js` e `admin-institutions-simple.js`
+- **Contagem Precisa**: Separação entre usuários totais vs usuários ativos
+- **Cálculo Correto**: Usuários únicos com conversas usando Set()
+
+### 🧹 **Limpeza Completa de Arquivos (19 arquivos removidos)**
+- **Database Scripts**: 8 scripts de teste/debug removidos
+- **SQLs Obsoletos**: 5 arquivos SQL da raiz do database
+- **Migrations Duplicadas**: 4 migrations renumeradas
+- **APIs Debug**: 4 arquivos de teste da API
+- **Session Logs**: 3 documentos temporários removidos
+
+### 📚 **Documentação Reorganizada**
+- **database/README.md**: Documentação completa com todas as 24 migrations
+- **docs/CLAUDE.md**: Consolidação de informações dos logs removidos
+- **docs/INDEX.md**: Atualizado para v3.4.1 com novos links
+- **CHANGELOG.md**: Documentação desta versão
+
+### 🔧 **Implementação Técnica**
+
+#### Migration 024 - Auto-Aprovação
+```sql
+-- Default value para novos usuários
+ALTER TABLE institution_users ALTER COLUMN is_active SET DEFAULT true;
+
+-- Trigger automático para aprovação
+CREATE OR REPLACE FUNCTION auto_approve_institution_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  NEW.is_active = true;
+  RETURN NEW;
+END;
+$$;
+```
+
+#### Backend Corrigido
+- **verify_institution_access**: Removido filtro `is_active` para mostrar assistentes
+- **get-institution-stats.js**: Contagem total vs usuários ativos
+- **admin-institutions-simple.js**: Estatísticas consistentes
+
+#### Frontend Atualizado
+- **InstitutionRegister.tsx**: "Ver Status da Aprovação" → "Assinar Agora"
+- **Mensagem**: "Aguardando aprovação" → "Conta aprovada automaticamente!"
+- **Redirecionamento**: `/pending-approval` → `/checkout`
+
+### 📊 **Status de Produção (27/09/2025)**
+- ✅ **Migration Aplicada**: Via MCP Supabase com sucesso
+- ✅ **ABPSI Funcional**: 2 usuários, 2 ativos, 4 conversas, 1 assistente
+- ✅ **Estatísticas Precisas**: Dashboards mostrando dados corretos
+- ✅ **Auto-Aprovação**: Usuários aprovados automaticamente
+- ✅ **Projeto Limpo**: 19 arquivos obsoletos removidos
+
+---
+
 ## [v3.4.0] - 2025-09-26 🎯 SISTEMA DE ASSINATURA INDIVIDUAL PARA INSTITUIÇÕES
 
 ### ✅ **Sistema de Verificação Dupla Implementado**

@@ -38,6 +38,7 @@ interface Institution {
   created_at: string;
   stats: {
     total_users: number;
+    active_users: number;
     total_conversations: number;
     total_assistants: number;
     license_status: string;
@@ -416,7 +417,7 @@ export const InstitutionDetailModal: React.FC<InstitutionDetailModalProps> = ({
                     <Users className="h-8 w-8 text-blue-600" />
                     <div className="ml-3">
                       <p className="text-2xl font-bold text-gray-900">
-                        {institution.stats.total_users}
+                        {institution.stats.active_users || institution.stats.total_users}
                       </p>
                       <p className="text-sm text-gray-600">Usuários Ativos</p>
                     </div>

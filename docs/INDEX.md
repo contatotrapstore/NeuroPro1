@@ -101,7 +101,7 @@ npm run dev
 
 ### 📊 **Banco de Dados**
 - [Schema completo](architecture/database-schema.md)
-- [SQL Functions](database/SQL_FUNCTIONS.md) - Funções RPC implementadas ✨ **NOVO**
+- [Database README](../database/README.md) - Migrations e estrutura completa
 - [Migrações](migrations/apply-migration-manual.md)
 - [RLS Policies](architecture/database-schema.md#🔒-row-level-security-rls)
 
@@ -112,21 +112,19 @@ npm run dev
 
 ## 📈 Status e Métricas
 
-### ✅ **Sistema Atual (v3.3.0)**
+### ✅ **Sistema Atual (v3.4.1)**
 - **Frontend**: 100% funcional
 - **Backend**: 100% funcional
-- **Admin Dashboard**: 100% funcional ✨ **NOVO**
-- **Sistema ABPSI**: 100% funcional ✨ **NOVO**
+- **Admin Dashboard**: 100% funcional
+- **Sistema ABPSI**: 100% funcional com auto-aprovação ✨ **ATUALIZADO**
 - **Pagamentos PIX**: 100% funcional
 - **Pagamentos Cartão**: Temporariamente desabilitado
 
 ### 📊 **Estatísticas de Produção**
-- **48 usuários ativos** (45 Neuro + 1 ABPSI + 2 Admin)
-- **R$ 7.223,28** receita mensal recorrente
-- **258 assinaturas ativas** (172 usuários + 86 admin)
-- **22 usuários pagantes únicos**
 - **19 assistentes** especializados
 - **5 áreas** de especialização
+- **Sistema Institucional**: ABPSI operacional
+- **Auto-Aprovação**: Implementada em setembro 2025
 - **Zero erros críticos** - Sistema 100% estável
 
 ## 🆘 Suporte e Ajuda
@@ -151,6 +149,7 @@ npm run dev
 
 | Versão | Data | Principais Mudanças |
 |--------|------|---------------------|
+| **v3.4.1** | 2025-09-27 | Sistema de auto-aprovação ABPSI + Limpeza de arquivos |
 | **v3.1.0** | 2025-01-18 | Novas áreas + Documentação completa |
 | **v3.0.1** | 2025-01-17 | Sistema de pagamentos |
 | **v2.3.2** | 2025-09-16 | Reset de senha reformulado |
@@ -204,6 +203,6 @@ npm run dev
 
 ---
 
-**📚 Documentação mantida atualizada** | **🚀 Versão**: v3.3.0 | **📅 Última atualização**: Setembro 2025
+**📚 Documentação mantida atualizada** | **🚀 Versão**: v3.4.1 | **📅 Última atualização**: 27 de Setembro 2025
 
 > **💡 Dica**: Use `Ctrl+F` para buscar rapidamente por tópicos específicos neste índice!

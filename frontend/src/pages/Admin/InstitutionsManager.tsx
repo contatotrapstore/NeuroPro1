@@ -14,7 +14,9 @@ interface Institution {
   created_at: string;
   stats: {
     total_users: number;
+    active_users: number;
     total_conversations: number;
+    total_assistants: number;
     license_status: string;
     license_expires?: string;
   };
@@ -46,32 +48,24 @@ export const InstitutionsManager: React.FC = () => {
         params.append('status_filter', statusFilter);
       }
 
-      console.log('🔍 Loading institutions with params:', params.toString());
-
       const headers = await getAuthHeaders();
-      console.log('🔑 Auth headers:', headers);
-
       const response = await fetch(`/api/admin-institutions-simple?${params}`, {
         method: 'GET',
         headers
       });
 
-      console.log('📡 Response status:', response.status);
-
       const result = await response.json();
-      console.log('📊 API Response:', result);
 
       if (result.success) {
-        console.log('✅ Institutions loaded:', result.data.institutions?.length || 0);
         setInstitutions(result.data.institutions || []);
         setTotalPages(result.data.pagination?.total_pages || 1);
         setCurrentPage(page);
       } else {
-        console.error('❌ API Error:', result.error);
+        console.error('API Error:', result.error);
         toast.error(`Erro ao carregar instituições: ${result.error}`);
       }
     } catch (error) {
-      console.error('💥 Network/Parse Error:', error);
+      console.error('Network Error:', error);
       toast.error(`Erro ao conectar com o servidor: ${error.message}`);
     } finally {
       setLoading(false);
@@ -273,7 +267,7 @@ export const InstitutionsManager: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900">
                         <Users className="w-4 h-4 mr-1" />
-                        {institution.stats.total_users}
+                        {institution.stats.active_users || institution.stats.total_users}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

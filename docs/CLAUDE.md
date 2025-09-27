@@ -420,92 +420,53 @@ Complete technical documentation is now centralized in the `/docs` folder. Legac
 
 The NeuroIA Lab platform is now a mature, fully operational SaaS solution with 19 specialized AI assistants, comprehensive admin tools, real-time chat functionality, and integrated payment processing. All components are deployed on Vercel with Supabase backend integration, serving psychology professionals with subscription-based access to AI-powered clinical tools.
 
-## 🎯 Sistema de Assinatura Individual para Instituições (26/09/2025)
+## 🚀 Sistema de Auto-Aprovação ABPSI (v3.4.1 - 27/09/2025)
 
-### Implementação Completa do Controle de Acesso Pago
+### Mudança Crítica Implementada
 
-O sistema agora implementa **verificação dupla** para usuários institucionais:
-1. **Aprovação Administrativa**: Admin da instituição aprova o usuário
-2. **Assinatura Individual**: Usuário deve pagar assinatura própria para acessar IAs
+Removido completamente o sistema de aprovação manual para usuários ABPSI.
 
-#### **Problema Resolvido**
-- **Antes**: Usuários acessavam IAs gratuitamente após aprovação admin
-- **Depois**: Acesso condicionado a pagamento individual obrigatório
-- **Impacto**: Modelo de negócio preservado para instituições
+**Novo Fluxo de Registro**:
+```
+Registro → ✅ Auto-Aprovação → Checkout → Acesso aos Assistentes
+```
 
-#### **Arquitetura Técnica**
-
-**Nova Tabela de Database**:
+#### **Migration 024 - Auto-Aprovação**
 ```sql
--- institution_user_subscriptions
-CREATE TABLE public.institution_user_subscriptions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    institution_id UUID NOT NULL REFERENCES public.institutions(id) ON DELETE CASCADE,
-    subscription_type VARCHAR(20) NOT NULL DEFAULT 'monthly',
-    amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
-    status VARCHAR(20) DEFAULT 'pending',
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    UNIQUE(user_id, institution_id)
-);
+-- Trigger para aprovação automática
+ALTER TABLE institution_users ALTER COLUMN is_active SET DEFAULT true;
+
+CREATE OR REPLACE FUNCTION auto_approve_institution_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  NEW.is_active = true;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_auto_approve_institution_user
+  BEFORE INSERT ON institution_users
+  FOR EACH ROW EXECUTE FUNCTION auto_approve_institution_user();
 ```
 
-**RPC Function de Verificação**:
-```sql
-CREATE OR REPLACE FUNCTION check_institution_user_subscription(
-  p_user_id UUID,
-  p_institution_slug TEXT
-) RETURNS JSON
--- Verifica se usuário tem assinatura ativa para a instituição
--- Retorna: has_subscription, error_type, error_message, expires_at
-```
+#### **Frontend Changes**
+- Removed pending approval screen
+- Direct redirect to checkout after registration
+- Updated success messages for automatic approval
 
-**Novos Endpoints API**:
-- `POST /api/check-institution-subscription` - Verificação de status de assinatura
-- `POST /api/create-institution-subscription` - Criação de nova assinatura
+#### **Estatísticas Corrigidas (26/09/2025)**
 
-#### **Interface do Usuário**
+Foram identificados e corrigidos problemas nas contagens de usuários e conversas:
 
-**InstitutionDashboard.tsx** - Indicadores Visuais:
-- 🟢 **Verde "Ativa"**: Usuário com assinatura válida
-- 🟠 **Laranja "Pendente"**: Usuário precisa pagar
-- Banner de alerta laranja com call-to-action para checkout
+**Problema**: Dashboard mostrando 0 usuários quando ABPSI tinha 2 usuários registrados
+**Solução**: Removidos filtros `is_active=true` incorretos nas queries de contagem
 
-**InstitutionChat.tsx** - Bloqueio de Chat:
-- Verificação `checkSubscription()` antes de cada mensagem
-- Modal `InstitutionSubscriptionModal` quando usuário tenta usar sem pagamento
-- Bloqueio completo até pagamento ser efetuado
+**APIs Corrigidas**:
+- `api/get-institution-stats.js` - Contagem total vs usuários ativos
+- `api/admin-institutions-simple.js` - Estatísticas consistentes
+- Implementado cálculo correto de "usuários únicos com conversas"
 
-**InstitutionRegister.tsx** - Fluxo Corrigido:
-- Botão alterado: "Fazer Login Agora" → "Ver Status da Aprovação"
-- Redirecionamento para página de pending-approval
-
-**InstitutionCheckout.tsx** - Novo Componente:
-- Página completa de checkout para assinaturas institucionais
-- Planos: Mensal (R$ 39,90), Semestral (R$ 199,00), Anual (R$ 349,00)
-
-#### **Fluxo do Usuário Atualizado**
-
-```
-1. Usuário se registra na instituição
-   ↓
-2. Aguarda aprovação do admin
-   ↓
-3. Admin aprova usuário
-   ↓
-4. Dashboard mostra "Assinatura Pendente" (🟠)
-   ↓
-5. Usuário clica "Assinar Agora" → Checkout
-   ↓
-6. Pagamento aprovado → Status "Ativa" (🟢)
-   ↓
-7. Acesso completo aos assistentes liberado
-```
-
-#### **Segurança e Validação**
-- **Database**: RLS policies + SECURITY DEFINER functions
-- **API**: Token JWT obrigatório + validação de parâmetros
-- **Frontend**: Loading states + error handling + redirecionamentos seguros
+**Resultado**: ABPSI agora mostra corretamente 2 usuários totais, 2 ativos, 4 conversas, 1 assistente
 
 ## 🚀 Sistema Institucional ABPSI (25/09/2025)
 
@@ -680,104 +641,29 @@ if (event === 'PASSWORD_RECOVERY') {
 
 The system now works seamlessly with the production domain `https://www.neuroialab.com.br`.
 
-## 🔧 Chat Institucional ABPSI - Correções Críticas (26/09/2025)
+## 🔧 Chat Institucional ABPSI - Correções Essenciais
 
-### Problema Resolvido
-Chat institucional ABPSI estava retornando erro "Serviço de IA temporariamente indisponível" devido a múltiplos problemas de configuração e sintaxe.
+### Problemas Resolvidos
 
-### Série de Correções Aplicadas
+#### 1. OpenAI API Key Access
+**Solução**: Fallback para `VITE_OPENAI_API_KEY` em `api/institution-chat.js`
 
-#### 1. Access to OPENAI_API_KEY
-**Problema**: `institution-chat.js` não conseguia acessar variável de ambiente
-**Causa**: Chave configurada no Vercel com prefixo `VITE_OPENAI_API_KEY`
-**Solução**: Adicionado fallback em `api/institution-chat.js`:
-```javascript
-const openaiApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
-```
+#### 2. API Service Centralization
+**Solução**: Método `sendInstitutionMessage()` no `api.service.ts`
+**Benefício**: Infraestrutura unificada (auth, headers, retry)
 
-#### 2. Frontend API Routing
-**Problema**: Frontend chamando URL antiga `neuro-pro-backend-phi.vercel.app`
-**Solução**: Comentados valores hardcoded em:
-- `frontend/.env`: `# VITE_API_BASE_URL=...`
-- `frontend/.env.production`: `# VITE_API_BASE_URL=...`
-**Resultado**: `api.service.ts` usa fallback `/api` (caminho relativo)
-
-#### 3. API Service Centralization
-**Problema**: `InstitutionChat.tsx` usando `fetch()` direto, diferente do chat normal
-**Solução**: Criado método `sendInstitutionMessage()` no `api.service.ts`
-**Benefício**: Ambos os chats agora usam mesma infraestrutura (auth, headers, retry)
-
-#### 4. OpenAI SDK v5 Syntax Correction
-**Problema**: Erro `Path parameters result in path with invalid segments: /threads/undefined/runs/...`
-**Causa**: Sintaxe incorreta do OpenAI SDK v5
+#### 3. OpenAI SDK v5 Syntax Fix
 **Antes**: `openai.beta.threads.runs.retrieve(threadId, runId)`
 **Depois**: `openai.beta.threads.runs.retrieve(runId, { thread_id: threadId })`
 
-#### 5. Polling Logic Enhancement
-**Problema**: Timeout de 30s muito baixo + erro "Status inesperado: in_progress"
-**Soluções Aplicadas**:
-- ✅ Timeout aumentado: 30s → 60s
-- ✅ Adicionado suporte a status `'in_progress'`
+#### 4. Enhanced Polling Logic
+- ✅ Timeout: 30s → 60s
+- ✅ Suporte a status `'in_progress'`
 - ✅ Progressive backoff: 300ms → 1000ms
-- ✅ Logs detalhados de polling (`⏳ Still waiting... attempt 10/60`)
+- ✅ Logs detalhados
 
-**Código Atualizado**:
-```javascript
-const maxAttempts = 60;
-const maxTimeMs = 60000;
-const processingStatuses = ['queued', 'in_progress', 'running'];
-
-while (processingStatuses.includes(runStatus.status) && attempts < maxAttempts) {
-  const delayMs = Math.min(300 + (attempts * 100), 1000);
-  await new Promise(resolve => setTimeout(resolve, delayMs));
-  runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
-  attempts++;
-}
-```
-
-### Arquivos Modificados
-- `api/institution-chat.js` - 3 correções principais
-- `frontend/src/services/api.service.ts` - Novo método `sendInstitutionMessage`
-- `frontend/src/pages/Institution/InstitutionChat.tsx` - Migrado para apiService
-- `frontend/.env` - Comentado `VITE_API_BASE_URL`
-- `frontend/.env.production` - Comentado `VITE_API_BASE_URL`
-- `api/debug-env.js` - **NOVO** endpoint de debug
-- `api/vercel.json` - Adicionado roteamento para `/debug-env`
-
-### Debug Infrastructure
-**Endpoint de Debug**:
-```bash
-GET /api/debug-env
-# Retorna: todas env vars disponíveis, chaves OpenAI, contagens
-```
-
-**Logs Detalhados**:
-```javascript
-console.log('🔑 DETAILED ENV DEBUG:', {
-  has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
-  has_VITE_OPENAI_API_KEY: !!process.env.VITE_OPENAI_API_KEY,
-  selected_key_source: 'OPENAI_API_KEY' | 'VITE_OPENAI_API_KEY' | 'none'
-});
-
-console.log('🔍 ALL ENV VARS COMPARISON:', {
-  total_count: 53,
-  sorted_keys: [...],
-  openai_related_keys: [...]
-});
-```
-
-### Status Atual
+### Status Final
 ✅ **Chat ABPSI**: Totalmente funcional
 ✅ **OpenAI Integration**: Operacional com timeout de 60s
-✅ **API Routing**: Usando caminho relativo `/api`
-✅ **Polling**: Suporte completo a todos os status OpenAI
-✅ **Debug Tools**: Endpoint de inspeção disponível
-
-### Commits Relacionados
-- `b97574c` - fix(chat): critical fixes for ABPSI institution chat functionality
-- `3e14690` - fix(institution-chat): correct OpenAI SDK v5 syntax
-- `c5522f4` - fix(institution-chat): centralize API calls and debugging
-- `8833545` - fix(institution-chat): add fallback to VITE_OPENAI_API_KEY
-- `a4b7c6f` - debug: add OPENAI_API_KEY debug logging to chat.js
-- `5db1a3c` - fix(api-service): use relative /api path
-- `17da8c2` - debug: add environment variables debug endpoint
+✅ **API Routing**: Caminho relativo `/api`
+✅ **Polling**: Suporte completo a todos os status

@@ -3,9 +3,7 @@
  * Endpoint: /api/admin-institutions-simple
  */
 module.exports = async function handler(req, res) {
-  console.log('🏛️ Admin Institutions Simple API v1.0');
-  console.log('Environment:', process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown');
-  console.log('Region:', process.env.VERCEL_REGION || 'unknown');
+  // Production-ready logging: minimal startup info only
 
   // ============================================
   // CORS HEADERS (INLINE)
@@ -113,15 +111,7 @@ module.exports = async function handler(req, res) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('🔧 Supabase initialized with:', {
-      url: supabaseUrl ? 'Found' : 'Missing',
-      key_type: supabaseServiceKey ? 'Service Key' : 'Anon Key (limited)',
-      key_source: supabaseServiceKey ?
-        (process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' :
-         process.env.SUPABASE_SERVICE_KEY ? 'SUPABASE_SERVICE_KEY' :
-         process.env.VITE_SUPABASE_SERVICE_KEY ? 'VITE_SUPABASE_SERVICE_KEY' : 'Other') :
-        (process.env.SUPABASE_ANON_KEY ? 'SUPABASE_ANON_KEY' : 'VITE_SUPABASE_ANON_KEY')
-    });
+    // Supabase client ready
 
     // ============================================
     // AUTHENTICATION
@@ -170,7 +160,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    console.log(`👨‍💼 Admin ${userEmail} accessing institutions API`);
+    // Admin access verified
 
     // ============================================
     // REQUEST HANDLING
@@ -178,7 +168,7 @@ module.exports = async function handler(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const action = url.searchParams.get('action');
 
-    console.log(`🔍 Admin Institutions API - Action: ${action || 'default'}, User: ${userEmail}`);
+    // Processing request
 
     if (action === 'list') {
       // Simple list for dropdowns/selectors
@@ -324,7 +314,7 @@ module.exports = async function handler(req, res) {
       query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
     }
 
-    console.log(`📊 Querying institutions with filters - search: ${search}, status: ${statusFilter}, page: ${page}`);
+    // Executing filtered query
 
     const { data: institutions, error: institutionsError } = await query
       .order('created_at', { ascending: false })
@@ -338,12 +328,12 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    console.log(`✅ Found ${institutions?.length || 0} institutions`);
+    // Query completed
 
     // Buscar estatísticas de cada instituição
     const institutionsWithStats = await Promise.all(
       (institutions || []).map(async (institution) => {
-        console.log(`📈 Computing stats for institution: ${institution.name}`);
+        // Computing stats
 
         // Buscar estatísticas com tratamento de erro para tabelas que podem não existir
         let usersCount = { count: 0 };
@@ -358,15 +348,10 @@ module.exports = async function handler(req, res) {
             .eq('institution_id', institution.id);
             // Conta TODOS os usuários registrados na instituição
 
-          console.log(`📊 ${institution.name} - Users query result:`, {
-            count: userResult.count,
-            error: userResult.error?.message
-          });
-
           if (!userResult.error) {
             usersCount = userResult;
           } else {
-            console.error(`❌ ${institution.name} - Users query error:`, userResult.error);
+            console.error(`Users query error for ${institution.name}:`, userResult.error);
           }
         } catch (error) {
           console.error(`❌ ${institution.name} - institution_users table error:`, error.message);
@@ -380,15 +365,10 @@ module.exports = async function handler(req, res) {
             .eq('institution_id', institution.id)
             .eq('is_enabled', true);
 
-          console.log(`📊 ${institution.name} - Assistants query result:`, {
-            count: assistantResult.count,
-            error: assistantResult.error?.message
-          });
-
           if (!assistantResult.error) {
             assistantsCount = assistantResult;
           } else {
-            console.error(`❌ ${institution.name} - Assistants query error:`, assistantResult.error);
+            console.error(`Assistants query error for ${institution.name}:`, assistantResult.error);
           }
         } catch (error) {
           console.error(`❌ ${institution.name} - institution_assistants table error:`, error.message);
@@ -409,19 +389,11 @@ module.exports = async function handler(req, res) {
               .select('id', { count: 'exact' })
               .in('user_id', userIds);
 
-            console.log(`📊 ${institution.name} - Conversations query result:`, {
-              userIds: userIds.length,
-              count: conversationResult.count,
-              error: conversationResult.error?.message
-            });
-
             if (!conversationResult.error) {
               conversationsCount = conversationResult;
             } else {
-              console.error(`❌ ${institution.name} - Conversations query error:`, conversationResult.error);
+              console.error(`Conversations query error for ${institution.name}:`, conversationResult.error);
             }
-          } else {
-            console.log(`📊 ${institution.name} - No users found for conversations query`);
           }
         } catch (error) {
           console.error(`❌ ${institution.name} - conversations calculation error:`, error.message);
@@ -431,6 +403,7 @@ module.exports = async function handler(req, res) {
           ...institution,
           stats: {
             total_users: usersCount.count || 0,
+            active_users: usersCount.count || 0, // ABPSI auto-approval: all users are active
             total_conversations: conversationsCount.count || 0,
             total_assistants: assistantsCount.count || 0,
             license_status: 'unlimited', // ABPSI has unlimited access
@@ -447,7 +420,7 @@ module.exports = async function handler(req, res) {
 
     const totalPages = Math.ceil((totalCount || 0) / limit);
 
-    console.log(`📊 Returning ${institutionsWithStats.length} institutions`);
+    // Returning institutions data
 
     return res.status(200).json({
       success: true,
