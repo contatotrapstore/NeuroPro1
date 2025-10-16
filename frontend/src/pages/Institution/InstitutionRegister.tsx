@@ -13,8 +13,9 @@ interface RegistrationFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  registration_number: string;
-  department: string;
+  isAbpsiStudent: boolean;
+  registration_number?: string;
+  department?: string;
   semester?: number;
   phone?: string;
 }
@@ -30,6 +31,7 @@ export const InstitutionRegister: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    isAbpsiStudent: true,
     registration_number: '',
     department: '',
     semester: undefined,
@@ -62,9 +64,9 @@ export const InstitutionRegister: React.FC = () => {
   };
 
   const validateForm = () => {
-    const { name, email, password, confirmPassword, registration_number, department } = formData;
+    const { name, email, password, confirmPassword, registration_number } = formData;
 
-    if (!name || !email || !password || !confirmPassword || !registration_number || !department) {
+    if (!name || !email || !password || !confirmPassword) {
       setError('Por favor, preencha todos os campos obrigatórios');
       return false;
     }
@@ -90,7 +92,8 @@ export const InstitutionRegister: React.FC = () => {
       return false;
     }
 
-    if (registration_number.length < 3) {
+    // Optional validation - only if user provides registration number
+    if (registration_number && registration_number.length < 3) {
       setError('Número de matrícula deve ter pelo menos 3 caracteres');
       return false;
     }
@@ -356,6 +359,74 @@ export const InstitutionRegister: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* ABPsi Student Question */}
+            {slug === 'abpsi' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Você é aluno(a) da ABPsi? *
+                </label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, isAbpsiStudent: true }))}
+                    className={cn(
+                      "flex-1 py-3 px-4 rounded-xl font-medium transition-all",
+                      formData.isAbpsiStudent
+                        ? "text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                    style={formData.isAbpsiStudent ? {
+                      backgroundColor: institutionData.primary_color,
+                      boxShadow: `0 4px 15px ${institutionData.primary_color}30`
+                    } : {}}
+                    disabled={isSubmitting}
+                  >
+                    Sim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, isAbpsiStudent: false }))}
+                    className={cn(
+                      "flex-1 py-3 px-4 rounded-xl font-medium transition-all",
+                      !formData.isAbpsiStudent
+                        ? "text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                    style={!formData.isAbpsiStudent ? {
+                      backgroundColor: institutionData.primary_color,
+                      boxShadow: `0 4px 15px ${institutionData.primary_color}30`
+                    } : {}}
+                    disabled={isSubmitting}
+                  >
+                    Não
+                  </button>
+                </div>
+
+                {/* Message for non-students */}
+                {!formData.isAbpsiStudent && (
+                  <div
+                    className="mt-4 p-4 rounded-lg border-2"
+                    style={{
+                      backgroundColor: institutionData.primary_color + '10',
+                      borderColor: institutionData.primary_color + '60'
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Icon name="info" className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: institutionData.primary_color }} />
+                      <div>
+                        <p className="font-semibold text-sm mb-1" style={{ color: institutionData.primary_color }}>
+                          Alunos da ABPsi têm mais vantagens!
+                        </p>
+                        <p className="text-sm" style={{ color: institutionData.primary_color }}>
+                          Estudantes regularmente matriculados na ABPsi têm acesso a benefícios exclusivos, descontos especiais e recursos premium.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -424,22 +495,24 @@ export const InstitutionRegister: React.FC = () => {
               </div>
             </div>
 
-            {/* Institution Information */}
+            {/* Institution Information - Optional */}
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Informações Institucionais
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Informações Institucionais
+                </h3>
+                <span className="text-sm text-gray-500 italic">(Opcional)</span>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="registration_number" className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Matrícula *
+                    Número de Matrícula
                   </label>
                   <input
                     id="registration_number"
                     name="registration_number"
                     type="text"
-                    required
                     value={formData.registration_number}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
@@ -451,25 +524,24 @@ export const InstitutionRegister: React.FC = () => {
 
                 <div>
                   <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
-                    Departamento/Curso *
+                    Departamento/Curso
                   </label>
                   <input
                     id="department"
                     name="department"
                     type="text"
-                    required
                     value={formData.department}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
                     style={{ '--tw-ring-color': institutionData.primary_color } as React.CSSProperties}
-                    placeholder={formData.role === 'student' ? 'Ex: Psicologia' : 'Ex: Departamento de Psicologia'}
+                    placeholder="Ex: Psicologia"
                     disabled={isSubmitting}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-2">
-                    Semestre Atual (Opcional)
+                    Semestre Atual
                   </label>
                   <select
                     id="semester"
