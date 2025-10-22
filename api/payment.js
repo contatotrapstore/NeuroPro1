@@ -326,12 +326,17 @@ module.exports = async function handler(req, res) {
               if (['pending', 'cancelled', 'expired'].includes(existingSubscription.status)) {
                 console.log('🔄 Updating existing subscription instead of creating new');
 
-                // Calculate expiration date (30 days from today for monthly, 180 days for semester)
+                // Calculate expiration date (proper date handling for monthly, semester, annual)
                 const expirationDate = new Date();
                 if (subscription_type === 'monthly') {
-                  expirationDate.setDate(expirationDate.getDate() + 30);
+                  expirationDate.setMonth(expirationDate.getMonth() + 1);
+                } else if (subscription_type === 'semester') {
+                  expirationDate.setMonth(expirationDate.getMonth() + 6);
+                } else if (subscription_type === 'annual') {
+                  expirationDate.setFullYear(expirationDate.getFullYear() + 1);
                 } else {
-                  expirationDate.setDate(expirationDate.getDate() + 180); // 6 months = 180 days
+                  // Fallback to 30 days for unknown types
+                  expirationDate.setDate(expirationDate.getDate() + 30);
                 }
 
                 const updateData = {
@@ -375,12 +380,17 @@ module.exports = async function handler(req, res) {
             } else {
               console.log('➕ No existing subscription found, creating new');
 
-              // Calculate expiration date (30 days from today for monthly, 180 days for semester)
+              // Calculate expiration date (proper date handling for monthly, semester, annual)
               const expirationDate = new Date();
               if (subscription_type === 'monthly') {
-                expirationDate.setDate(expirationDate.getDate() + 30);
+                expirationDate.setMonth(expirationDate.getMonth() + 1);
+              } else if (subscription_type === 'semester') {
+                expirationDate.setMonth(expirationDate.getMonth() + 6);
+              } else if (subscription_type === 'annual') {
+                expirationDate.setFullYear(expirationDate.getFullYear() + 1);
               } else {
-                expirationDate.setDate(expirationDate.getDate() + 180); // 6 months = 180 days
+                // Fallback to 30 days for unknown types
+                expirationDate.setDate(expirationDate.getDate() + 30);
               }
 
               // Prepare subscription data with detailed logging
@@ -451,12 +461,17 @@ module.exports = async function handler(req, res) {
             dbResult = subscription;
             }
           } else {
-            // Calculate expiration date for package (30 days from today for monthly, 180 days for semester)
+            // Calculate expiration date for package (proper date handling for monthly, semester, annual)
             const packageExpirationDate = new Date();
             if (subscription_type === 'monthly') {
-              packageExpirationDate.setDate(packageExpirationDate.getDate() + 30);
+              packageExpirationDate.setMonth(packageExpirationDate.getMonth() + 1);
+            } else if (subscription_type === 'semester') {
+              packageExpirationDate.setMonth(packageExpirationDate.getMonth() + 6);
+            } else if (subscription_type === 'annual') {
+              packageExpirationDate.setFullYear(packageExpirationDate.getFullYear() + 1);
             } else {
-              packageExpirationDate.setDate(packageExpirationDate.getDate() + 180); // 6 months = 180 days
+              // Fallback to 30 days for unknown types
+              packageExpirationDate.setDate(packageExpirationDate.getDate() + 30);
             }
 
             // Create package

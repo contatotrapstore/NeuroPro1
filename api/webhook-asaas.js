@@ -307,22 +307,72 @@ async function handlePaymentConfirmed(supabase, webhookData) {
         newStatus = 'active';
       }
 
-      console.log(`📋 Updating subscription status from ${subscriptions[0].status} to ${newStatus}`);
+      const subscription = subscriptions[0];
+      const isRenewal = subscription.status === 'active' && new Date(subscription.expires_at) > new Date();
 
-      // Update subscription status using the correct ID
-      const updateId = subscriptions[0].asaas_subscription_id; // Use the ID from the found subscription
+      console.log(`📋 Processing subscription:`, {
+        currentStatus: subscription.status,
+        newStatus: newStatus,
+        expiresAt: subscription.expires_at,
+        subscriptionType: subscription.subscription_type,
+        isRenewal: isRenewal
+      });
+
+      // Calculate new expiration date
+      let newExpiresAt;
+      if (isRenewal) {
+        // RENEWAL: Extend from current expiration date
+        console.log('🔄 RENEWAL detected - extending from current expiration');
+        const currentExpiration = new Date(subscription.expires_at);
+        newExpiresAt = new Date(currentExpiration);
+
+        if (subscription.subscription_type === 'monthly') {
+          newExpiresAt.setMonth(currentExpiration.getMonth() + 1);
+        } else if (subscription.subscription_type === 'semester') {
+          newExpiresAt.setMonth(currentExpiration.getMonth() + 6);
+        } else if (subscription.subscription_type === 'annual') {
+          newExpiresAt.setFullYear(currentExpiration.getFullYear() + 1);
+        } else {
+          newExpiresAt.setMonth(currentExpiration.getMonth() + 1);
+        }
+      } else {
+        // NEW SUBSCRIPTION or REACTIVATION: Calculate from now
+        console.log('➕ NEW subscription or REACTIVATION - calculating from now');
+        newExpiresAt = new Date();
+
+        if (subscription.subscription_type === 'monthly') {
+          newExpiresAt.setMonth(newExpiresAt.getMonth() + 1);
+        } else if (subscription.subscription_type === 'semester') {
+          newExpiresAt.setMonth(newExpiresAt.getMonth() + 6);
+        } else if (subscription.subscription_type === 'annual') {
+          newExpiresAt.setFullYear(newExpiresAt.getFullYear() + 1);
+        } else {
+          newExpiresAt.setMonth(newExpiresAt.getMonth() + 1);
+        }
+      }
+
+      console.log(`📅 Expiration date: ${subscription.expires_at} → ${newExpiresAt.toISOString()}`);
+
+      // Update subscription status and expiration
+      const updateId = subscription.asaas_subscription_id;
       const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
           status: newStatus,
+          expires_at: newExpiresAt.toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('asaas_subscription_id', updateId);
 
       if (updateError) {
-        console.error('Error updating subscription status:', updateError);
+        console.error('Error updating subscription:', updateError);
       } else {
-        console.log(`✅ Subscription status updated to ${newStatus}:`, subscriptions.length, 'records');
+        console.log(`✅ Subscription updated:`, {
+          status: newStatus,
+          expiresAt: newExpiresAt.toISOString(),
+          isRenewal: isRenewal,
+          recordsUpdated: subscriptions.length
+        });
       }
     } else {
       console.warn('⚠️ No subscriptions found for payment:', {
@@ -362,22 +412,72 @@ async function handlePaymentConfirmed(supabase, webhookData) {
         newPackageStatus = 'active';
       }
 
-      console.log(`📦 Updating package status from ${packages[0].status} to ${newPackageStatus}`);
+      const pkg = packages[0];
+      const isPkgRenewal = pkg.status === 'active' && new Date(pkg.expires_at) > new Date();
 
-      // Update using the correct ID from the found package
-      const packageUpdateId = packages[0].asaas_subscription_id;
+      console.log(`📦 Processing package:`, {
+        currentStatus: pkg.status,
+        newStatus: newPackageStatus,
+        expiresAt: pkg.expires_at,
+        subscriptionType: pkg.subscription_type,
+        isRenewal: isPkgRenewal
+      });
+
+      // Calculate new expiration date for package
+      let newPkgExpiresAt;
+      if (isPkgRenewal) {
+        // RENEWAL: Extend from current expiration date
+        console.log('🔄 PACKAGE RENEWAL detected - extending from current expiration');
+        const currentExpiration = new Date(pkg.expires_at);
+        newPkgExpiresAt = new Date(currentExpiration);
+
+        if (pkg.subscription_type === 'monthly') {
+          newPkgExpiresAt.setMonth(currentExpiration.getMonth() + 1);
+        } else if (pkg.subscription_type === 'semester') {
+          newPkgExpiresAt.setMonth(currentExpiration.getMonth() + 6);
+        } else if (pkg.subscription_type === 'annual') {
+          newPkgExpiresAt.setFullYear(currentExpiration.getFullYear() + 1);
+        } else {
+          newPkgExpiresAt.setMonth(currentExpiration.getMonth() + 1);
+        }
+      } else {
+        // NEW PACKAGE or REACTIVATION: Calculate from now
+        console.log('➕ NEW package or REACTIVATION - calculating from now');
+        newPkgExpiresAt = new Date();
+
+        if (pkg.subscription_type === 'monthly') {
+          newPkgExpiresAt.setMonth(newPkgExpiresAt.getMonth() + 1);
+        } else if (pkg.subscription_type === 'semester') {
+          newPkgExpiresAt.setMonth(newPkgExpiresAt.getMonth() + 6);
+        } else if (pkg.subscription_type === 'annual') {
+          newPkgExpiresAt.setFullYear(newPkgExpiresAt.getFullYear() + 1);
+        } else {
+          newPkgExpiresAt.setMonth(newPkgExpiresAt.getMonth() + 1);
+        }
+      }
+
+      console.log(`📅 Package expiration: ${pkg.expires_at} → ${newPkgExpiresAt.toISOString()}`);
+
+      // Update package status and expiration
+      const packageUpdateId = pkg.asaas_subscription_id;
       const { error: updatePackageError } = await supabase
         .from('user_packages')
         .update({
           status: newPackageStatus,
+          expires_at: newPkgExpiresAt.toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('asaas_subscription_id', packageUpdateId);
 
       if (updatePackageError) {
-        console.error('Error updating package status:', updatePackageError);
+        console.error('Error updating package:', updatePackageError);
       } else {
-        console.log(`✅ Package status updated to ${newPackageStatus}:`, packages.length, 'records');
+        console.log(`✅ Package updated:`, {
+          status: newPackageStatus,
+          expiresAt: newPkgExpiresAt.toISOString(),
+          isRenewal: isPkgRenewal,
+          recordsUpdated: packages.length
+        });
       }
     } else {
       console.warn('⚠️ No packages found for payment:', {

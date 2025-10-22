@@ -262,13 +262,18 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Calculate expiration date
+      // Calculate expiration date (proper date handling for monthly, semester, annual)
       const now = new Date();
       const expiresAt = new Date(now);
       if (finalSubscriptionType === 'monthly') {
         expiresAt.setMonth(now.getMonth() + 1);
       } else if (finalSubscriptionType === 'semester') {
         expiresAt.setMonth(now.getMonth() + 6);
+      } else if (finalSubscriptionType === 'annual') {
+        expiresAt.setFullYear(now.getFullYear() + 1);
+      } else {
+        // Fallback to 30 days for unknown types
+        expiresAt.setMonth(now.getMonth() + 1);
       }
 
       const { data: subscription, error } = await supabase

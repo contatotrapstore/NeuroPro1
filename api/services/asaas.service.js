@@ -482,7 +482,8 @@ class AsaasService {
   mapSubscriptionCycle(subscriptionType) {
     const cycleMap = {
       'monthly': 'MONTHLY',
-      'semester': 'SEMIANNUALLY'
+      'semester': 'SEMIANNUALLY',
+      'annual': 'YEARLY'
     };
     return cycleMap[subscriptionType] || 'MONTHLY';
   }
@@ -498,6 +499,11 @@ class AsaasService {
       nextDate.setMonth(today.getMonth() + 1);
     } else if (subscriptionType === 'semester') {
       nextDate.setMonth(today.getMonth() + 6);
+    } else if (subscriptionType === 'annual') {
+      nextDate.setFullYear(today.getFullYear() + 1);
+    } else {
+      // Fallback to monthly
+      nextDate.setMonth(today.getMonth() + 1);
     }
 
     return nextDate.toISOString().split('T')[0];
