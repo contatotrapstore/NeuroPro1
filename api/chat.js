@@ -568,22 +568,77 @@ module.exports = async function handler(req, res) {
             }
           }
         } catch (openaiError) {
+          // Enhanced error logging with categorization
+          const errorCategory = openaiError.code || openaiError.type || 'UNKNOWN';
+          const isAuthError = ['invalid_api_key', 'insufficient_quota', 'authentication_error'].includes(errorCategory);
+          const isRateLimitError = errorCategory === 'rate_limit_exceeded';
+          const isTimeoutError = openaiError.message?.includes('timeout') || openaiError.message?.includes('timed out');
+          const isAssistantError = errorCategory === 'invalid_request_error' && openaiError.message?.includes('assistant');
+
           console.error('🤖 OpenAI Error Details:', {
             message: openaiError.message,
             status: openaiError.status,
             code: openaiError.code,
             type: openaiError.type,
+            category: errorCategory,
+            isAuthError,
+            isRateLimitError,
+            isTimeoutError,
+            isAssistantError,
             conversationId,
             assistantId: conversation.assistants?.openai_assistant_id,
+            assistantName: conversation.assistants?.name,
             hasAPIKey: !!process.env.OPENAI_API_KEY,
             apiKeyLength: process.env.OPENAI_API_KEY?.length,
+            apiKeyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 8) + '...' : 'NOT_SET',
+            timestamp: new Date().toISOString(),
+            userId,
             stack: openaiError.stack,
-            fullError: JSON.stringify(openaiError, null, 2),
             debugStep: 'OPENAI_ERROR_CAUGHT'
           });
-          
-          // Create a fallback response when OpenAI fails
-          const fallbackContent = `Desculpe, não consegui processar sua mensagem no momento. O assistente está temporariamente indisponível. Tente novamente em alguns instantes.`;
+
+          // Log to database for admin monitoring (non-blocking)
+          try {
+            await supabase
+              .from('error_logs')
+              .insert({
+                service: 'openai',
+                error_type: errorCategory,
+                error_message: openaiError.message,
+                user_id: userId,
+                conversation_id: conversationId,
+                assistant_id: conversation.assistant_id,
+                metadata: {
+                  code: openaiError.code,
+                  status: openaiError.status,
+                  type: openaiError.type,
+                  isAuthError,
+                  isRateLimitError,
+                  isTimeoutError,
+                  isAssistantError
+                }
+              });
+          } catch (logError) {
+            console.warn('⚠️ Failed to log error to database:', logError.message);
+          }
+
+          // Create context-aware fallback response
+          let fallbackContent = `Desculpe, não consegui processar sua mensagem no momento. O assistente está temporariamente indisponível. Tente novamente em alguns instantes.`;
+
+          // Provide more specific feedback based on error type (for admins, log it)
+          if (isAuthError) {
+            console.error('🚨 CRITICAL: OpenAI Authentication Error - Check API Key configuration!');
+            fallbackContent = `Desculpe, estamos com problemas técnicos no momento. Nossa equipe foi notificada e está trabalhando na solução.`;
+          } else if (isRateLimitError) {
+            console.warn('⚠️ Rate limit exceeded - too many requests');
+            fallbackContent = `O sistema está com alta demanda no momento. Por favor, aguarde alguns segundos e tente novamente.`;
+          } else if (isTimeoutError) {
+            console.warn('⏱️ Request timeout - OpenAI took too long to respond');
+            fallbackContent = `O processamento está demorando mais que o esperado. Por favor, tente novamente.`;
+          } else if (isAssistantError) {
+            console.error('🚨 CRITICAL: Assistant configuration error - Invalid assistant_id:', conversation.assistants?.openai_assistant_id);
+            fallbackContent = `Desculpe, há um problema com a configuração deste assistente. Nossa equipe foi notificada.`;
+          }
           
           const { data: fallbackReply, error: fallbackError } = await userClient
             .from('messages')
