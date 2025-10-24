@@ -16,6 +16,7 @@ backend/dist/
 .env.development
 .env.production
 .env.test
+.env.test
 frontend/.env
 frontend/.env.local
 frontend/.env.development
@@ -26,6 +27,11 @@ backend/.env.local
 backend/.env.development
 backend/.env.production
 backend/.env.test
+api/.env
+api/.env.local
+api/.env.development
+api/.env.production
+api/.env.test
 
 # Logs
 *.log
