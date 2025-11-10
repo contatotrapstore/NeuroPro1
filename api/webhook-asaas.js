@@ -417,16 +417,23 @@ async function handlePaymentConfirmed(supabase, webhookData) {
 
       console.log(`📅 Expiration date: ${subscription.expires_at} → ${newExpiresAt.toISOString()}`);
 
-      // Update subscription status and expiration
+      // Update subscription status and expiration using UPSERT
+      // This handles the edge case where webhook arrives before payment.js creates the record
       const updateId = subscription.asaas_subscription_id;
       const { error: updateError } = await supabase
         .from('user_subscriptions')
-        .update({
+        .upsert({
+          id: subscription.id, // Include the ID for updating existing record
+          user_id: subscription.user_id, // Include user_id for conflict resolution
+          assistant_id: subscription.assistant_id, // Include assistant_id for conflict resolution
+          asaas_subscription_id: updateId,
           status: newStatus,
           expires_at: newExpiresAt.toISOString(),
           updated_at: new Date().toISOString()
-        })
-        .eq('asaas_subscription_id', updateId);
+        }, {
+          onConflict: 'user_id,assistant_id', // Use the unique constraint
+          ignoreDuplicates: false // Always update
+        });
 
       if (updateError) {
         console.error('Error updating subscription:', updateError);
