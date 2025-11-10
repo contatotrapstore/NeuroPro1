@@ -293,6 +293,70 @@ async function handlePaymentConfirmed(supabase, webhookData) {
       return;
     }
 
+    // If no subscriptions found by payment/subscription ID, try to find by user + assistant
+    // This handles cases where user made a new payment for an existing subscription
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log('🔍 No subscriptions found by payment ID, searching by externalReference...');
+
+      // Extract user_id from externalReference (format: "individual_USER_ID_TIMESTAMP")
+      const externalRef = payment.externalReference;
+      if (externalRef && externalRef.startsWith('individual_')) {
+        const parts = externalRef.split('_');
+        if (parts.length >= 2) {
+          const userId = parts[1];
+          console.log('👤 Extracted user_id from externalReference:', userId);
+
+          // Get user's subscriptions to find potential renewal candidates
+          const { data: userSubscriptions, error: userSubsError } = await supabase
+            .from('user_subscriptions')
+            .select('*')
+            .eq('user_id', userId)
+            .in('status', ['active', 'expired', 'cancelled']);
+
+          if (!userSubsError && userSubscriptions && userSubscriptions.length > 0) {
+            console.log(`✅ Found ${userSubscriptions.length} subscription(s) for user to potentially renew`);
+
+            // Try to match by subscription type and amount
+            // This assumes the payment description or value can help identify the right subscription
+            const matchingSubscriptions = userSubscriptions.filter(sub => {
+              // Match by subscription type based on payment value
+              const monthlyRange = [39, 40, 59, 60]; // Common monthly prices
+              const semesterRange = [199, 200, 259, 260]; // Common semester prices
+
+              if (sub.subscription_type === 'monthly' && monthlyRange.includes(Math.floor(payment.value))) {
+                return true;
+              }
+              if (sub.subscription_type === 'semester' && semesterRange.includes(Math.floor(payment.value))) {
+                return true;
+              }
+              return false;
+            });
+
+            if (matchingSubscriptions.length > 0) {
+              // Use the first matching subscription (or the most recently expired one)
+              subscriptions = matchingSubscriptions.sort((a, b) =>
+                new Date(b.expires_at) - new Date(a.expires_at)
+              );
+              console.log('🎯 Matched subscription by user + value:', {
+                subscriptionId: subscriptions[0].id,
+                assistant: subscriptions[0].assistant_id,
+                currentStatus: subscriptions[0].status,
+                expiresAt: subscriptions[0].expires_at
+              });
+            } else {
+              // If no match by value, take all subscriptions (admin might need to verify)
+              subscriptions = userSubscriptions;
+              console.log('⚠️ Using all user subscriptions (no value match)');
+            }
+          } else {
+            console.log('❌ No subscriptions found for user:', userId);
+          }
+        }
+      } else {
+        console.log('⚠️ Could not extract user_id from externalReference:', externalRef);
+      }
+    }
+
     console.log('🔍 Found subscriptions:', {
       count: subscriptions?.length || 0,
       foundByPaymentId: !!paymentSubscriptions?.length,

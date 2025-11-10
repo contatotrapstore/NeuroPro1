@@ -1030,9 +1030,13 @@ module.exports = async function handler(req, res) {
             };
           });
 
+          // Use UPSERT to handle both new subscriptions and renewals
           const { error: insertError } = await supabase
             .from('user_subscriptions')
-            .insert(subscriptionsToAdd);
+            .upsert(subscriptionsToAdd, {
+              onConflict: 'user_id,assistant_id', // Update if user already has subscription for this assistant
+              ignoreDuplicates: false // Always update, don't ignore
+            });
 
           if (insertError) {
             console.error('Error adding subscriptions:', insertError);

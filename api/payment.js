@@ -365,6 +365,25 @@ module.exports = async function handler(req, res) {
 
                 console.log('✅ Subscription updated successfully:', updatedSubscription.id);
                 dbResult = updatedSubscription;
+
+                // Log transaction for tracking (non-blocking)
+                try {
+                  await supabase.from('transactions').insert({
+                    user_id: userId,
+                    subscription_id: updatedSubscription.id,
+                    amount: totalAmount,
+                    payment_method: payment_method,
+                    asaas_payment_id: asaasResult.id,
+                    asaas_customer_id: asaasCustomer.id,
+                    status: 'pending',
+                    customer_data: customer_data,
+                    payment_data: asaasResult,
+                    created_at: new Date().toISOString()
+                  });
+                  console.log('✅ Transaction record created');
+                } catch (transactionError) {
+                  console.warn('⚠️ Failed to log transaction (non-critical):', transactionError.message);
+                }
               } else {
                 // Subscription is active - should not allow duplicate
                 return res.status(409).json({
@@ -458,6 +477,25 @@ module.exports = async function handler(req, res) {
 
             console.log('✅ Subscription created successfully:', subscription.id);
 
+            // Log transaction for tracking (non-blocking)
+            try {
+              await supabase.from('transactions').insert({
+                user_id: userId,
+                subscription_id: subscription.id,
+                amount: totalAmount,
+                payment_method: payment_method,
+                asaas_payment_id: asaasResult.id,
+                asaas_customer_id: asaasCustomer.id,
+                status: 'pending',
+                customer_data: customer_data,
+                payment_data: asaasResult,
+                created_at: new Date().toISOString()
+              });
+              console.log('✅ Transaction record created');
+            } catch (transactionError) {
+              console.warn('⚠️ Failed to log transaction (non-critical):', transactionError.message);
+            }
+
             dbResult = subscription;
             }
           } else {
@@ -517,6 +555,25 @@ module.exports = async function handler(req, res) {
 
             if (subscriptionsError) {
               console.error('Database error creating package subscriptions:', subscriptionsError);
+            }
+
+            // Log transaction for tracking (non-blocking)
+            try {
+              await supabase.from('transactions').insert({
+                user_id: userId,
+                package_id: userPackage.id,
+                amount: totalAmount,
+                payment_method: payment_method,
+                asaas_payment_id: asaasResult.id,
+                asaas_customer_id: asaasCustomer.id,
+                status: 'pending',
+                customer_data: customer_data,
+                payment_data: asaasResult,
+                created_at: new Date().toISOString()
+              });
+              console.log('✅ Transaction record created for package');
+            } catch (transactionError) {
+              console.warn('⚠️ Failed to log transaction (non-critical):', transactionError.message);
             }
 
             dbResult = userPackage;

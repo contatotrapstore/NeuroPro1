@@ -127,12 +127,13 @@ module.exports = async function handler(req, res) {
         error: checkError ? checkError.message : 'none'
       });
       
-      // First get the user subscriptions
+      // First get the user subscriptions (only valid, non-expired)
       const { data: subscriptions, error: subsError } = await supabase
         .from('user_subscriptions')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString()); // Only non-expired subscriptions
 
       console.log('📊 Subscriptions query result:', {
         hasSubscriptions: !!subscriptions,
