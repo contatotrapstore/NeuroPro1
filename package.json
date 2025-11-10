@@ -1,7 +1,7 @@
 {
   "name": "neuroai-lab",
-  "version": "1.0.1",
-  "description": "NeuroIA Lab - SaaS platform for psychology professionals with 14 AI assistants",
+  "version": "3.4.2",
+  "description": "NeuroIA Lab - SaaS platform for psychology professionals with 19 AI assistants",
   "private": true,
   "type": "commonjs",
   "engines": {

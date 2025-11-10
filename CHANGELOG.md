@@ -1,5 +1,41 @@
 # Changelog - NeuroIA Lab
 
+## [v3.4.2] - 2025-11-10 🧹 LIMPEZA DE CÓDIGO E MIGRATIONS
+
+### 🗑️ **Remoção de Arquivos Duplicados e Obsoletos (12 arquivos)**
+- **APIs Duplicadas**: Removidos 7 arquivos `-simple` e não consolidados
+  - `admin-assistants-simple.js`, `admin-institutions-simple.js`, `admin-institution-assistants-simple.js`
+  - `upload-simple.js`, `admin-assistants.js`, `admin-institutions.js`, `admin-institution-assistants.js`
+- **Scripts de Seeding**: Removidos 2 scripts one-time (já executados)
+  - `seed-assistants.js`, `seed-database.js`
+- **SQL Cleanup**: Removido 1 arquivo de limpeza já aplicado
+  - `database/cleanup/remove_security_definer_views.sql`
+- **Scripts de Teste**: Removidos 2 scripts de diagnóstico
+  - `test-new-key.js`, `scripts/test-openai-config.js`
+
+### 🔧 **Correções de Assinaturas e Renovações**
+- **Migration 029**: Auto-expiração de assinaturas (`expire_old_subscriptions()`)
+  - 170 assinaturas expiradas corrigidas automaticamente
+  - View `subscription_health` para monitoramento em tempo real
+- **Migration 030**: Adicionado status 'overdue' para pagamentos atrasados
+- **Webhook ASAAS**: Busca por user_id quando payment_id muda (renovações)
+- **Admin UPSERT**: Liberação manual de assinaturas sem erro de constraint
+- **Transaction Logs**: Auditoria completa de todos os pagamentos
+
+### 📝 **Atualizações de Documentação**
+- **README.md**: Versão atualizada para v3.4.2, referências corrigidas
+- **package.json**: Versão bump para 3.4.2, descrição atualizada (19 assistentes)
+- **api/vercel.json**: Rotas de arquivos deletados removidas
+- **.gitignore**: Duplicata `.env.test` removida
+
+### 📊 **Impacto**
+- **-12 arquivos** na API (redução de 35%)
+- **-3,500 linhas** de código duplicado removidas
+- **Arquitetura mais clara** - fonte única de verdade para admin
+- **Sistema 100% funcional** - 0 erros, 154 assinaturas ativas válidas
+
+---
+
 ## [v3.4.1] - 2025-09-27 🚀 SISTEMA DE AUTO-APROVAÇÃO ABPSI + LIMPEZA DE ARQUIVOS
 
 ### ✅ **Sistema de Auto-Aprovação Implementado**

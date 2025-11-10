@@ -44,10 +44,6 @@
       "dest": "/upload.js"
     },
     {
-      "src": "/api/upload-simple",
-      "dest": "/upload-simple.js"
-    },
-    {
       "src": "/payment/(.*)",
       "dest": "/payment.js"
     },
@@ -56,20 +52,12 @@
       "dest": "/webhook-asaas.js"
     },
     {
-      "src": "/webhook-asaas-test",
-      "dest": "/webhook-asaas-test.js"
-    },
-    {
       "src": "/webhooks/asaas",
       "dest": "/webhook-asaas.js"
     },
     {
       "src": "/institution-chat",
       "dest": "/institution-chat.js"
-    },
-    {
-      "src": "/debug-env",
-      "dest": "/debug-env.js"
     }
   ]
 }
