@@ -16,7 +16,6 @@ backend/dist/
 .env.development
 .env.production
 .env.test
-.env.test
 frontend/.env
 frontend/.env.local
 frontend/.env.development

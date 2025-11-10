@@ -2,7 +2,7 @@
 
 Uma plataforma SaaS especializada em saúde mental que oferece acesso a 19 assistentes de inteligência artificial especializados em diferentes áreas da prática psicológica, incluindo as novas áreas de **Neuromodulação** e **Terapia Ocupacional**.
 
-**🚀 Versão Atual**: v3.4.0 - Sistema de Assinatura Individual para Instituições
+**🚀 Versão Atual**: v3.4.2 - Limpeza de Código e Migrations
 
 ## ✅ Status do Sistema
 - 🟢 **Frontend**: 100% funcional
