@@ -549,6 +549,23 @@ async function handlePaymentConfirmed(supabase, webhookData) {
           isRenewal: isPkgRenewal,
           recordsUpdated: packages.length
         });
+
+        // Also update all individual subscriptions linked to this package
+        const { error: updateSubsError, count: subsCount } = await supabase
+          .from('user_subscriptions')
+          .update({
+            status: newPackageStatus,
+            expires_at: newPkgExpiresAt.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('package_id', pkg.id)
+          .eq('user_id', pkg.user_id);
+
+        if (updateSubsError) {
+          console.error('❌ Error updating package subscriptions:', updateSubsError);
+        } else {
+          console.log(`✅ Package subscriptions updated: ${subsCount} subscriptions activated`);
+        }
       }
     } else {
       console.warn('⚠️ No packages found for payment:', {
@@ -588,16 +605,34 @@ async function handlePaymentOverdue(supabase, webhookData) {
     }
 
     // Update package status to overdue
-    const { error: updatePackageError } = await supabase
+    const { data: packageData, error: updatePackageError } = await supabase
       .from('user_packages')
       .update({
         status: 'overdue',
         updated_at: new Date().toISOString()
       })
-      .eq('asaas_subscription_id', payment.subscription || payment.id);
+      .eq('asaas_subscription_id', payment.subscription || payment.id)
+      .select('id, user_id');
 
     if (updatePackageError) {
       console.error('Error updating package to overdue:', updatePackageError);
+    } else if (packageData && packageData.length > 0) {
+      // Also update all individual subscriptions linked to this package
+      const pkg = packageData[0];
+      const { error: updateSubsError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'overdue',
+          updated_at: new Date().toISOString()
+        })
+        .eq('package_id', pkg.id)
+        .eq('user_id', pkg.user_id);
+
+      if (updateSubsError) {
+        console.error('❌ Error updating package subscriptions to overdue:', updateSubsError);
+      } else {
+        console.log(`✅ Package subscriptions set to overdue`);
+      }
     }
 
     // TODO: Send overdue notification email
@@ -631,17 +666,36 @@ async function handlePaymentCancelled(supabase, webhookData) {
     }
 
     // Update package status to cancelled
-    const { error: updatePackageError } = await supabase
+    const { data: packageData, error: updatePackageError } = await supabase
       .from('user_packages')
       .update({
         status: 'cancelled',
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq('asaas_subscription_id', payment.subscription || payment.id);
+      .eq('asaas_subscription_id', payment.subscription || payment.id)
+      .select('id, user_id');
 
     if (updatePackageError) {
       console.error('Error updating package to cancelled:', updatePackageError);
+    } else if (packageData && packageData.length > 0) {
+      // Also update all individual subscriptions linked to this package
+      const pkg = packageData[0];
+      const { error: updateSubsError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('package_id', pkg.id)
+        .eq('user_id', pkg.user_id);
+
+      if (updateSubsError) {
+        console.error('❌ Error updating package subscriptions to cancelled:', updateSubsError);
+      } else {
+        console.log(`✅ Package subscriptions set to cancelled`);
+      }
     }
 
     // TODO: Send cancellation confirmation email
@@ -734,16 +788,34 @@ async function handleSubscriptionOverdue(supabase, webhookData) {
     }
 
     // Update package status to overdue
-    const { error: updatePackageError } = await supabase
+    const { data: packageData, error: updatePackageError } = await supabase
       .from('user_packages')
       .update({
         status: 'overdue',
         updated_at: new Date().toISOString()
       })
-      .eq('asaas_subscription_id', subscription.id);
+      .eq('asaas_subscription_id', subscription.id)
+      .select('id, user_id');
 
     if (updatePackageError) {
       console.error('Error updating package to overdue:', updatePackageError);
+    } else if (packageData && packageData.length > 0) {
+      // Also update all individual subscriptions linked to this package
+      const pkg = packageData[0];
+      const { error: updateSubsError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'overdue',
+          updated_at: new Date().toISOString()
+        })
+        .eq('package_id', pkg.id)
+        .eq('user_id', pkg.user_id);
+
+      if (updateSubsError) {
+        console.error('❌ Error updating package subscriptions to overdue:', updateSubsError);
+      } else {
+        console.log(`✅ Package subscriptions set to overdue`);
+      }
     }
 
     // TODO: Send payment reminder email
@@ -777,17 +849,36 @@ async function handleSubscriptionCancelled(supabase, webhookData) {
     }
 
     // Update package status to cancelled
-    const { error: updatePackageError } = await supabase
+    const { data: packageData, error: updatePackageError } = await supabase
       .from('user_packages')
       .update({
         status: 'cancelled',
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq('asaas_subscription_id', subscription.id);
+      .eq('asaas_subscription_id', subscription.id)
+      .select('id, user_id');
 
     if (updatePackageError) {
       console.error('Error updating package to cancelled:', updatePackageError);
+    } else if (packageData && packageData.length > 0) {
+      // Also update all individual subscriptions linked to this package
+      const pkg = packageData[0];
+      const { error: updateSubsError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('package_id', pkg.id)
+        .eq('user_id', pkg.user_id);
+
+      if (updateSubsError) {
+        console.error('❌ Error updating package subscriptions to cancelled:', updateSubsError);
+      } else {
+        console.log(`✅ Package subscriptions set to cancelled`);
+      }
     }
 
     // TODO: Send cancellation notification
