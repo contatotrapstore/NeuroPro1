@@ -517,7 +517,12 @@ export default function Checkout() {
                   leftIcon={processing ? <LoadingSpinner size="sm" /> : <Lock className="w-4 h-4" />}
                   className="min-w-48"
                 >
-                  {processing ? 'Processando...' : `Pagar ${formatCurrency(checkoutData.total_price)}`}
+                  {processing
+                    ? 'Processando...'
+                    : checkoutData?.package_type === 'package_all'
+                      ? '12x R$ 199,00'
+                      : `Pagar ${formatCurrency(checkoutData.total_price)}`
+                  }
                 </Button>
               </div>
             </form>
@@ -588,14 +593,29 @@ export default function Checkout() {
                 <hr className="my-4" />
 
                 <div className="space-y-2">
-                  <div className="flex justify-between text-neuro-gray-600">
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(checkoutData.total_price)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-lg text-neuro-gray-900">
-                    <span>Total</span>
-                    <span>{formatCurrency(checkoutData.total_price)}</span>
-                  </div>
+                  {checkoutData.package_type === 'package_all' ? (
+                    <>
+                      <div className="flex justify-between font-semibold text-lg text-green-700">
+                        <span>Parcelamento</span>
+                        <span>12x R$ 199,00</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-neuro-gray-600">
+                        <span>Total</span>
+                        <span>{formatCurrency(checkoutData.total_price)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-neuro-gray-600">
+                        <span>Subtotal</span>
+                        <span>{formatCurrency(checkoutData.total_price)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-lg text-neuro-gray-900">
+                        <span>Total</span>
+                        <span>{formatCurrency(checkoutData.total_price)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="mt-4 p-3 bg-neuro-surface rounded-lg">
