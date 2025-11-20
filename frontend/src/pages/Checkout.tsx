@@ -295,11 +295,27 @@ export default function Checkout() {
                   <h2 className="text-xl font-semibold text-neuro-gray-900 mb-4">
                     Método de Pagamento
                   </h2>
+
+                  {/* Info for package_all: only credit card */}
+                  {checkoutData?.package_type === 'package_all' && (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800 flex items-center">
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        💳 Parcelamento disponível apenas no cartão de crédito
+                      </p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { value: 'CREDIT_CARD', label: 'Cartão de Crédito', icon: CreditCardIcon },
                       { value: 'PIX', label: 'PIX', icon: PixIcon }
-                    ].map(({ value, label, icon: Icon }) => (
+                    ]
+                    .filter(({ value }) =>
+                      // Remove PIX for package_all (installment only with credit card)
+                      checkoutData?.package_type === 'package_all' ? value !== 'PIX' : true
+                    )
+                    .map(({ value, label, icon: Icon }) => (
                       <label
                         key={value}
                         className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
@@ -540,10 +556,14 @@ export default function Checkout() {
                   <div className="space-y-4">
                     <div className="p-3 bg-neuro-surface rounded-lg">
                       <h4 className="font-medium text-neuro-gray-900 mb-2">
-                        Pacote {checkoutData.package_type === 'package_3' ? '3' : '6'} Assistentes
+                        {checkoutData.package_type === 'package_all'
+                          ? '🔥 BLACK FRIDAY - TODOS os Assistentes'
+                          : `Pacote ${checkoutData.package_type === 'package_3' ? '3' : '6'} Assistentes`}
                       </h4>
                       <p className="text-sm text-neuro-gray-600 mb-3">
-                        Plano {checkoutData.subscription_type === 'monthly' ? 'Mensal' : checkoutData.subscription_type === 'semester' ? 'Semestral' : 'Anual'}
+                        {checkoutData.package_type === 'package_all'
+                          ? '12x R$ 199,00 (Total: R$ 2.388,00)'
+                          : `Plano ${checkoutData.subscription_type === 'monthly' ? 'Mensal' : checkoutData.subscription_type === 'semester' ? 'Semestral' : 'Anual'}`}
                       </p>
                       
                       <div className="space-y-2">

@@ -614,7 +614,7 @@ export default function Store() {
           onClick={() => setShowPackagesModal(false)}
         >
           <motion.div
-            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
@@ -636,8 +636,98 @@ export default function Store() {
 
             {/* Modal Content */}
             <div className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {packages.map((pkg, index) => {
+              {/* BLACK FRIDAY Section - Highlighted */}
+              {packages.filter(pkg => pkg.limited).map((pkg, index) => {
+                const isPopular = pkg.popular;
+
+                return (
+                  <motion.div
+                    key="promo"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="mb-8"
+                  >
+                    <Card
+                      variant="glow"
+                      className="relative transform-gpu transition-all duration-500 group overflow-hidden border-4 border-green-500 shadow-2xl bg-gradient-to-br from-green-50 via-emerald-50 to-green-50"
+                    >
+                      <CardContent className="text-center p-10 relative z-10">
+                        {/* Fire Animation Background */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 via-emerald-400/10 to-green-400/10 animate-pulse"></div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2, duration: 0.6 }}
+                          className="relative z-10"
+                        >
+                          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-bold mb-4 animate-pulse shadow-lg">
+                            🔥 OFERTA LIMITADA - BLACK FRIDAY 🔥
+                          </div>
+
+                          <div className="flex items-center justify-center mb-6">
+                            <div className="w-24 h-24 rounded-3xl flex items-center justify-center bg-gradient-to-br from-green-600 to-emerald-600 shadow-2xl">
+                              <Icon name="package" className="w-12 h-12 text-white" />
+                            </div>
+                          </div>
+
+                          <h3 className="text-4xl font-bold text-gray-900 mb-3">
+                            TODOS os Assistentes
+                          </h3>
+
+                          <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
+                            Acesso completo a todos os {pkg.assistants} assistentes especializados
+                          </p>
+
+                          <div className="mb-8">
+                            <div className="flex items-baseline justify-center mb-3">
+                              <span className="text-5xl font-bold text-green-600">
+                                {pkg.installmentCount}x R$ {pkg.installmentPrice.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+                            <div className="text-lg text-gray-600 mb-2">
+                              Total: R$ {pkg.totalPrice.toFixed(2).replace('.', ',')}
+                            </div>
+                            {pkg.originalPrice && pkg.originalPrice > pkg.totalPrice && (
+                              <div className="text-base text-gray-400 line-through mb-3">
+                                De R$ {pkg.originalPrice.toFixed(2).replace('.', ',')}
+                              </div>
+                            )}
+                            <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-base font-bold mt-3 shadow-md">
+                              <Icon name="percentage" className="w-5 h-5 mr-2" />
+                              Economize R$ {pkg.savings.toFixed(2).replace('.', ',')}
+                            </div>
+                          </div>
+
+                          <Button
+                            size="lg"
+                            leftIcon={<Icon name="gift" className="w-6 h-6 text-white group-hover/btn:scale-110 transition-transform" />}
+                            rightIcon={<Icon name="arrowRight" className="w-5 h-5 text-white group-hover/btn:translate-x-1 transition-transform" />}
+                            className="w-full max-w-md mx-auto relative overflow-hidden group/btn glow-hover shadow-2xl text-lg py-6"
+                            onClick={() => {
+                              setShowPackagesModal(false);
+                              handlePackageSelect('package_all');
+                            }}
+                            style={{
+                              background: `linear-gradient(135deg, #10B981 0%, #059669 100%)`,
+                              boxShadow: `0 8px 24px rgba(16, 185, 129, 0.5)`
+                            }}
+                          >
+                            <span className="font-bold">
+                              Garantir Acesso Completo Agora!
+                            </span>
+                          </Button>
+                        </motion.div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+
+              {/* Regular Packages Section - 2 Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {packages.filter(pkg => !pkg.limited).map((pkg, index) => {
                   const isPopular = pkg.popular;
                   
                   return (

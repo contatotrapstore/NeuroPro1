@@ -287,6 +287,13 @@ module.exports = async function handler(req, res) {
             customerPhone: customer_data.mobilePhone || customer_data.phone
           };
 
+          // BLACK FRIDAY: Add installment for package_all
+          if (package_type === 'package_all' && payment_method === 'CREDIT_CARD') {
+            paymentData.installmentCount = 12;
+            paymentData.installmentValue = 199.00;
+            console.log('🔥 BLACK FRIDAY: Package_all with 12 installments of R$ 199.00');
+          }
+
           if (payment_method === 'CREDIT_CARD') {
             // 🔍 ENHANCED DEBUG: Log all credit card data before processing
             console.log('🚨 CREDIT CARD DEBUG - Raw card_data received:', {
