@@ -292,19 +292,22 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
           if (!isActive) return null;
 
           return (
-            <div className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-500 overflow-hidden sticky top-0 z-40">
+            <div
+              className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-500 overflow-hidden sticky top-0 z-40 cursor-pointer hover:from-green-600 hover:via-green-500 hover:to-emerald-400 transition-all duration-300"
+              onClick={() => navigate('/store')}
+            >
               <div className="relative flex whitespace-nowrap animate-marquee py-3">
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes - 12x R$ 199 (Total R$ 2.388) - Clique aqui! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes - 12x R$ 199 (Total R$ 2.388) - Clique aqui! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes - 12x R$ 199 (Total R$ 2.388) - Clique aqui! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes - 12x R$ 199 (Total R$ 2.388) - Clique aqui! Válido até 01/12 🔥
                 </span>
               </div>
             </div>

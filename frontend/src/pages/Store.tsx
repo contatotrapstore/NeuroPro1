@@ -150,10 +150,12 @@ export default function Store() {
     ...(isBlackFridayActive() ? [{
       name: 'BLACK FRIDAY - TODOS OS ASSISTENTES',
       assistants: assistants.length,
-      annualPrice: PACKAGE_ALL_PRICING.annual,
+      totalPrice: PACKAGE_ALL_PRICING.totalPrice,
+      installmentPrice: PACKAGE_ALL_PRICING.installmentPrice,
+      installmentCount: PACKAGE_ALL_PRICING.installmentCount,
       originalPrice: PACKAGE_ALL_PRICING.originalPrice,
       discount: 80,
-      savings: PACKAGE_ALL_PRICING.originalPrice - PACKAGE_ALL_PRICING.annual,
+      savings: PACKAGE_ALL_PRICING.originalPrice - PACKAGE_ALL_PRICING.totalPrice,
       popular: true,
       limited: true,
       packageType: 'package_all' as const
@@ -626,7 +628,7 @@ export default function Store() {
 
             {/* Modal Content */}
             <div className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {packages.map((pkg, index) => {
                   const isPopular = pkg.popular;
                   
@@ -680,16 +682,18 @@ export default function Store() {
                             </p>
 
                             <div className="mb-8">
-                              {pkg.annualPrice ? (
-                                // Package All - Annual pricing with Black Friday
+                              {pkg.installmentPrice ? (
+                                // Package All - Installment pricing with Black Friday
                                 <>
                                   <div className="flex items-baseline justify-center mb-2">
                                     <span className="text-4xl font-bold text-green-600">
-                                      R$ {pkg.annualPrice.toFixed(2).replace('.', ',')}
+                                      {pkg.installmentCount}x R$ {pkg.installmentPrice.toFixed(2).replace('.', ',')}
                                     </span>
-                                    <span className="text-neuro-gray-500 ml-2">/ano</span>
                                   </div>
-                                  {pkg.originalPrice && pkg.originalPrice > pkg.annualPrice && (
+                                  <div className="text-sm text-neuro-gray-500 mb-1">
+                                    Total: R$ {pkg.totalPrice.toFixed(2).replace('.', ',')}
+                                  </div>
+                                  {pkg.originalPrice && pkg.originalPrice > pkg.totalPrice && (
                                     <div className="text-sm text-neuro-gray-400 line-through mb-1">
                                       De R$ {pkg.originalPrice.toFixed(2).replace('.', ',')}
                                     </div>
@@ -771,7 +775,7 @@ export default function Store() {
       {/* Package Selector Modal */}
       {showPackageSelector && (
         <PackageSelector
-          packageType={selectedPackageType === 'package_3' ? 3 : 6}
+          packageType={selectedPackageType === 'package_3' ? 3 : selectedPackageType === 'package_6' ? 6 : 'all'}
           onClose={() => setShowPackageSelector(false)}
         />
       )}

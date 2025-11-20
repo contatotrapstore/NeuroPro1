@@ -27,7 +27,7 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [planType, setPlanType] = useState<'monthly' | 'semester' | 'annual'>(
-    packageType === 'all' ? 'annual' : 'monthly'
+    packageType === 'all' ? 'monthly' : 'monthly'
   );
 
   const isPackageAll = packageType === 'all';
@@ -35,7 +35,7 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
   const packagePrices = {
     3: { monthly: 99.90, semester: 499.00 },
     6: { monthly: 179.90, semester: 899.00 },
-    all: { annual: PACKAGE_ALL_PRICING.annual }
+    all: { monthly: PACKAGE_ALL_PRICING.totalPrice }
   };
 
   const individualPrice = planType === 'monthly' ? 39.90 : planType === 'semester' ? 199.00 : 239.90;
@@ -47,7 +47,7 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
   }
 
   const packagePrice = isPackageAll
-    ? (packagePriceInfo as any).annual
+    ? (packagePriceInfo as any).monthly
     : packagePriceInfo[planType as 'monthly' | 'semester'];
 
   const packageCount = typeof packageType === 'number' ? packageType : assistants.length;
@@ -281,47 +281,66 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
               </h3>
 
               {/* Plan Type Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Tipo de Plano
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white transition-colors">
-                    <input
-                      type="radio"
-                      value="monthly"
-                      checked={planType === 'monthly'}
-                      onChange={(e) => setPlanType(e.target.value as 'monthly')}
-                      className="mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">Mensal</div>
-                      <div className="text-sm text-gray-600">
-                        R$ {packagePrices[packageType].monthly.toFixed(2)}/mês
-                      </div>
-                    </div>
+              {!isPackageAll ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Tipo de Plano
                   </label>
-                  
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white transition-colors">
-                    <input
-                      type="radio"
-                      value="semester"
-                      checked={planType === 'semester'}
-                      onChange={(e) => setPlanType(e.target.value as 'semester')}
-                      className="mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">Semestral</div>
-                      <div className="text-sm text-gray-600">
-                        R$ {packagePrices[packageType].semester.toFixed(2)}/semestre
+                  <div className="space-y-3">
+                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white transition-colors">
+                      <input
+                        type="radio"
+                        value="monthly"
+                        checked={planType === 'monthly'}
+                        onChange={(e) => setPlanType(e.target.value as 'monthly')}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">Mensal</div>
+                        <div className="text-sm text-gray-600">
+                          R$ {packagePrices[packageType].monthly.toFixed(2)}/mês
+                        </div>
                       </div>
-                      <div className="text-xs text-green-600 font-medium">
-                        {discount}% de desconto
+                    </label>
+
+                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white transition-colors">
+                      <input
+                        type="radio"
+                        value="semester"
+                        checked={planType === 'semester'}
+                        onChange={(e) => setPlanType(e.target.value as 'semester')}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">Semestral</div>
+                        <div className="text-sm text-gray-600">
+                          R$ {packagePrices[packageType].semester.toFixed(2)}/semestre
+                        </div>
+                        <div className="text-xs text-green-600 font-medium">
+                          {discount}% de desconto
+                        </div>
                       </div>
-                    </div>
-                  </label>
+                    </label>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mb-6 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-700 mb-2">
+                      🔥 BLACK FRIDAY - Pagamento Facilitado
+                    </div>
+                    <div className="text-2xl font-bold text-green-600 mb-1">
+                      12x R$ {PACKAGE_ALL_PRICING.installmentPrice.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Total: R$ {PACKAGE_ALL_PRICING.totalPrice.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-green-700 font-medium mt-2">
+                      Parcelas mensais sem juros
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Selected Assistants */}
               {selectedAssistants.length > 0 && (

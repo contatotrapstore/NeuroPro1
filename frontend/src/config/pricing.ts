@@ -36,8 +36,11 @@ export const PACKAGE_PRICING = {
 } as const;
 
 // BLACK FRIDAY: Package All pricing
+// Payment plan: 12 monthly installments of R$199 (total R$2,388)
 export const PACKAGE_ALL_PRICING = {
-  annual: isBlackFridayActive() ? 199.00 : 999.00,
+  totalPrice: isBlackFridayActive() ? 2388.00 : 999.00,
+  installmentPrice: 199.00,
+  installmentCount: 12,
   isPromo: isBlackFridayActive(),
   originalPrice: 999.00,
   endDate: BLACK_FRIDAY_END,

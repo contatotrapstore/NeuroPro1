@@ -214,7 +214,7 @@ module.exports = async function handler(req, res) {
             description = `Assinatura ${subscriptionTypeLabel} - ${assistant.name}`;
           } else {
             // Package pricing
-            // BLACK FRIDAY: package_all with all assistants for R$ 199/year until 01/12/2025
+            // BLACK FRIDAY: package_all - 12x R$ 199 monthly (total R$ 2,388) until 01/12/2025
             const now = new Date();
             const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00');
             const isBlackFriday = now < blackFridayEnd;
@@ -229,7 +229,7 @@ module.exports = async function handler(req, res) {
                 semester: 899.90
               },
               package_all: {
-                annual: isBlackFriday ? 199.00 : 999.00  // Black Friday R$ 199, normal R$ 999
+                monthly: isBlackFriday ? 2388.00 : 999.00  // Black Friday 12x R$199 = R$2,388, normal R$999
               }
             };
 
@@ -266,7 +266,7 @@ module.exports = async function handler(req, res) {
             description = `Pacote ${packageLabel} - ${subscriptionLabel}`;
 
             if (package_type === 'package_all' && isBlackFriday) {
-              console.log(`🔥 BLACK FRIDAY: package_all pricing - PROMOTIONAL R$ 199.00 for ${selected_assistants.length} assistants`);
+              console.log(`🔥 BLACK FRIDAY: package_all pricing - PROMOTIONAL 12x R$ 199.00 (total R$ 2.388,00) for ${selected_assistants.length} assistants`);
             }
           }
 
