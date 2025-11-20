@@ -301,7 +301,7 @@ export default function Checkout() {
                     <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <p className="text-sm text-green-800 flex items-center">
                         <CreditCard className="w-4 h-4 mr-2" />
-                        💳 Parcelamento disponível apenas no cartão de crédito
+                        💳 Pagamento em 12x de R$ 199,00 sem juros no cartão de crédito
                       </p>
                     </div>
                   )}
@@ -618,6 +618,16 @@ export default function Checkout() {
                   )}
                 </div>
 
+                {/* Installment Disclaimer for package_all */}
+                {checkoutData.package_type === 'package_all' && (
+                  <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-xs text-green-700 flex items-center justify-center">
+                      <span className="mr-1">✓</span>
+                      Parcelamento em 12x de R$ 199,00 sem juros
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-4 p-3 bg-neuro-surface rounded-lg">
                   <div className="flex items-start space-x-2">
                     <Lock className="w-4 h-4 text-neuro-primary mt-0.5 flex-shrink-0" />
@@ -636,15 +646,27 @@ export default function Checkout() {
                 <div className="flex items-start space-x-2">
                   <Calendar className="w-4 h-4 text-neuro-primary mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-neuro-gray-600">
-                    <p className="font-medium mb-1">Ciclo de Cobrança</p>
-                    <p>
-                      {checkoutData.subscription_type === 'monthly'
-                        ? 'Renovação mensal automática'
-                        : checkoutData.subscription_type === 'semester'
-                        ? 'Renovação semestral automática'
-                        : 'Renovação anual automática'
-                      }. Você pode cancelar a qualquer momento.
-                    </p>
+                    {checkoutData.package_type === 'package_all' ? (
+                      <>
+                        <p className="font-medium mb-1">Pagamento Parcelado</p>
+                        <p>
+                          12 parcelas mensais de R$ 199,00 no cartão de crédito (total R$ 2.388,00).
+                          Após conclusão do pagamento, acesso mantido sem renovação automática.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium mb-1">Ciclo de Cobrança</p>
+                        <p>
+                          {checkoutData.subscription_type === 'monthly'
+                            ? 'Renovação mensal automática'
+                            : checkoutData.subscription_type === 'semester'
+                            ? 'Renovação semestral automática'
+                            : 'Renovação anual automática'
+                          }. Você pode cancelar a qualquer momento.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
