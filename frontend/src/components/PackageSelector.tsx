@@ -51,7 +51,12 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
     : packagePriceInfo[planType as 'monthly' | 'semester'];
 
   const packageCount = typeof packageType === 'number' ? packageType : assistants.length;
-  const individualTotal = packageCount * individualPrice;
+
+  // For package_all, compare with 12 months of individual subscriptions
+  const individualTotal = isPackageAll
+    ? packageCount * 39.90 * 12  // 12 months at monthly rate
+    : packageCount * individualPrice;
+
   const discount = Math.round(((individualTotal - packagePrice) / individualTotal) * 100);
 
   useEffect(() => {
@@ -373,7 +378,7 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
               <div className="mb-6 p-4 bg-white rounded-lg border">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Preço individual ({packageType}x)</span>
+                    <span>Preço individual ({packageCount}x)</span>
                     <span>R$ {individualTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-green-600 font-medium">
@@ -395,12 +400,12 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
               <div className="space-y-3">
                 <button
                   onClick={handleProceedToCheckout}
-                  disabled={selectedAssistants.length !== packageType}
+                  disabled={selectedAssistants.length !== packageCount}
                   className="w-full px-4 py-3 bg-neuro-primary text-white rounded-lg hover:bg-neuro-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
-                  {selectedAssistants.length === packageType 
+                  {selectedAssistants.length === packageCount
                     ? `Prosseguir para Pagamento`
-                    : `Selecione ${packageType - selectedAssistants.length} mais`
+                    : `Selecione ${packageCount - selectedAssistants.length} mais`
                   }
                 </button>
                 
