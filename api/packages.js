@@ -108,7 +108,12 @@ module.exports = async function handler(req, res) {
     
     // Return default packages if there's any error
     console.log('⚠️ Returning default packages due to error');
-    
+
+    // Check if Black Friday promotion is active
+    const now = new Date();
+    const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00');
+    const isBlackFriday = now < blackFridayEnd;
+
     const defaultPackages = [
       {
         id: 'pkg_3_assistants',
@@ -121,7 +126,7 @@ module.exports = async function handler(req, res) {
         status: 'active'
       },
       {
-        id: 'pkg_6_assistants', 
+        id: 'pkg_6_assistants',
         name: '6 Assistants Package',
         description: 'Choose any 6 psychology AI assistants',
         assistant_count: 6,
@@ -129,6 +134,17 @@ module.exports = async function handler(req, res) {
         semester_price: 899.00,
         discount_percentage: 25,
         status: 'active'
+      },
+      {
+        id: 'pkg_all_assistants',
+        name: 'All Assistants Package',
+        description: '🔥 BLACK FRIDAY: Access to all psychology AI assistants',
+        assistant_count: -1, // -1 indicates "all"
+        annual_price: isBlackFriday ? 199.00 : 999.00,
+        discount_percentage: isBlackFriday ? 95 : 50,
+        status: isBlackFriday ? 'active' : 'inactive',
+        limited: true,
+        endDate: '2025-12-01T23:59:59-03:00'
       }
     ];
 

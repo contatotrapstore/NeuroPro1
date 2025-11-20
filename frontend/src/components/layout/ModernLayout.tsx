@@ -295,16 +295,16 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
             <div className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-500 overflow-hidden sticky top-0 z-40">
               <div className="relative flex whitespace-nowrap animate-marquee py-3">
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
+                  🔥 BLACK FRIDAY: TODOS os Assistentes por apenas R$ 199,00/ano - Economize R$ 800! Válido até 01/12 🔥
                 </span>
               </div>
             </div>

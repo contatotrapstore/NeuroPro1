@@ -136,10 +136,18 @@ module.exports = async function handler(req, res) {
           });
         }
 
-        if (type === 'package' && (!package_type || !selected_assistants?.length)) {
+        if (type === 'package' && !package_type) {
           return res.status(400).json({
             success: false,
-            error: 'Tipo e assistentes do pacote são obrigatórios'
+            error: 'Tipo do pacote é obrigatório'
+          });
+        }
+
+        // For package_all, selected_assistants will be auto-populated, so skip validation here
+        if (type === 'package' && package_type !== 'package_all' && !selected_assistants?.length) {
+          return res.status(400).json({
+            success: false,
+            error: 'Assistentes do pacote são obrigatórios'
           });
         }
 
@@ -188,19 +196,13 @@ module.exports = async function handler(req, res) {
               });
             }
 
-            // BLACK FRIDAY PROMO: Annual subscriptions at R$ 199.00 until 01/12/2025
-            const now = new Date();
-            const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00'); // Brazil timezone
-            const isBlackFriday = now < blackFridayEnd;
-
+            // Individual assistant pricing (normal prices, no Black Friday for individuals)
             if (subscription_type === 'monthly') {
               totalAmount = assistant.monthly_price;
             } else if (subscription_type === 'semester') {
               totalAmount = assistant.semester_price;
             } else if (subscription_type === 'annual') {
-              // Apply Black Friday promotional pricing
-              totalAmount = isBlackFriday ? 199.00 : (assistant.annual_price || 239.90);
-              console.log(`🔥 BLACK FRIDAY: Annual pricing - ${isBlackFriday ? 'PROMOTIONAL R$ 199.00' : `NORMAL R$ ${assistant.annual_price || 239.90}`}`);
+              totalAmount = assistant.annual_price || 239.90;
             } else {
               totalAmount = assistant.monthly_price; // Fallback
             }
@@ -211,20 +213,61 @@ module.exports = async function handler(req, res) {
 
             description = `Assinatura ${subscriptionTypeLabel} - ${assistant.name}`;
           } else {
-            // Package pricing (FIX: 499.90 -> 499.00 for semester package_3)
+            // Package pricing
+            // BLACK FRIDAY: package_all with all assistants for R$ 199/year until 01/12/2025
+            const now = new Date();
+            const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00');
+            const isBlackFriday = now < blackFridayEnd;
+
             const packagePricing = {
               package_3: {
                 monthly: 99.90,
-                semester: 499.00  // FIXED: Was 499.90, now matches frontend
+                semester: 499.00
               },
               package_6: {
                 monthly: 179.90,
                 semester: 899.90
+              },
+              package_all: {
+                annual: isBlackFriday ? 199.00 : 999.00  // Black Friday R$ 199, normal R$ 999
               }
             };
 
+            // Auto-populate all active assistants for package_all
+            if (package_type === 'package_all') {
+              const { data: allAssistants, error: assistantsError } = await supabase
+                .from('assistants')
+                .select('id, name')
+                .eq('is_active', true)
+                .order('name');
+
+              if (assistantsError || !allAssistants?.length) {
+                console.error('Error fetching assistants for package_all:', assistantsError);
+                return res.status(500).json({
+                  success: false,
+                  error: 'Erro ao buscar assistentes disponíveis'
+                });
+              }
+
+              selected_assistants = allAssistants.map(a => a.id);
+              console.log(`🔥 BLACK FRIDAY package_all: Auto-selected ${allAssistants.length} assistants`);
+            }
+
             totalAmount = packagePricing[package_type][subscription_type];
-            description = `Pacote ${package_type === 'package_3' ? '3' : '6'} Assistentes - ${subscription_type === 'monthly' ? 'Mensal' : 'Semestral'}`;
+
+            let packageLabel = package_type === 'package_3' ? '3 Assistentes' :
+                             package_type === 'package_6' ? '6 Assistentes' :
+                             `Todos os ${selected_assistants.length} Assistentes`;
+
+            let subscriptionLabel = subscription_type === 'monthly' ? 'Mensal' :
+                                  subscription_type === 'semester' ? 'Semestral' :
+                                  'Anual';
+
+            description = `Pacote ${packageLabel} - ${subscriptionLabel}`;
+
+            if (package_type === 'package_all' && isBlackFriday) {
+              console.log(`🔥 BLACK FRIDAY: package_all pricing - PROMOTIONAL R$ 199.00 for ${selected_assistants.length} assistants`);
+            }
           }
 
           // 4. Create payment in Asaas (ONE-TIME PAYMENT - NO MORE SUBSCRIPTIONS)

@@ -24,7 +24,7 @@ interface Assistant {
 interface CheckoutData {
   type: 'individual' | 'package';
   assistant_id?: string;
-  package_type?: 'package_3' | 'package_6';
+  package_type?: 'package_3' | 'package_6' | 'package_all';
   subscription_type: 'monthly' | 'semester' | 'annual';
   selected_assistants?: string[];
   total_price: number;

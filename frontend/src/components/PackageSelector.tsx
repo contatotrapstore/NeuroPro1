@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AssistantIcon } from './ui/AssistantIcon';
 import { ApiService } from '../services/api.service';
+import { PACKAGE_ALL_PRICING } from '../config/pricing';
 
 interface Assistant {
   id: string;
@@ -15,7 +16,7 @@ interface Assistant {
 }
 
 interface PackageSelectorProps {
-  packageType: 3 | 6;
+  packageType: 3 | 6 | 'all';
   onClose: () => void;
 }
 
@@ -25,28 +26,44 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
   const [selectedAssistants, setSelectedAssistants] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [planType, setPlanType] = useState<'monthly' | 'semester'>('monthly');
+  const [planType, setPlanType] = useState<'monthly' | 'semester' | 'annual'>(
+    packageType === 'all' ? 'annual' : 'monthly'
+  );
+
+  const isPackageAll = packageType === 'all';
 
   const packagePrices = {
     3: { monthly: 99.90, semester: 499.00 },
-    6: { monthly: 179.90, semester: 899.00 }
+    6: { monthly: 179.90, semester: 899.00 },
+    all: { annual: PACKAGE_ALL_PRICING.annual }
   };
 
-  const individualPrice = planType === 'monthly' ? 39.90 : 199.00;
+  const individualPrice = planType === 'monthly' ? 39.90 : planType === 'semester' ? 199.00 : 239.90;
   const packagePriceInfo = packagePrices[packageType as keyof typeof packagePrices];
-  
+
   if (!packagePriceInfo) {
     console.error(`Invalid package type: ${packageType}`);
     return <div className="text-red-500">Erro: Tipo de pacote inválido</div>;
   }
 
-  const packagePrice = packagePriceInfo[planType];
-  const individualTotal = packageType * individualPrice;
+  const packagePrice = isPackageAll
+    ? (packagePriceInfo as any).annual
+    : packagePriceInfo[planType as 'monthly' | 'semester'];
+
+  const packageCount = typeof packageType === 'number' ? packageType : assistants.length;
+  const individualTotal = packageCount * individualPrice;
   const discount = Math.round(((individualTotal - packagePrice) / individualTotal) * 100);
 
   useEffect(() => {
     loadAssistants();
   }, []);
+
+  // Auto-select all assistants for package_all
+  useEffect(() => {
+    if (isPackageAll && assistants.length > 0) {
+      setSelectedAssistants(assistants.map(a => a.id));
+    }
+  }, [isPackageAll, assistants]);
 
   const loadAssistants = async () => {
     try {
@@ -70,10 +87,13 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
   };
 
   const handleAssistantToggle = (assistantId: string) => {
+    // Disable toggle for package_all (all assistants are included)
+    if (isPackageAll) return;
+
     setSelectedAssistants(prev => {
       if (prev.includes(assistantId)) {
         return prev.filter(id => id !== assistantId);
-      } else if (prev.length < packageType) {
+      } else if (prev.length < (packageType as number)) {
         return [...prev, assistantId];
       }
       return prev;
@@ -81,14 +101,16 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
   };
 
   const handleProceedToCheckout = () => {
-    if (selectedAssistants.length !== packageType) {
-      alert(`Selecione exatamente ${packageType} assistentes`);
+    const expectedCount = typeof packageType === 'number' ? packageType : assistants.length;
+
+    if (selectedAssistants.length !== expectedCount) {
+      alert(`Selecione exatamente ${expectedCount} assistentes`);
       return;
     }
 
     const checkoutData = {
       type: 'package' as const,
-      package_type: `package_${packageType}` as 'package_3' | 'package_6',
+      package_type: isPackageAll ? 'package_all' as const : `package_${packageType}` as 'package_3' | 'package_6',
       subscription_type: planType,
       selected_assistants: selectedAssistants,
       total_price: packagePrice
@@ -151,10 +173,12 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                Escolha {packageType} Assistentes
+                {isPackageAll ? '🔥 BLACK FRIDAY - TODOS OS ASSISTENTES' : `Escolha ${packageType} Assistentes`}
               </h2>
               <p className="text-gray-600 mt-1">
-                Selecione exatamente {packageType} assistentes para seu pacote personalizado
+                {isPackageAll
+                  ? `Todos os ${assistants.length} assistentes incluídos automaticamente no pacote completo`
+                  : `Selecione exatamente ${packageType} assistentes para seu pacote personalizado`}
               </p>
             </div>
             <button
@@ -175,38 +199,48 @@ export function PackageSelector({ packageType, onClose }: PackageSelectorProps) 
             <div className="mb-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Assistentes Disponíveis
+                  {isPackageAll ? 'Assistentes Incluídos' : 'Assistentes Disponíveis'}
                 </h3>
                 <div className="text-sm text-gray-600">
-                  {selectedAssistants.length}/{packageType} selecionados
+                  {selectedAssistants.length}/{packageCount} selecionados
                 </div>
               </div>
-              
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
-                <div 
-                  className="bg-neuro-primary h-2 rounded-full transition-all"
-                  style={{ width: `${(selectedAssistants.length / packageType) * 100}%` }}
-                ></div>
-              </div>
+
+              {/* Progress Bar or Black Friday Badge */}
+              {isPackageAll ? (
+                <div className="bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-lg p-3 mb-6">
+                  <div className="text-sm font-semibold text-green-700 text-center">
+                    ✅ Todos os {assistants.length} assistentes já estão incluídos no seu pacote!
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                  <div
+                    className="bg-neuro-primary h-2 rounded-full transition-all"
+                    style={{ width: `${(selectedAssistants.length / packageCount) * 100}%` }}
+                  ></div>
+                </div>
+              )}
             </div>
 
             {/* Assistants Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {assistants.map((assistant) => {
                 const isSelected = selectedAssistants.includes(assistant.id);
-                const canSelect = selectedAssistants.length < packageType;
+                const canSelect = selectedAssistants.length < packageCount;
                 
                 return (
                   <div
                     key={assistant.id}
                     onClick={() => handleAssistantToggle(assistant.id)}
-                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-neuro-primary bg-neuro-primary bg-opacity-5'
-                        : canSelect
-                        ? 'border-gray-200 hover:border-neuro-primary hover:shadow-md'
-                        : 'border-gray-100 opacity-50 cursor-not-allowed'
+                    className={`p-4 border-2 rounded-xl transition-all ${
+                      isPackageAll
+                        ? 'border-green-300 bg-green-50 cursor-default'
+                        : isSelected
+                          ? 'border-neuro-primary bg-neuro-primary bg-opacity-5 cursor-pointer'
+                          : canSelect
+                            ? 'border-gray-200 hover:border-neuro-primary hover:shadow-md cursor-pointer'
+                            : 'border-gray-100 opacity-50 cursor-not-allowed'
                     }`}
                   >
                     <div className="flex items-start space-x-3">

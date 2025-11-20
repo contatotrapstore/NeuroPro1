@@ -16,6 +16,7 @@ import { ApiService } from '../services/api.service';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthModal } from '../hooks/useAuthModal';
 import { AuthModal } from '../components/auth/AuthModal';
+import { PACKAGE_ALL_PRICING, isBlackFridayActive } from '../config/pricing';
 import type { Assistant } from '../types';
 
 export default function Store() {
@@ -34,7 +35,7 @@ export default function Store() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArea, setSelectedArea] = useState<string>('all');
-  const [selectedPackageType, setSelectedPackageType] = useState<'package_3' | 'package_6'>('package_3');
+  const [selectedPackageType, setSelectedPackageType] = useState<'package_3' | 'package_6' | 'package_all'>('package_3');
   const [showPackageSelector, setShowPackageSelector] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasLoadedRef = useRef(false);
@@ -93,27 +94,18 @@ export default function Store() {
       // Find the assistant to get its actual price
       const assistant = assistants.find(a => a.id === assistantId);
 
-      // BLACK FRIDAY: Automatic annual subscription during promotion
-      const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00');
-      const isBlackFriday = new Date() < blackFridayEnd;
-
-      const subscriptionType = isBlackFriday ? 'annual' : 'monthly';
-      const assistantPrice = isBlackFriday
-        ? 199.00 // Black Friday promotional price
-        : (assistant?.monthly_price || 39.90); // Monthly price otherwise
-
       navigate('/checkout', {
         state: {
           type: 'individual',
           assistant_id: assistantId,
-          subscription_type: subscriptionType,
-          total_price: assistantPrice
+          subscription_type: 'monthly',
+          total_price: assistant?.monthly_price || 39.90
         }
       });
     }, 'Para assinar este assistente, faça login ou crie sua conta');
   };
 
-  const handlePackageSelect = (packageType: 'package_3' | 'package_6') => {
+  const handlePackageSelect = (packageType: 'package_3' | 'package_6' | 'package_all') => {
     setSelectedPackageType(packageType);
     setShowPackageSelector(true);
   };
@@ -146,14 +138,26 @@ export default function Store() {
       popular: false
     },
     {
-      name: 'Pacote Completo',
+      name: 'Pacote Profissional',
       assistants: 6,
       monthlyPrice: 179.90,
       semesterPrice: 899.00,
       discount: 25,
       savings: 59.50,
-      popular: true
-    }
+      popular: false
+    },
+    // BLACK FRIDAY: All assistants package
+    ...(isBlackFridayActive() ? [{
+      name: 'BLACK FRIDAY - TODOS OS ASSISTENTES',
+      assistants: assistants.length,
+      annualPrice: PACKAGE_ALL_PRICING.annual,
+      originalPrice: PACKAGE_ALL_PRICING.originalPrice,
+      discount: 80,
+      savings: PACKAGE_ALL_PRICING.originalPrice - PACKAGE_ALL_PRICING.annual,
+      popular: true,
+      limited: true,
+      packageType: 'package_all' as const
+    }] : [])
   ];
 
   const filteredAssistants = assistants.filter(assistant => {
@@ -659,28 +663,60 @@ export default function Store() {
                               <Icon name="package" className="w-10 h-10 text-white" />
                             </div>
                             
+                            {pkg.limited && (
+                              <div className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-xs font-bold mb-4 animate-pulse">
+                                🔥 OFERTA LIMITADA
+                              </div>
+                            )}
+
                             <h3 className="text-2xl font-bold text-neuro-gray-900 mb-2">
-                              {pkg.assistants} Assistentes
+                              {pkg.limited ? 'TODOS os Assistentes' : `${pkg.assistants} Assistentes`}
                             </h3>
-                            
+
                             <p className="text-neuro-gray-600 mb-6">
-                              Escolha {pkg.assistants} assistentes especializados
+                              {pkg.limited
+                                ? `Acesso completo a todos os ${pkg.assistants} assistentes especializados`
+                                : `Escolha ${pkg.assistants} assistentes especializados`}
                             </p>
-                            
+
                             <div className="mb-8">
-                              <div className="flex items-baseline justify-center mb-2">
-                                <span className="text-4xl font-bold text-neuro-primary">
-                                  R$ {pkg.monthlyPrice?.toFixed(2).replace('.', ',') || '0,00'}
-                                </span>
-                                <span className="text-neuro-gray-500 ml-2">/mês</span>
-                              </div>
-                              <div className="text-sm text-neuro-gray-500">
-                                ou R$ {pkg.semesterPrice}/semestre
-                              </div>
-                              <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold mt-3">
-                                <Icon name="percentage" className="w-4 h-4 mr-1" />
-                                {pkg.discount}% economia
-                              </div>
+                              {pkg.annualPrice ? (
+                                // Package All - Annual pricing with Black Friday
+                                <>
+                                  <div className="flex items-baseline justify-center mb-2">
+                                    <span className="text-4xl font-bold text-green-600">
+                                      R$ {pkg.annualPrice.toFixed(2).replace('.', ',')}
+                                    </span>
+                                    <span className="text-neuro-gray-500 ml-2">/ano</span>
+                                  </div>
+                                  {pkg.originalPrice && pkg.originalPrice > pkg.annualPrice && (
+                                    <div className="text-sm text-neuro-gray-400 line-through mb-1">
+                                      De R$ {pkg.originalPrice.toFixed(2).replace('.', ',')}
+                                    </div>
+                                  )}
+                                  <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold mt-3">
+                                    <Icon name="percentage" className="w-4 h-4 mr-1" />
+                                    Economize R$ {pkg.savings.toFixed(2).replace('.', ',')}
+                                  </div>
+                                </>
+                              ) : (
+                                // Regular packages - Monthly/Semester pricing
+                                <>
+                                  <div className="flex items-baseline justify-center mb-2">
+                                    <span className="text-4xl font-bold text-neuro-primary">
+                                      R$ {pkg.monthlyPrice?.toFixed(2).replace('.', ',') || '0,00'}
+                                    </span>
+                                    <span className="text-neuro-gray-500 ml-2">/mês</span>
+                                  </div>
+                                  <div className="text-sm text-neuro-gray-500">
+                                    ou R$ {pkg.semesterPrice}/semestre
+                                  </div>
+                                  <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold mt-3">
+                                    <Icon name="percentage" className="w-4 h-4 mr-1" />
+                                    {pkg.discount}% economia
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </motion.div>
 
@@ -698,7 +734,8 @@ export default function Store() {
                               className="w-full relative overflow-hidden group/btn glow-hover shadow-lg"
                               onClick={() => {
                                 setShowPackagesModal(false);
-                                handlePackageSelect(pkg.assistants === 3 ? 'package_3' : 'package_6');
+                                const packageType = pkg.packageType || (pkg.assistants === 3 ? 'package_3' : 'package_6');
+                                handlePackageSelect(packageType);
                               }}
                               style={{
                                 background: isPopular 
@@ -709,7 +746,9 @@ export default function Store() {
                                   : `0 6px 20px rgba(45, 90, 31, 0.4)`
                               }}
                             >
-                              <span className="font-semibold">Escolher {pkg.assistants} Assistentes</span>
+                              <span className="font-semibold">
+                                {pkg.limited ? 'Garantir Acesso Completo' : `Escolher ${pkg.assistants} Assistentes`}
+                              </span>
                             </Button>
                           </motion.div>
                         </CardContent>
