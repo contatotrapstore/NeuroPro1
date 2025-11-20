@@ -188,9 +188,9 @@ module.exports = async function handler(req, res) {
               });
             }
 
-            // BLACK FRIDAY PROMO: Annual subscriptions at R$ 199.00 until 01/11/2025
+            // BLACK FRIDAY PROMO: Annual subscriptions at R$ 199.00 until 01/12/2025
             const now = new Date();
-            const blackFridayEnd = new Date('2025-11-01T23:59:59-03:00'); // Brazil timezone
+            const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00'); // Brazil timezone
             const isBlackFriday = now < blackFridayEnd;
 
             if (subscription_type === 'monthly') {

@@ -5,14 +5,14 @@
  */
 
 // Black Friday promotion end date
-const BLACK_FRIDAY_END = new Date('2025-11-01T23:59:59-03:00');
+const BLACK_FRIDAY_END = new Date('2025-12-01T23:59:59-03:00');
 const isBlackFridayActive = () => new Date() < BLACK_FRIDAY_END;
 
 // Default base pricing for individual assistants (fallback values)
 export const DEFAULT_INDIVIDUAL_PRICING = {
   monthly: 39.90,
   semester: 199.00,
-  annual: isBlackFridayActive() ? 199.00 : 239.90, // 🔥 BLACK FRIDAY: R$ 199 until 01/11
+  annual: isBlackFridayActive() ? 199.00 : 239.90, // 🔥 BLACK FRIDAY: R$ 199 until 01/12
 } as const;
 
 // Package pricing with discounts

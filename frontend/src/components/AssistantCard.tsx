@@ -164,7 +164,7 @@ export function AssistantCard({
                     <span className="text-xs text-gray-500 line-through">R$ {pricingInfo.annual.originalPrice.toFixed(2)}</span>
                   </div>
                   <div className="text-xs font-medium text-red-700">
-                    Economize 17% • Válido até 01/11
+                    Economize 17% • Válido até 01/12
                   </div>
                 </div>
               )}

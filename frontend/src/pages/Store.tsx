@@ -94,7 +94,7 @@ export default function Store() {
       const assistant = assistants.find(a => a.id === assistantId);
 
       // BLACK FRIDAY: Automatic annual subscription during promotion
-      const blackFridayEnd = new Date('2025-11-01T23:59:59-03:00');
+      const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00');
       const isBlackFriday = new Date() < blackFridayEnd;
 
       const subscriptionType = isBlackFriday ? 'annual' : 'monthly';

@@ -286,7 +286,7 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
       <div className="main-content">
         {/* BLACK FRIDAY PROMOTIONAL BANNER */}
         {(() => {
-          const blackFridayEnd = new Date('2025-11-01T23:59:59-03:00');
+          const blackFridayEnd = new Date('2025-12-01T23:59:59-03:00');
           const isActive = new Date() < blackFridayEnd;
 
           if (!isActive) return null;
@@ -295,16 +295,16 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
             <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 overflow-hidden sticky top-0 z-40">
               <div className="relative flex whitespace-nowrap animate-marquee py-3">
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/11 🔥
+                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/11 🔥
+                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/11 🔥
+                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
                 </span>
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
-                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/11 🔥
+                  🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
                 </span>
               </div>
             </div>
