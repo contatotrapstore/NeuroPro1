@@ -154,16 +154,16 @@ export function AssistantCard({
 
               {/* BLACK FRIDAY PROMO */}
               {pricingInfo.annual.isPromo && (
-                <div className="bg-gradient-to-r from-orange-50 via-red-50 to-pink-50 p-3 rounded-xl border-2 border-red-200 mb-3">
+                <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 p-3 rounded-xl border-2 border-green-300 mb-3">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <span className="text-base">🔥</span>
-                    <div className="text-xs font-bold text-red-600 uppercase tracking-wide">Black Friday</div>
+                    <div className="text-xs font-bold text-green-700 uppercase tracking-wide">Black Friday</div>
                   </div>
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    <span className="text-xl font-bold text-red-600">{pricingInfo.annual.formatted}</span>
+                    <span className="text-xl font-bold text-green-700">{pricingInfo.annual.formatted}</span>
                     <span className="text-xs text-gray-500 line-through">R$ {pricingInfo.annual.originalPrice.toFixed(2)}</span>
                   </div>
-                  <div className="text-xs font-medium text-red-700">
+                  <div className="text-xs font-medium text-green-600">
                     Economize 17% • Válido até 01/12
                   </div>
                 </div>

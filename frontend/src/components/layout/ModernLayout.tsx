@@ -292,7 +292,7 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
           if (!isActive) return null;
 
           return (
-            <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 overflow-hidden sticky top-0 z-40">
+            <div className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-500 overflow-hidden sticky top-0 z-40">
               <div className="relative flex whitespace-nowrap animate-marquee py-3">
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
                   🔥 BLACK FRIDAY: Assinatura Anual por R$ 199,00 - Economize 17%! Válido até 01/12 🔥
