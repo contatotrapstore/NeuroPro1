@@ -177,7 +177,7 @@ module.exports = async function handler(req, res) {
             // Get assistant pricing
             const { data: assistant, error: assistantError } = await supabase
               .from('assistants')
-              .select('name, monthly_price, semester_price')
+              .select('name, monthly_price, semester_price, annual_price')
               .eq('id', assistant_id)
               .single();
 
@@ -188,17 +188,34 @@ module.exports = async function handler(req, res) {
               });
             }
 
-            totalAmount = subscription_type === 'monthly'
-              ? assistant.monthly_price
-              : assistant.semester_price;
+            // BLACK FRIDAY PROMO: Annual subscriptions at R$ 199.00 until 01/11/2025
+            const now = new Date();
+            const blackFridayEnd = new Date('2025-11-01T23:59:59-03:00'); // Brazil timezone
+            const isBlackFriday = now < blackFridayEnd;
 
-            description = `Assinatura ${subscription_type === 'monthly' ? 'Mensal' : 'Semestral'} - ${assistant.name}`;
+            if (subscription_type === 'monthly') {
+              totalAmount = assistant.monthly_price;
+            } else if (subscription_type === 'semester') {
+              totalAmount = assistant.semester_price;
+            } else if (subscription_type === 'annual') {
+              // Apply Black Friday promotional pricing
+              totalAmount = isBlackFriday ? 199.00 : (assistant.annual_price || 239.90);
+              console.log(`🔥 BLACK FRIDAY: Annual pricing - ${isBlackFriday ? 'PROMOTIONAL R$ 199.00' : `NORMAL R$ ${assistant.annual_price || 239.90}`}`);
+            } else {
+              totalAmount = assistant.monthly_price; // Fallback
+            }
+
+            const subscriptionTypeLabel = subscription_type === 'monthly' ? 'Mensal' :
+                                         subscription_type === 'semester' ? 'Semestral' :
+                                         subscription_type === 'annual' ? 'Anual' : 'Mensal';
+
+            description = `Assinatura ${subscriptionTypeLabel} - ${assistant.name}`;
           } else {
-            // Package pricing
+            // Package pricing (FIX: 499.90 -> 499.00 for semester package_3)
             const packagePricing = {
               package_3: {
                 monthly: 99.90,
-                semester: 499.90
+                semester: 499.00  // FIXED: Was 499.90, now matches frontend
               },
               package_6: {
                 monthly: 179.90,

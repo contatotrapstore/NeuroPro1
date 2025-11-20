@@ -18,6 +18,7 @@ interface Assistant {
   area?: 'Psicologia' | 'Psicopedagogia' | 'Fonoaudiologia';
   monthly_price: number;
   semester_price: number;
+  annual_price?: number;
   is_active: boolean;
   openai_assistant_id?: string;
   specialization?: string;
@@ -150,7 +151,24 @@ export function AssistantCard({
               <div className="text-sm text-gray-600 mb-3">
                 por mês, por assistente
               </div>
-              
+
+              {/* BLACK FRIDAY PROMO */}
+              {pricingInfo.annual.isPromo && (
+                <div className="bg-gradient-to-r from-orange-50 via-red-50 to-pink-50 p-3 rounded-xl border-2 border-red-200 mb-3">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="text-base">🔥</span>
+                    <div className="text-xs font-bold text-red-600 uppercase tracking-wide">Black Friday</div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="text-xl font-bold text-red-600">{pricingInfo.annual.formatted}</span>
+                    <span className="text-xs text-gray-500 line-through">R$ {pricingInfo.annual.originalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="text-xs font-medium text-red-700">
+                    Economize 17% • Válido até 01/11
+                  </div>
+                </div>
+              )}
+
               {/* Comparativo de Planos */}
               <div className="bg-gradient-to-r from-blue-50 to-green-50 p-3 rounded-xl border border-blue-100">
                 <div className="text-xs font-medium text-gray-700 mb-1">💡 Dica Inteligente</div>

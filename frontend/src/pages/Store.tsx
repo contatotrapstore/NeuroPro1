@@ -92,13 +92,21 @@ export default function Store() {
     requireAuth(() => {
       // Find the assistant to get its actual price
       const assistant = assistants.find(a => a.id === assistantId);
-      const assistantPrice = assistant?.monthly_price || 39.90; // Fallback to default if not found
+
+      // BLACK FRIDAY: Automatic annual subscription during promotion
+      const blackFridayEnd = new Date('2025-11-01T23:59:59-03:00');
+      const isBlackFriday = new Date() < blackFridayEnd;
+
+      const subscriptionType = isBlackFriday ? 'annual' : 'monthly';
+      const assistantPrice = isBlackFriday
+        ? 199.00 // Black Friday promotional price
+        : (assistant?.monthly_price || 39.90); // Monthly price otherwise
 
       navigate('/checkout', {
         state: {
           type: 'individual',
           assistant_id: assistantId,
-          subscription_type: 'monthly',
+          subscription_type: subscriptionType,
           total_price: assistantPrice
         }
       });

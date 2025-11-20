@@ -18,13 +18,14 @@ interface Assistant {
   color_theme: string;
   monthly_price: number;
   semester_price: number;
+  annual_price?: number;
 }
 
 interface CheckoutData {
   type: 'individual' | 'package';
   assistant_id?: string;
   package_type?: 'package_3' | 'package_6';
-  subscription_type: 'monthly' | 'semester';
+  subscription_type: 'monthly' | 'semester' | 'annual';
   selected_assistants?: string[];
   total_price: number;
 }
@@ -528,7 +529,7 @@ export default function Checkout() {
                           {currentAssistant.name}
                         </h4>
                         <p className="text-sm text-neuro-gray-600">
-                          Assinatura {checkoutData.subscription_type === 'monthly' ? 'Mensal' : 'Semestral'}
+                          Assinatura {checkoutData.subscription_type === 'monthly' ? 'Mensal' : checkoutData.subscription_type === 'semester' ? 'Semestral' : 'Anual'}
                         </p>
                       </div>
                     </div>
@@ -542,7 +543,7 @@ export default function Checkout() {
                         Pacote {checkoutData.package_type === 'package_3' ? '3' : '6'} Assistentes
                       </h4>
                       <p className="text-sm text-neuro-gray-600 mb-3">
-                        Plano {checkoutData.subscription_type === 'monthly' ? 'Mensal' : 'Semestral'}
+                        Plano {checkoutData.subscription_type === 'monthly' ? 'Mensal' : checkoutData.subscription_type === 'semester' ? 'Semestral' : 'Anual'}
                       </p>
                       
                       <div className="space-y-2">
@@ -597,9 +598,11 @@ export default function Checkout() {
                   <div className="text-xs text-neuro-gray-600">
                     <p className="font-medium mb-1">Ciclo de Cobrança</p>
                     <p>
-                      {checkoutData.subscription_type === 'monthly' 
-                        ? 'Renovação mensal automática' 
-                        : 'Renovação semestral automática'
+                      {checkoutData.subscription_type === 'monthly'
+                        ? 'Renovação mensal automática'
+                        : checkoutData.subscription_type === 'semester'
+                        ? 'Renovação semestral automática'
+                        : 'Renovação anual automática'
                       }. Você pode cancelar a qualquer momento.
                     </p>
                   </div>

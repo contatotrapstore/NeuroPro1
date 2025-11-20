@@ -4,10 +4,15 @@
  * All prices should be managed from this single source of truth
  */
 
+// Black Friday promotion end date
+const BLACK_FRIDAY_END = new Date('2025-11-01T23:59:59-03:00');
+const isBlackFridayActive = () => new Date() < BLACK_FRIDAY_END;
+
 // Default base pricing for individual assistants (fallback values)
 export const DEFAULT_INDIVIDUAL_PRICING = {
   monthly: 39.90,
   semester: 199.00,
+  annual: isBlackFridayActive() ? 199.00 : 239.90, // 🔥 BLACK FRIDAY: R$ 199 until 01/11
 } as const;
 
 // Package pricing with discounts
@@ -31,7 +36,7 @@ export const PACKAGE_PRICING = {
 } as const;
 
 // Subscription types
-export type SubscriptionType = 'monthly' | 'semester';
+export type SubscriptionType = 'monthly' | 'semester' | 'annual';
 export type PackageSize = 3 | 6;
 
 /**
@@ -53,14 +58,20 @@ export const calculatePackageDiscount = (
  */
 export const getIndividualPrice = (
   subscriptionType: SubscriptionType,
-  dynamicPricing?: { monthly_price?: number; semester_price?: number }
+  dynamicPricing?: { monthly_price?: number; semester_price?: number; annual_price?: number }
 ): number => {
   if (dynamicPricing) {
     const price = subscriptionType === 'monthly'
       ? dynamicPricing.monthly_price
-      : dynamicPricing.semester_price;
+      : subscriptionType === 'semester'
+      ? dynamicPricing.semester_price
+      : dynamicPricing.annual_price;
 
     if (price && price > 0) {
+      // Apply Black Friday discount for annual if active
+      if (subscriptionType === 'annual' && isBlackFridayActive()) {
+        return 199.00;
+      }
       return price;
     }
   }
@@ -119,7 +130,9 @@ export const formatPrice = (price: number): string => {
  * Format subscription label
  */
 export const formatSubscriptionLabel = (subscriptionType: SubscriptionType): string => {
-  return subscriptionType === 'monthly' ? '/mês' : '/semestre';
+  return subscriptionType === 'monthly' ? '/mês' :
+         subscriptionType === 'semester' ? '/semestre' :
+         '/ano';
 };
 
 /**
@@ -128,9 +141,11 @@ export const formatSubscriptionLabel = (subscriptionType: SubscriptionType): str
 export const getAssistantPricingInfo = (assistant?: {
   monthly_price?: number;
   semester_price?: number;
+  annual_price?: number;
 }) => {
   const monthlyPrice = getIndividualPrice('monthly', assistant);
   const semesterPrice = getIndividualPrice('semester', assistant);
+  const annualPrice = getIndividualPrice('annual', assistant);
 
   return {
     monthly: {
@@ -140,6 +155,12 @@ export const getAssistantPricingInfo = (assistant?: {
     semester: {
       price: semesterPrice,
       formatted: `${formatPrice(semesterPrice)}/semestre`,
+    },
+    annual: {
+      price: annualPrice,
+      formatted: `${formatPrice(annualPrice)}/ano`,
+      isPromo: isBlackFridayActive(),
+      originalPrice: 239.90,
     }
   };
 };

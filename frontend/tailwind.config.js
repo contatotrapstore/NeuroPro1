@@ -80,6 +80,13 @@ export default {
         'fade-in': 'fadeIn 0.5s ease-out',
         'slide-up': 'slideUp 0.6s ease-out',
         'scale-in': 'scaleIn 0.4s ease-out',
+        'marquee': 'marquee 20s linear infinite',
+      },
+      keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-25%)' },
+        },
       },
       boxShadow: {
         'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
