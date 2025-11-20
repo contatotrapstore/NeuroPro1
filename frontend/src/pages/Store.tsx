@@ -43,25 +43,33 @@ export default function Store() {
   useEffect(() => {
     // Prevent double execution in React StrictMode
     if (hasLoadedRef.current) return;
-    
+
     hasLoadedRef.current = true;
-    
+
     // Debounce to prevent multiple rapid calls
     const timeoutId = setTimeout(() => {
       loadAssistants();
-      
+
       // Check if coming from a specific assistant for future highlighting
       const assistantId = searchParams.get('assistant');
       if (assistantId) {
         // Future feature: highlight specific assistant
       }
+
+      // Check if should show packages modal (from promotional banner)
+      const showPackages = searchParams.get('showPackages');
+      if (showPackages === 'true') {
+        setShowPackagesModal(true);
+        // Clean up URL
+        navigate('/store', { replace: true });
+      }
     }, 150);
-    
+
     return () => {
       clearTimeout(timeoutId);
       hasLoadedRef.current = false;
     };
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   const loadAssistants = async (forceRefresh = false) => {
     try {

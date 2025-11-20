@@ -294,9 +294,9 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
           return (
             <div
               className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-500 overflow-hidden sticky top-0 z-40 cursor-pointer hover:from-green-600 hover:via-green-500 hover:to-emerald-400 transition-all duration-300"
-              onClick={() => navigate('/store')}
+              onClick={() => navigate('/store?showPackages=true')}
             >
-              <div className="relative flex whitespace-nowrap animate-marquee py-3">
+              <div className="relative flex whitespace-nowrap animate-marquee py-3 pointer-events-none">
                 <span className="inline-flex items-center text-white font-bold text-sm px-8">
                   🔥 BLACK FRIDAY: TODOS os Assistentes - 12x R$ 199 (Total R$ 2.388) - Clique aqui! Válido até 01/12 🔥
                 </span>
