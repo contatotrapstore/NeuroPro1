@@ -46,19 +46,33 @@ module.exports = async function handler(req, res) {
       return isAdminEmail || hasAdminRole;
     };
 
-    // Initialize Supabase
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    // Initialize Supabase with fallbacks for different env var names
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                              process.env.SUPABASE_SERVICE_KEY ||
+                              process.env.VITE_SUPABASE_SERVICE_KEY;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    // Use service key for admin operations, fallback to anon key
+    const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+
+    console.log('🔑 Supabase Config Check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      hasAnonKey: !!supabaseAnonKey,
+      usingKey: supabaseServiceKey ? 'service' : 'anon'
+    });
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase config:', { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey });
       return res.status(500).json({
         success: false,
-        error: 'Configuração do servidor incompleta'
+        error: 'Configuração do servidor incompleta',
+        debug: { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey }
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
@@ -71,8 +85,8 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Create user-specific client for auth
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    // Create user-specific client for auth (needs anon key for user auth)
+    const userClient = createClient(supabaseUrl, supabaseAnonKey || supabaseKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
