@@ -301,12 +301,16 @@ module.exports = async function handler(req, res) {
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
       const filter = url.searchParams.get('filter') || 'all'; // all, neuro, abpsi, paying
+      const search = url.searchParams.get('search') || '';
 
-      // Use secure RPC function with filters
+      console.log('📋 Admin users request:', { page, limit, filter, search });
+
+      // Use secure RPC function with filters and search
       const { data: usersData, error: usersError } = await supabase.rpc('get_admin_users_list', {
         page_limit: limit,
         page_offset: offset,
-        user_type: filter
+        user_type: filter,
+        search_term: search || null
       });
 
       if (usersError) {
@@ -332,7 +336,8 @@ module.exports = async function handler(req, res) {
           limit: limit
         },
         filter: filter,
-        message: `Usuários ${filter !== 'all' ? filter : ''} recuperados com sucesso`
+        search: search,
+        message: `Usuários ${search ? 'filtrados' : filter !== 'all' ? filter : ''} recuperados com sucesso`
       });
     }
 

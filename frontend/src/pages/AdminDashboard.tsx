@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
-  FileText
+  FileText,
+  Search
 } from 'lucide-react';
 import { NeuroLabIconMedium } from '../components/icons/NeuroLabLogo';
 import { adminService } from '../services/admin.service';
@@ -70,6 +71,7 @@ export default function AdminDashboard() {
   }>>([]);
   const [modalLoading, setModalLoading] = useState(false);
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState('');
 
   useEffect(() => {
     // AdminProtectedRoute já verificou se é admin, então só carregar dados uma vez
@@ -79,10 +81,10 @@ export default function AdminDashboard() {
     }
   }, [user?.id, dataLoaded]); // Evitar recarregamentos múltiplos
 
-  const loadUsers = async (page: number, limit: number) => {
+  const loadUsers = async (page: number, limit: number, search = '') => {
     setUsersLoading(true);
     try {
-      const usersResult = await adminService.getUsers(page, limit);
+      const usersResult = await adminService.getUsers(page, limit, search);
       if (usersResult.success && usersResult.data) {
         // Verificar se data é array, se não, extrair do objeto
         const userData = Array.isArray(usersResult.data)
@@ -147,14 +149,25 @@ export default function AdminDashboard() {
 
   const handlePageChange = async (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
-      await loadUsers(newPage, usersPerPage);
+      await loadUsers(newPage, usersPerPage, userSearch);
     }
   };
 
   const handleUsersPerPageChange = async (newLimit: number) => {
     setUsersPerPage(newLimit);
-    await loadUsers(1, newLimit);
+    await loadUsers(1, newLimit, userSearch);
   };
+
+  // Debounced search effect
+  useEffect(() => {
+    if (!dataLoaded) return; // Don't search before initial load
+
+    const timeoutId = setTimeout(() => {
+      loadUsers(1, usersPerPage, userSearch);
+    }, 400); // 400ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [userSearch]);
 
   const handleLogout = async () => {
     await signOut();
@@ -419,25 +432,47 @@ export default function AdminDashboard() {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-xl shadow-lg">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Gerenciar Usuários</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Exibindo {users.length > 0 ? ((currentPage - 1) * usersPerPage + 1) : 0} - {Math.min(currentPage * usersPerPage, totalUsers)} de {totalUsers} usuários
-                </p>
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Gerenciar Usuários</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {userSearch ? `Resultados para "${userSearch}": ` : 'Exibindo '}
+                    {users.length > 0 ? ((currentPage - 1) * usersPerPage + 1) : 0} - {Math.min(currentPage * usersPerPage, totalUsers)} de {totalUsers} usuários
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm text-gray-600">Por página:</label>
+                  <select
+                    value={usersPerPage}
+                    onChange={(e) => handleUsersPerPageChange(Number(e.target.value))}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    disabled={usersLoading}
+                  >
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <label className="text-sm text-gray-600">Usuários por página:</label>
-                <select
-                  value={usersPerPage}
-                  onChange={(e) => handleUsersPerPageChange(Number(e.target.value))}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                  disabled={usersLoading}
-                >
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome ou email..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+                {userSearch && (
+                  <button
+                    onClick={() => setUserSearch('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
             <div className="overflow-x-auto max-h-96 overflow-y-auto">

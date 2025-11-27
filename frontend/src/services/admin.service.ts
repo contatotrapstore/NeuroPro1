@@ -144,8 +144,10 @@ export class AdminService {
     return this.apiService.get('/admin/stats');
   }
 
-  async getUsers(page = 1, limit = 20) {
-    return this.apiService.get(`/admin/users?page=${page}&limit=${limit}`);
+  async getUsers(page = 1, limit = 20, search = '') {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    if (search) params.append('search', search);
+    return this.apiService.get(`/admin/users?${params}`);
   }
 
   async getSubscriptions(page = 1, limit = 20) {
