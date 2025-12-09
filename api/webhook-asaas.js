@@ -40,14 +40,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Initialize services with error handling
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    // Initialize services with error handling (with fallbacks for Vercel)
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                               process.env.SUPABASE_SERVICE_KEY ||
+                               process.env.VITE_SUPABASE_SERVICE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('❌ Supabase configuration missing:', {
         hasUrl: !!supabaseUrl,
-        hasServiceKey: !!supabaseServiceKey
+        hasServiceKey: !!supabaseServiceKey,
+        availableEnvVars: Object.keys(process.env).filter(k => k.includes('SUPABASE'))
       });
       return res.status(500).json({
         error: 'Server configuration error'
@@ -212,374 +215,207 @@ async function handlePaymentConfirmed(supabase, webhookData) {
     value: payment.value,
     billingType: payment.billingType,
     status: payment.status,
+    externalReference: payment.externalReference,
     timestamp: new Date().toISOString()
   });
 
-  // Log credit card payment for debugging
-  if (payment.billingType === 'CREDIT_CARD') {
-    console.log('💳 Credit card payment detected:', {
-      paymentId: payment.id,
-      status: payment.status,
-      subscriptionId: payment.subscription,
-      value: payment.value,
-      billingType: payment.billingType
-    });
+  // Determine if payment should activate subscriptions
+  const shouldActivate = ['CONFIRMED', 'RECEIVED'].includes(payment.status);
+  const newTransactionStatus = shouldActivate ? 'paid' : 'pending';
 
-    // For credit card, we should process CONFIRMED, RECEIVED, and even PENDING
-    // because Asaas may send PENDING first then CONFIRMED later
-    if (!['CONFIRMED', 'RECEIVED', 'PENDING'].includes(payment.status)) {
-      console.warn('⚠️ Credit card payment status not processable:', payment.status);
-      return; // Don't activate subscription for failed/cancelled payments
-    }
-
-    // Only activate subscription for confirmed payments
-    if (payment.status === 'PENDING') {
-      console.log('📋 Credit card payment is PENDING - updating status but not activating yet');
-    } else {
-      console.log('✅ Credit card payment confirmed - will activate subscription');
-    }
-  }
+  console.log(`💰 Payment status: ${payment.status} → Transaction status: ${newTransactionStatus}`);
 
   try {
-    // For ONE-TIME PAYMENTS, we always use payment ID (much simpler!)
-    let subscriptionSearchId = payment.id;
-    console.log('🔍 Searching by payment ID (one-time payment):', subscriptionSearchId);
+    // ============================================
+    // STEP 1: UPDATE TRANSACTIONS TABLE FIRST
+    // ============================================
+    console.log('📝 STEP 1: Updating transactions table...');
 
-    // Legacy support: if payment.subscription exists, try that too
-    if (payment.subscription) {
-      console.log('🔍 Also checking legacy subscription ID:', payment.subscription);
-    }
-
-    if (!subscriptionSearchId) {
-      console.error('❌ No valid ID found for subscription search');
-      console.error('🔍 Payment data:', {
-        paymentId: payment.id,
-        subscriptionId: payment.subscription,
-        externalReference: payment.externalReference,
-        status: payment.status
-      });
-      return;
-    }
-
-    // Update subscription status based on payment (try payment ID first, then subscription ID)
-    let subscriptions = [];
-    let subsError = null;
-
-    // First try with payment ID (for one-time payments)
-    const { data: paymentSubscriptions, error: paymentSubsError } = await supabase
-      .from('user_subscriptions')
+    // Try to find transaction by asaas_payment_id
+    const { data: existingTransaction, error: findTxError } = await supabase
+      .from('transactions')
       .select('*')
-      .eq('asaas_subscription_id', payment.id);
+      .eq('asaas_payment_id', payment.id)
+      .single();
 
-    if (!paymentSubsError && paymentSubscriptions && paymentSubscriptions.length > 0) {
-      subscriptions = paymentSubscriptions;
-      console.log('✅ Found subscriptions by payment ID:', payment.id);
-    } else if (payment.subscription) {
-      // Fallback: try with subscription ID (for legacy subscriptions)
-      const { data: legacySubscriptions, error: legacySubsError } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('asaas_subscription_id', payment.subscription);
+    let transactionUserId = null;
+    let transactionData = null;
 
-      subscriptions = legacySubscriptions || [];
-      subsError = legacySubsError;
-      console.log('✅ Found subscriptions by subscription ID:', payment.subscription);
+    if (existingTransaction) {
+      console.log('✅ Found existing transaction:', {
+        id: existingTransaction.id,
+        userId: existingTransaction.user_id,
+        currentStatus: existingTransaction.status
+      });
+
+      transactionUserId = existingTransaction.user_id;
+      transactionData = existingTransaction;
+
+      // Update transaction status
+      const { error: updateTxError } = await supabase
+        .from('transactions')
+        .update({
+          status: newTransactionStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingTransaction.id);
+
+      if (updateTxError) {
+        console.error('❌ Error updating transaction:', updateTxError);
+      } else {
+        console.log(`✅ Transaction updated: ${existingTransaction.status} → ${newTransactionStatus}`);
+      }
     } else {
-      subsError = paymentSubsError;
-    }
+      console.log('⚠️ No transaction found by payment ID:', payment.id);
 
-    if (subsError) {
-      console.error('Error finding subscriptions:', subsError);
-      return;
-    }
-
-    // If no subscriptions found by payment/subscription ID, try to find by user + assistant
-    // This handles cases where user made a new payment for an existing subscription
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log('🔍 No subscriptions found by payment ID, searching by externalReference...');
-
-      // Extract user_id from externalReference (format: "individual_USER_ID_TIMESTAMP")
-      const externalRef = payment.externalReference;
-      if (externalRef && externalRef.startsWith('individual_')) {
-        const parts = externalRef.split('_');
-        if (parts.length >= 2) {
-          const userId = parts[1];
-          console.log('👤 Extracted user_id from externalReference:', userId);
-
-          // Get user's subscriptions to find potential renewal candidates
-          const { data: userSubscriptions, error: userSubsError } = await supabase
-            .from('user_subscriptions')
-            .select('*')
-            .eq('user_id', userId)
-            .in('status', ['active', 'expired', 'cancelled']);
-
-          if (!userSubsError && userSubscriptions && userSubscriptions.length > 0) {
-            console.log(`✅ Found ${userSubscriptions.length} subscription(s) for user to potentially renew`);
-
-            // Try to match by subscription type and amount
-            // This assumes the payment description or value can help identify the right subscription
-            const matchingSubscriptions = userSubscriptions.filter(sub => {
-              // Match by subscription type based on payment value
-              const monthlyRange = [39, 40, 59, 60]; // Common monthly prices
-              const semesterRange = [199, 200, 259, 260]; // Common semester prices
-
-              if (sub.subscription_type === 'monthly' && monthlyRange.includes(Math.floor(payment.value))) {
-                return true;
-              }
-              if (sub.subscription_type === 'semester' && semesterRange.includes(Math.floor(payment.value))) {
-                return true;
-              }
-              return false;
-            });
-
-            if (matchingSubscriptions.length > 0) {
-              // Use the first matching subscription (or the most recently expired one)
-              subscriptions = matchingSubscriptions.sort((a, b) =>
-                new Date(b.expires_at) - new Date(a.expires_at)
-              );
-              console.log('🎯 Matched subscription by user + value:', {
-                subscriptionId: subscriptions[0].id,
-                assistant: subscriptions[0].assistant_id,
-                currentStatus: subscriptions[0].status,
-                expiresAt: subscriptions[0].expires_at
-              });
-            } else {
-              // If no match by value, take all subscriptions (admin might need to verify)
-              subscriptions = userSubscriptions;
-              console.log('⚠️ Using all user subscriptions (no value match)');
-            }
-          } else {
-            console.log('❌ No subscriptions found for user:', userId);
+      // Try to extract user_id from externalReference
+      if (payment.externalReference) {
+        // Format: "individual_USER_ID_TIMESTAMP" or "package_USER_ID_TIMESTAMP"
+        const refParts = payment.externalReference.split('_');
+        if (refParts.length >= 2) {
+          // UUID is 36 chars, find it in the parts
+          const uuidPart = refParts.find(part => part.length === 36 && part.includes('-'));
+          if (uuidPart) {
+            transactionUserId = uuidPart;
+            console.log('👤 Extracted user_id from externalReference:', transactionUserId);
           }
         }
-      } else {
-        console.log('⚠️ Could not extract user_id from externalReference:', externalRef);
       }
     }
 
-    console.log('🔍 Found subscriptions:', {
-      count: subscriptions?.length || 0,
-      foundByPaymentId: !!paymentSubscriptions?.length,
-      foundBySubscriptionId: !!(payment.subscription && legacySubscriptions?.length),
-      foundIds: subscriptions?.map(s => s.id) || []
-    });
+    // If we still don't have a user_id, try customer lookup
+    if (!transactionUserId && payment.customer) {
+      console.log('🔍 Looking up user by Asaas customer ID:', payment.customer);
+      const { data: customerTransaction } = await supabase
+        .from('transactions')
+        .select('user_id')
+        .eq('asaas_customer_id', payment.customer)
+        .limit(1)
+        .single();
 
-    if (subscriptions && subscriptions.length > 0) {
-      // Determine the new status based on payment status
-      let newStatus = 'pending'; // Default for PENDING payments
-      if (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') {
-        newStatus = 'active';
+      if (customerTransaction) {
+        transactionUserId = customerTransaction.user_id;
+        console.log('✅ Found user_id by customer ID:', transactionUserId);
       }
+    }
 
-      const subscription = subscriptions[0];
-      const isRenewal = subscription.status === 'active' && new Date(subscription.expires_at) > new Date();
+    if (!transactionUserId) {
+      console.error('❌ Could not determine user_id for payment:', payment.id);
+      return;
+    }
 
-      console.log(`📋 Processing subscription:`, {
-        currentStatus: subscription.status,
-        newStatus: newStatus,
-        expiresAt: subscription.expires_at,
-        subscriptionType: subscription.subscription_type,
-        isRenewal: isRenewal
-      });
+    // Don't proceed with subscription activation if payment is just PENDING
+    if (!shouldActivate) {
+      console.log('⏳ Payment is PENDING - transaction updated but subscriptions not activated yet');
+      return;
+    }
+
+    // ============================================
+    // STEP 2: UPDATE USER SUBSCRIPTIONS
+    // ============================================
+    console.log('📝 STEP 2: Updating user subscriptions for user:', transactionUserId);
+    // ============================================
+    // SIMPLIFIED SUBSCRIPTION RENEWAL LOGIC
+    // ============================================
+
+    // Get ALL user subscriptions (active or expired)
+    const { data: userSubscriptions, error: userSubsError } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', transactionUserId);
+
+    if (userSubsError) {
+      console.error('❌ Error fetching user subscriptions:', userSubsError);
+      return;
+    }
+
+    console.log(`📋 Found ${userSubscriptions?.length || 0} subscription(s) for user`);
+
+    if (userSubscriptions && userSubscriptions.length > 0) {
+      // Determine subscription period based on payment value
+      let periodMonths = 1; // Default monthly
+      const paymentValue = payment.value;
+
+      // Detect period based on common pricing patterns
+      if (paymentValue >= 150 && paymentValue < 300) {
+        periodMonths = 6; // Semester
+      } else if (paymentValue >= 300 || paymentValue > 2000) {
+        periodMonths = 12; // Annual or package_all
+      }
 
       // Calculate new expiration date
-      let newExpiresAt;
-      if (isRenewal) {
-        // RENEWAL: Extend from current expiration date
-        console.log('🔄 RENEWAL detected - extending from current expiration');
-        const currentExpiration = new Date(subscription.expires_at);
-        newExpiresAt = new Date(currentExpiration);
+      const now = new Date();
+      let newExpiresAt = new Date(now);
+      newExpiresAt.setMonth(now.getMonth() + periodMonths);
 
-        if (subscription.subscription_type === 'monthly') {
-          newExpiresAt.setMonth(currentExpiration.getMonth() + 1);
-        } else if (subscription.subscription_type === 'semester') {
-          newExpiresAt.setMonth(currentExpiration.getMonth() + 6);
-        } else if (subscription.subscription_type === 'annual') {
-          newExpiresAt.setFullYear(currentExpiration.getFullYear() + 1);
-        } else {
-          newExpiresAt.setMonth(currentExpiration.getMonth() + 1);
-        }
-      } else {
-        // NEW SUBSCRIPTION or REACTIVATION: Calculate from now
-        console.log('➕ NEW subscription or REACTIVATION - calculating from now');
-        newExpiresAt = new Date();
+      console.log(`📅 Renewal period: ${periodMonths} month(s), new expiration: ${newExpiresAt.toISOString()}`);
 
-        if (subscription.subscription_type === 'monthly') {
-          newExpiresAt.setMonth(newExpiresAt.getMonth() + 1);
-        } else if (subscription.subscription_type === 'semester') {
-          newExpiresAt.setMonth(newExpiresAt.getMonth() + 6);
-        } else if (subscription.subscription_type === 'annual') {
-          newExpiresAt.setFullYear(newExpiresAt.getFullYear() + 1);
-        } else {
-          newExpiresAt.setMonth(newExpiresAt.getMonth() + 1);
-        }
-      }
-
-      console.log(`📅 Expiration date: ${subscription.expires_at} → ${newExpiresAt.toISOString()}`);
-
-      // Update subscription status and expiration using UPSERT
-      // This handles the edge case where webhook arrives before payment.js creates the record
-      const updateId = subscription.asaas_subscription_id;
-      const { error: updateError } = await supabase
+      // Update ALL user subscriptions
+      const { error: updateError, count } = await supabase
         .from('user_subscriptions')
-        .upsert({
-          id: subscription.id, // Include the ID for updating existing record
-          user_id: subscription.user_id, // Include user_id for conflict resolution
-          assistant_id: subscription.assistant_id, // Include assistant_id for conflict resolution
-          asaas_subscription_id: updateId,
-          status: newStatus,
+        .update({
+          status: 'active',
           expires_at: newExpiresAt.toISOString(),
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,assistant_id', // Use the unique constraint
-          ignoreDuplicates: false // Always update
-        });
+        })
+        .eq('user_id', transactionUserId);
 
       if (updateError) {
-        console.error('Error updating subscription:', updateError);
+        console.error('❌ Error updating subscriptions:', updateError);
       } else {
-        console.log(`✅ Subscription updated:`, {
-          status: newStatus,
-          expiresAt: newExpiresAt.toISOString(),
-          isRenewal: isRenewal,
-          recordsUpdated: subscriptions.length
-        });
+        console.log(`✅ Updated ${userSubscriptions.length} subscription(s) to active until ${newExpiresAt.toISOString()}`);
       }
     } else {
-      console.warn('⚠️ No subscriptions found for payment:', {
-        paymentId: payment.id,
-        subscriptionId: payment.subscription,
-        searchId: subscriptionSearchId
-      });
+      console.warn('⚠️ No subscriptions found for user:', transactionUserId);
     }
 
-    // Update package status if applicable (try payment ID first, then subscription ID)
-    let packages = [];
+    // ============================================
+    // STEP 3: UPDATE USER PACKAGES (if any)
+    // ============================================
+    console.log('📝 STEP 3: Checking for user packages...');
 
-    // First try with payment ID
-    const { data: paymentPackages } = await supabase
+    const { data: userPackages, error: pkgError } = await supabase
       .from('user_packages')
       .select('*')
-      .eq('asaas_subscription_id', payment.id);
+      .eq('user_id', transactionUserId);
 
-    if (paymentPackages && paymentPackages.length > 0) {
-      packages = paymentPackages;
-      console.log('✅ Found packages by payment ID:', payment.id);
-    } else if (payment.subscription) {
-      // Fallback: try with subscription ID
-      const { data: legacyPackages } = await supabase
-        .from('user_packages')
-        .select('*')
-        .eq('asaas_subscription_id', payment.subscription);
+    if (userPackages && userPackages.length > 0) {
+      const pkg = userPackages[0];
 
-      packages = legacyPackages || [];
-      console.log('✅ Found packages by subscription ID:', payment.subscription);
-    }
-
-    if (packages && packages.length > 0) {
-      // Use same status logic for packages
-      let newPackageStatus = 'pending';
-      if (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') {
-        newPackageStatus = 'active';
+      // Calculate new expiration (same logic as subscriptions)
+      let periodMonths = 1;
+      const paymentValue = payment.value;
+      if (paymentValue >= 150 && paymentValue < 300) {
+        periodMonths = 6;
+      } else if (paymentValue >= 300 || paymentValue > 2000) {
+        periodMonths = 12;
       }
 
-      const pkg = packages[0];
-      const isPkgRenewal = pkg.status === 'active' && new Date(pkg.expires_at) > new Date();
+      const now = new Date();
+      let newPkgExpiresAt = new Date(now);
+      newPkgExpiresAt.setMonth(now.getMonth() + periodMonths);
 
-      console.log(`📦 Processing package:`, {
-        currentStatus: pkg.status,
-        newStatus: newPackageStatus,
-        expiresAt: pkg.expires_at,
-        subscriptionType: pkg.subscription_type,
-        isRenewal: isPkgRenewal
-      });
-
-      // Calculate new expiration date for package
-      let newPkgExpiresAt;
-      if (isPkgRenewal) {
-        // RENEWAL: Extend from current expiration date
-        console.log('🔄 PACKAGE RENEWAL detected - extending from current expiration');
-        const currentExpiration = new Date(pkg.expires_at);
-        newPkgExpiresAt = new Date(currentExpiration);
-
-        if (pkg.subscription_type === 'monthly') {
-          newPkgExpiresAt.setMonth(currentExpiration.getMonth() + 1);
-        } else if (pkg.subscription_type === 'semester') {
-          newPkgExpiresAt.setMonth(currentExpiration.getMonth() + 6);
-        } else if (pkg.subscription_type === 'annual') {
-          newPkgExpiresAt.setFullYear(currentExpiration.getFullYear() + 1);
-        } else {
-          newPkgExpiresAt.setMonth(currentExpiration.getMonth() + 1);
-        }
-      } else {
-        // NEW PACKAGE or REACTIVATION: Calculate from now
-        console.log('➕ NEW package or REACTIVATION - calculating from now');
-        newPkgExpiresAt = new Date();
-
-        if (pkg.subscription_type === 'monthly') {
-          newPkgExpiresAt.setMonth(newPkgExpiresAt.getMonth() + 1);
-        } else if (pkg.subscription_type === 'semester') {
-          newPkgExpiresAt.setMonth(newPkgExpiresAt.getMonth() + 6);
-        } else if (pkg.subscription_type === 'annual') {
-          newPkgExpiresAt.setFullYear(newPkgExpiresAt.getFullYear() + 1);
-        } else {
-          newPkgExpiresAt.setMonth(newPkgExpiresAt.getMonth() + 1);
-        }
-      }
-
-      console.log(`📅 Package expiration: ${pkg.expires_at} → ${newPkgExpiresAt.toISOString()}`);
-
-      // Update package status and expiration
-      const packageUpdateId = pkg.asaas_subscription_id;
       const { error: updatePackageError } = await supabase
         .from('user_packages')
         .update({
-          status: newPackageStatus,
+          status: 'active',
           expires_at: newPkgExpiresAt.toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('asaas_subscription_id', packageUpdateId);
+        .eq('user_id', transactionUserId);
 
       if (updatePackageError) {
-        console.error('Error updating package:', updatePackageError);
+        console.error('❌ Error updating package:', updatePackageError);
       } else {
-        console.log(`✅ Package updated:`, {
-          status: newPackageStatus,
-          expiresAt: newPkgExpiresAt.toISOString(),
-          isRenewal: isPkgRenewal,
-          recordsUpdated: packages.length
-        });
-
-        // Also update all individual subscriptions linked to this package
-        const { error: updateSubsError, count: subsCount } = await supabase
-          .from('user_subscriptions')
-          .update({
-            status: newPackageStatus,
-            expires_at: newPkgExpiresAt.toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('package_id', pkg.id)
-          .eq('user_id', pkg.user_id);
-
-        if (updateSubsError) {
-          console.error('❌ Error updating package subscriptions:', updateSubsError);
-        } else {
-          console.log(`✅ Package subscriptions updated: ${subsCount} subscriptions activated`);
-        }
+        console.log(`✅ Package updated to active until ${newPkgExpiresAt.toISOString()}`);
       }
-    } else {
-      console.warn('⚠️ No packages found for payment:', {
-        paymentId: payment.id,
-        subscriptionId: payment.subscription,
-        searchId: subscriptionSearchId
-      });
     }
 
-    // TODO: Send confirmation email to user
-    // TODO: Log payment for analytics
+    console.log('🎉 Payment processing completed successfully!');
 
   } catch (error) {
-    console.error('Error processing payment confirmation:', error);
+    console.error('❌ Error processing payment confirmation:', error);
+    console.error('Stack:', error.stack);
   }
 }
 
