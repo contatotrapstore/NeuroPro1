@@ -157,7 +157,39 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      if (!subscriptions || subscriptions.length === 0) {
+      // Check package subscription if no individual subscription found
+      let hasAccess = subscriptions && subscriptions.length > 0;
+      let accessType = 'individual_subscription';
+      let expiresAt = null;
+      let assistantName = null;
+
+      if (hasAccess) {
+        // Use individual subscription data
+        const subscription = subscriptions[0];
+        expiresAt = new Date(subscription.expires_at);
+        assistantName = subscription.assistants?.name;
+      } else {
+        // Check if assistant is in user's package
+        const { data: userPackages, error: pkgError } = await userClient
+          .from('user_packages')
+          .select('assistant_ids, status, expires_at')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .gte('expires_at', new Date().toISOString());
+
+        if (!pkgError && userPackages) {
+          const matchingPackage = userPackages.find(pkg =>
+            pkg.assistant_ids && pkg.assistant_ids.includes(assistant_id)
+          );
+          if (matchingPackage) {
+            hasAccess = true;
+            accessType = 'package_subscription';
+            expiresAt = new Date(matchingPackage.expires_at);
+          }
+        }
+      }
+
+      if (!hasAccess) {
         return res.status(403).json({
           success: false,
           message: 'Você não possui assinatura ativa para este assistente.',
@@ -167,28 +199,23 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check if subscription expired
-      const subscription = subscriptions[0];
+      // Check if subscription/package expired
       const now = new Date();
-      const expiresAt = new Date(subscription.expires_at);
-
-      if (expiresAt < now) {
-        // Calculate days expired
+      if (expiresAt && expiresAt < now) {
         const daysExpired = Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24));
 
         return res.status(403).json({
           success: false,
-          message: `Sua assinatura do ${subscription.assistants?.name || 'assistente'} expirou há ${daysExpired} ${daysExpired === 1 ? 'dia' : 'dias'}. Renove para continuar usando.`,
+          message: `Sua assinatura ${assistantName ? `do ${assistantName}` : ''} expirou há ${daysExpired} ${daysExpired === 1 ? 'dia' : 'dias'}. Renove para continuar usando.`,
           error_code: 'SUBSCRIPTION_EXPIRED',
-          expired_at: subscription.expires_at,
+          expired_at: expiresAt.toISOString(),
           days_expired: daysExpired,
           action_required: 'renew',
-          assistant_id: assistant_id,
-          subscription_id: subscription.id
+          assistant_id: assistant_id
         });
       }
 
-      console.log(`✅ Creating conversation - subscription valid for ${subscription.assistants?.name}`);
+      console.log(`✅ Creating conversation - access via ${accessType}${assistantName ? ` for ${assistantName}` : ''}`);
 
       // Initialize OpenAI if API key is available
       let threadId = 'mock-thread-' + Date.now(); // fallback
@@ -307,7 +334,39 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      if (!subscriptions || subscriptions.length === 0) {
+      // Check package subscription if no individual subscription found
+      let hasAccess = subscriptions && subscriptions.length > 0;
+      let accessType = 'individual_subscription';
+      let expiresAt = null;
+      let assistantName = null;
+
+      if (hasAccess) {
+        // Use individual subscription data
+        const subscription = subscriptions[0];
+        expiresAt = new Date(subscription.expires_at);
+        assistantName = subscription.assistants?.name;
+      } else {
+        // Check if assistant is in user's package
+        const { data: userPackages, error: pkgError } = await userClient
+          .from('user_packages')
+          .select('assistant_ids, status, expires_at')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .gte('expires_at', new Date().toISOString());
+
+        if (!pkgError && userPackages) {
+          const matchingPackage = userPackages.find(pkg =>
+            pkg.assistant_ids && pkg.assistant_ids.includes(conversation.assistant_id)
+          );
+          if (matchingPackage) {
+            hasAccess = true;
+            accessType = 'package_subscription';
+            expiresAt = new Date(matchingPackage.expires_at);
+          }
+        }
+      }
+
+      if (!hasAccess) {
         return res.status(403).json({
           success: false,
           message: 'Você não possui assinatura ativa para este assistente.',
@@ -316,33 +375,28 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check if subscription expired
-      const subscription = subscriptions[0];
+      // Check if subscription/package expired
       const now = new Date();
-      const expiresAt = new Date(subscription.expires_at);
-
-      if (expiresAt < now) {
-        // Calculate days expired
+      if (expiresAt && expiresAt < now) {
         const daysExpired = Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24));
 
         return res.status(403).json({
           success: false,
-          message: `Sua assinatura do ${subscription.assistants?.name || 'assistente'} expirou há ${daysExpired} ${daysExpired === 1 ? 'dia' : 'dias'}. Renove para continuar usando.`,
+          message: `Sua assinatura ${assistantName ? `do ${assistantName}` : ''} expirou há ${daysExpired} ${daysExpired === 1 ? 'dia' : 'dias'}. Renove para continuar usando.`,
           error_code: 'SUBSCRIPTION_EXPIRED',
-          expired_at: subscription.expires_at,
+          expired_at: expiresAt.toISOString(),
           days_expired: daysExpired,
           action_required: 'renew',
-          assistant_id: conversation.assistant_id,
-          subscription_id: subscription.id
+          assistant_id: conversation.assistant_id
         });
       }
 
       // Calculate days remaining for info
-      const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-      console.log(`✅ Subscription valid for ${subscription.assistants?.name}: ${daysRemaining} days remaining`);
+      const daysRemaining = expiresAt ? Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)) : 0;
+      console.log(`✅ Access via ${accessType}${assistantName ? ` for ${assistantName}` : ''}: ${daysRemaining} days remaining`);
 
       // Add warning if less than 3 days remaining
-      if (daysRemaining <= 3) {
+      if (daysRemaining <= 3 && daysRemaining > 0) {
         console.log(`⚠️ Subscription expiring soon: ${daysRemaining} days remaining`);
       }
 
