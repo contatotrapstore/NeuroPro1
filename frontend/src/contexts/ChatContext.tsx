@@ -4,12 +4,23 @@ import { useAuth } from './AuthContext';
 import { useConversationsCache } from '../hooks/useLocalStorage';
 import { ApiService } from '../services/api.service';
 
+interface FileAttachment {
+  file_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  openai_file_id: string;
+  direction?: 'upload' | 'download';
+  download_url?: string;
+}
+
 interface Message {
   id: string;
   conversation_id: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  attachments?: FileAttachment[];
 }
 
 interface Conversation {
@@ -109,7 +120,8 @@ interface ChatContextType {
   createConversation: (assistantId: string, title?: string) => Promise<Conversation | null>;
   loadConversations: () => Promise<void>;
   selectConversation: (conversationId: string) => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, attachments?: FileAttachment[]) => Promise<void>;
+  uploadFile: (file: File) => Promise<FileAttachment | null>;
   loadMessages: (conversationId: string) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
   clearError: () => void;
@@ -302,8 +314,39 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Upload file for chat
+  const uploadFile = async (file: File): Promise<FileAttachment | null> => {
+    if (!user || !state.currentConversation) {
+      return null;
+    }
+
+    try {
+      const apiService = ApiService.getInstance();
+      const result = await apiService.uploadChatFile(file, state.currentConversation.id);
+
+      if (!result.success || !result.data) {
+        console.error('Upload failed:', result.error);
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Erro ao fazer upload' });
+        return null;
+      }
+
+      return {
+        file_id: result.data.file_id,
+        file_name: result.data.file_name,
+        file_type: result.data.file_type,
+        file_size: result.data.file_size,
+        openai_file_id: result.data.openai_file_id,
+        direction: 'upload'
+      };
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      return null;
+    }
+  };
+
   // Enviar mensagem com validações
-  const sendMessage = async (content: string): Promise<void> => {
+  const sendMessage = async (content: string, attachments?: FileAttachment[]): Promise<void> => {
     // Validações básicas
     if (!user || !state.currentConversation || state.isTransitioning || state.isTyping) {
       return;
@@ -327,7 +370,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         conversation_id: currentConversationId,
         role: 'user',
         content,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        attachments: attachments
       };
       dispatch({ type: 'ADD_MESSAGE', payload: userMessage });
 
@@ -346,7 +390,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       messageAbortControllerRef.current = new AbortController();
 
       const apiService = ApiService.getInstance();
-      const result = await apiService.sendMessage(currentConversationId, content);
+
+      // Send message with or without attachments
+      const result = attachments && attachments.length > 0
+        ? await apiService.sendMessageWithAttachments(currentConversationId, content, attachments)
+        : await apiService.sendMessage(currentConversationId, content);
 
       if (!result.success) {
         throw new Error(result.error || 'Erro ao enviar mensagem');
@@ -526,6 +574,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     loadConversations,
     selectConversation,
     sendMessage,
+    uploadFile,
     loadMessages,
     deleteConversation,
     clearError,

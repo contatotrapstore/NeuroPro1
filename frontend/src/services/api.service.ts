@@ -318,7 +318,7 @@ export class ApiService {
   }
 
   // POST request
-  async post<T>(endpoint: string, data?: any, options: { requireAuth?: boolean } = {}): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: any, options: { requireAuth?: boolean; skipCache?: boolean } = {}): Promise<ApiResponse<T>> {
     return this.makeRequest<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
@@ -541,6 +541,108 @@ export class ApiService {
     session_id: string;
   }): Promise<ApiResponse<any>> {
     return this.post('/institution-chat', data, { skipCache: true });
+  }
+
+  // File upload methods for chat
+  async uploadChatFile(file: File, conversationId?: string): Promise<ApiResponse<{
+    file_id: string;
+    file_name: string;
+    file_type: string;
+    file_size: number;
+    openai_file_id: string;
+    status: string;
+  }>> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        return {
+          success: false,
+          error: 'Usuário não autenticado'
+        };
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      if (conversationId) {
+        formData.append('conversation_id', conversationId);
+      }
+
+      const url = `${this.baseURL}/chat-upload`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: result.error || 'Erro ao fazer upload do arquivo'
+        };
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      return {
+        success: false,
+        error: error.message || 'Erro ao fazer upload do arquivo'
+      };
+    }
+  }
+
+  // Download file from assistant
+  async downloadChatFile(fileId: string): Promise<Blob | null> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        console.error('Usuário não autenticado');
+        return null;
+      }
+
+      const url = `${this.baseURL}/chat-upload/download/${fileId}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Download failed:', response.statusText);
+        return null;
+      }
+
+      return await response.blob();
+    } catch (error: any) {
+      console.error('Download error:', error);
+      return null;
+    }
+  }
+
+  // Send message with attachments
+  async sendMessageWithAttachments(
+    conversationId: string,
+    message: string,
+    attachments: Array<{
+      file_id: string;
+      file_name: string;
+      file_type: string;
+      file_size: number;
+      openai_file_id: string;
+    }>
+  ): Promise<ApiResponse<any>> {
+    return this.post(
+      `/chat/conversations/${conversationId}/messages`,
+      { content: message, attachments },
+      { skipCache: true }
+    );
   }
 }
 

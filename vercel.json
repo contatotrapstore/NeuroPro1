@@ -5,9 +5,20 @@
   "functions": {
     "api/webhook-asaas.js": {
       "maxDuration": 30
+    },
+    "api/chat-upload.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "api/chat.js": {
+      "maxDuration": 120
     }
   },
   "rewrites": [
+    {
+      "source": "/api/chat-upload/download/:fileId",
+      "destination": "/api/chat-upload"
+    },
     {
       "source": "/api/institutions/:slug*/auth",
       "destination": "/api/institutions/[...slug]"
