@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useChat } from '../../contexts/ChatContext';
 import { AssistantIcon } from '../ui/AssistantIcon';
 import { ApiService } from '../../services/api.service';
@@ -26,6 +26,37 @@ function getFileIcon(fileType: string): string {
   if (fileType.includes('csv') || fileType.includes('spreadsheet')) return 'csv';
   if (fileType.includes('json')) return 'json';
   return 'file';
+}
+
+// Simple markdown parser for message content
+function renderMessageContent(content: string): React.ReactNode {
+  // Split by markdown patterns and render accordingly
+  const parts: React.ReactNode[] = [];
+  let remaining = content;
+  let key = 0;
+
+  // Pattern for **bold** text
+  const boldPattern = /\*\*([^*]+)\*\*/g;
+
+  let lastIndex = 0;
+  let match;
+
+  while ((match = boldPattern.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    // Add bold text
+    parts.push(<strong key={key++} className="font-semibold">{match[1]}</strong>);
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
 }
 
 interface FileAttachmentDisplayProps {
@@ -182,7 +213,7 @@ function MessageBubble({ role, content, timestamp, attachments, assistantInfo }:
             }`}
           >
             <div className="text-sm whitespace-pre-wrap break-words">
-              {content}
+              {renderMessageContent(content)}
             </div>
 
             {/* Attachments */}

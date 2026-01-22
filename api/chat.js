@@ -603,7 +603,7 @@ module.exports = async function handler(req, res) {
               const assistantMessage = messages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
               
               if (assistantMessage && assistantMessage.content[0]?.text?.value) {
-                const assistantContent = assistantMessage.content[0].text.value;
+                let assistantContent = assistantMessage.content[0].text.value;
                 console.log('💬 Assistant response found:', {
                   messageId: assistantMessage.id,
                   contentLength: assistantContent.length,
@@ -625,13 +625,14 @@ module.exports = async function handler(req, res) {
                     try {
                       // Get file info from OpenAI
                       const fileInfo = await openai.files.retrieve(annotation.file_path.file_id);
+                      const fileName = fileInfo.filename || 'arquivo-gerado.pdf';
 
                       const { data: fileRecord, error: fileError } = await serviceClient
                         .from('chat_files')
                         .insert({
                           user_id: userId,
                           conversation_id: conversationId,
-                          file_name: fileInfo.filename || 'generated-file',
+                          file_name: fileName,
                           file_type: 'application/octet-stream',
                           file_size: fileInfo.bytes || 0,
                           openai_file_id: annotation.file_path.file_id,
@@ -644,11 +645,21 @@ module.exports = async function handler(req, res) {
                       if (!fileError && fileRecord) {
                         generatedFiles.push({
                           file_id: fileRecord.id,
-                          file_name: fileInfo.filename || 'generated-file',
+                          file_name: fileName,
+                          file_type: 'application/pdf',
+                          file_size: fileInfo.bytes || 0,
                           openai_file_id: annotation.file_path.file_id,
                           direction: 'download'
                         });
                         console.log('✅ Generated file saved:', fileRecord.id);
+
+                        // Replace the annotation text with a clickable download indicator
+                        // The annotation.text contains something like "[filename](/mnt/data/file.pdf)"
+                        if (annotation.text) {
+                          const downloadText = `📎 **${fileName}** (arquivo disponível para download abaixo)`;
+                          assistantContent = assistantContent.replace(annotation.text, downloadText);
+                          console.log('🔗 Replaced annotation text with download indicator');
+                        }
                       }
                     } catch (fileErr) {
                       console.error('⚠️ Error saving generated file reference:', fileErr.message);
