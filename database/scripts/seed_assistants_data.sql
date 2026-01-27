@@ -4,7 +4,6 @@
 -- Este script popula dados iniciais dos assistentes no sistema
 -- Pode ser executado múltiplas vezes (usa ON CONFLICT)
 -- Data: 2025-01-25
--- Autor: Claude Code
 
 -- ==========================================
 -- 1. INSERIR ASSISTENTES BÁSICOS

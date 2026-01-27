@@ -1,5 +1,4 @@
 -- Configurar Row Level Security (RLS) para sistema de instituições
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Políticas de segurança para isolamento de dados entre instituições
 

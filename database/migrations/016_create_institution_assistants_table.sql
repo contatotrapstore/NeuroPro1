@@ -1,5 +1,4 @@
 -- Criar tabela de assistentes por instituição
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Define quais assistentes estão disponíveis para cada instituição com customizações
 

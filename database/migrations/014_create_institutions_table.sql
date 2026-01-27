@@ -1,5 +1,4 @@
 -- Criar tabela de instituições para sistema multi-tenant
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Sistema de faculdades/instituições começando com Academia Brasileira de Psicanálise (ABPSI)
 

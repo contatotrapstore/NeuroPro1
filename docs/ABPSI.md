@@ -372,7 +372,6 @@ WHERE i.slug = 'abpsi';
 
 - [`docs/SESSION_LOG_25092025.md`](./SESSION_LOG_25092025.md) - Log detalhado da implementação
 - [`docs/INSTITUTIONS_GUIDE.md`](./INSTITUTIONS_GUIDE.md) - Guia para novas instituições
-- [`docs/CLAUDE.md`](./CLAUDE.md) - Documentação técnica principal
 - [`frontend/src/pages/Institution/InstitutionLogin.tsx`](../frontend/src/pages/Institution/InstitutionLogin.tsx) - Componente de login
 
 ---

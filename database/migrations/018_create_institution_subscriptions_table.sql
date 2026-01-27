@@ -1,5 +1,4 @@
 -- Criar tabela de licenças e assinaturas das instituições
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Controla licenças, limites de usuários e status de pagamento das instituições
 

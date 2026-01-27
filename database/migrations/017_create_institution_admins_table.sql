@@ -1,5 +1,4 @@
 -- Criar tabela de subadmins das instituições
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Define usuários com permissões administrativas específicas dentro das instituições
 

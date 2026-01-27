@@ -1,5 +1,4 @@
 -- Adicionar suporte a assinatura anual (1 ano)
--- Autor: Claude Code
 -- Data: 2025-10-22
 -- Descrição: Adiciona 'annual' como tipo válido de assinatura e atualiza funções
 

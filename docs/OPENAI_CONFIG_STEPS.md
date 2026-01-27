@@ -195,5 +195,4 @@ Antes de considerar o problema resolvido, verificar:
 ---
 
 **Atualizado**: 2025-10-23
-**Autor**: Claude Code
 **Status**: Aguardando configuração da OPENAI_API_KEY no Vercel

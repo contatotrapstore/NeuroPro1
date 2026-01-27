@@ -1,5 +1,4 @@
 -- Create error_logs table for monitoring system errors
--- Author: Claude Code
 -- Date: 2025-10-22
 -- Descrição: Tabela para armazenar logs de erros para diagnóstico e monitoramento
 

@@ -1,5 +1,4 @@
 -- Criar tabela de assinaturas individuais para usuários de instituições
--- Autor: Claude Code
 -- Data: 2025-01-26
 -- Descrição: Controla assinaturas pagas individuais de usuários dentro de instituições
 

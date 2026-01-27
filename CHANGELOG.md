@@ -59,7 +59,6 @@
 
 ### 📚 **Documentação Reorganizada**
 - **database/README.md**: Documentação completa com todas as 24 migrations
-- **docs/CLAUDE.md**: Consolidação de informações dos logs removidos
 - **docs/INDEX.md**: Atualizado para v3.4.1 com novos links
 - **CHANGELOG.md**: Documentação desta versão
 
@@ -624,7 +623,6 @@ $$;
 - **Visual Hierarchy**: Enhanced admin dashboard layout and information architecture
 
 ### 📚 Documentation Updates
-- **CLAUDE.md**: Updated with complete feature implementation status
 - **ADMIN_CREDENTIALS.md**: New file with admin access instructions
 - **CHANGELOG.md**: Comprehensive change tracking (this file)
 - **API Documentation**: Updated with admin endpoint specifications

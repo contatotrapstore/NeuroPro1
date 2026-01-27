@@ -1,5 +1,4 @@
 -- Popular dados iniciais da Academia Brasileira de Psicanálise (ABPSI)
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Configuração inicial da ABPSI como primeira instituição do sistema
 

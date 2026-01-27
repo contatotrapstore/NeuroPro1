@@ -251,4 +251,3 @@ Se problema persistir após seguir este guia:
 
 **Última atualização**: 2025-10-22
 **Versão**: 1.0
-**Autor**: Claude Code

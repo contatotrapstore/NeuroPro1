@@ -1,5 +1,4 @@
 -- Criar tabela de relação usuários-instituições
--- Autor: Claude Code
 -- Data: 2025-01-24
 -- Descrição: Relaciona usuários com instituições definindo papéis e permissões
 

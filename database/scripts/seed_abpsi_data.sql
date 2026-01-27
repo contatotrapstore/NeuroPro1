@@ -4,7 +4,6 @@
 -- Este script popula dados iniciais da ABPSI no sistema
 -- Pode ser executado múltiplas vezes (usa ON CONFLICT)
 -- Data: 2025-01-24
--- Autor: Claude Code
 
 -- ==========================================
 -- 1. INSERIR INSTITUIÇÃO ABPSI

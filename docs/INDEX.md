@@ -22,7 +22,6 @@
 ### 💻 **Para Desenvolvedores**
 - **[API Documentation](api/README.md)** - Referência completa da API
 - **[OpenAPI Spec](api/openapi.yaml)** - Especificação técnica em YAML
-- **[Guia Claude Code](CLAUDE.md)** - Desenvolvimento com IA
 - **[Frontend Architecture](../frontend/README.md)** - Estrutura React/TypeScript
 
 ### 🏗️ **Arquitetura e Infraestrutura**

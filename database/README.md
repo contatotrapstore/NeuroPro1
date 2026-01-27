@@ -133,7 +133,6 @@ supabase db reset
 
 - [ABPSI.md](../docs/ABPSI.md) - Documentação completa da ABPSI
 - [INSTITUTIONS_GUIDE.md](../docs/INSTITUTIONS_GUIDE.md) - Guia para novas instituições
-- [CLAUDE.md](../docs/CLAUDE.md) - Documentação técnica completa
 - [SQL_FUNCTIONS.md](../docs/database/SQL_FUNCTIONS.md) - Detalhes das funções RPC
 
 ## 🚨 Importante
