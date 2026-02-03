@@ -69,6 +69,15 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Validate service role key is configured (not placeholder)
+    if (!supabaseServiceKey || supabaseServiceKey.includes('YOUR_SERVICE_ROLE_KEY')) {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY não configurada ou é placeholder!');
+      return sendResponse(res, 500, {
+        success: false,
+        error: 'Configuração do servidor incompleta - service key não configurada'
+      });
+    }
+
     // Extract user token for authentication
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];

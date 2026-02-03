@@ -46,7 +46,13 @@ module.exports = async function handler(req, res) {
         error: 'Configuração do servidor incompleta'
       });
     }
-    
+
+    // Validate service role key (needed for file operations)
+    const isServiceKeyValid = supabaseServiceKey && !supabaseServiceKey.includes('YOUR_SERVICE_ROLE_KEY');
+    if (!isServiceKeyValid) {
+      console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY não configurada - upload/download de arquivos não funcionará');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
 
     // Extract user token for authentication
@@ -618,51 +624,68 @@ module.exports = async function handler(req, res) {
                 if (fileAnnotations.length > 0) {
                   console.log('📄 Found', fileAnnotations.length, 'generated files in response');
 
-                  // Save file references to database
-                  const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+                  // Check if service key is valid before trying to save files
+                  if (!isServiceKeyValid) {
+                    console.error('❌ Cannot save generated files - SUPABASE_SERVICE_ROLE_KEY not configured!');
+                    console.error('📌 Configure a variável no Vercel Dashboard: Settings > Environment Variables');
+                  } else {
+                    // Save file references to database
+                    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-                  for (const annotation of fileAnnotations) {
-                    try {
-                      // Get file info from OpenAI
-                      const fileInfo = await openai.files.retrieve(annotation.file_path.file_id);
-                      const fileName = fileInfo.filename || 'arquivo-gerado.pdf';
+                    for (const annotation of fileAnnotations) {
+                      try {
+                        // Get file info from OpenAI
+                        const fileInfo = await openai.files.retrieve(annotation.file_path.file_id);
+                        const fileName = fileInfo.filename || 'arquivo-gerado.pdf';
 
-                      const { data: fileRecord, error: fileError } = await serviceClient
-                        .from('chat_files')
-                        .insert({
-                          user_id: userId,
-                          conversation_id: conversationId,
-                          file_name: fileName,
-                          file_type: 'application/octet-stream',
-                          file_size: fileInfo.bytes || 0,
-                          openai_file_id: annotation.file_path.file_id,
-                          direction: 'download',
-                          status: 'ready'
-                        })
-                        .select()
-                        .single();
-
-                      if (!fileError && fileRecord) {
-                        generatedFiles.push({
-                          file_id: fileRecord.id,
-                          file_name: fileName,
-                          file_type: 'application/pdf',
-                          file_size: fileInfo.bytes || 0,
-                          openai_file_id: annotation.file_path.file_id,
-                          direction: 'download'
+                        console.log('📝 Processing annotation:', {
+                          text: annotation.text ? annotation.text.substring(0, 100) : 'N/A',
+                          fileId: annotation.file_path.file_id,
+                          fileName: fileName
                         });
-                        console.log('✅ Generated file saved:', fileRecord.id);
 
-                        // Replace the annotation text with a clickable download indicator
-                        // The annotation.text contains something like "[filename](/mnt/data/file.pdf)"
-                        if (annotation.text) {
-                          const downloadText = `📎 **${fileName}** (arquivo disponível para download abaixo)`;
-                          assistantContent = assistantContent.replace(annotation.text, downloadText);
-                          console.log('🔗 Replaced annotation text with download indicator');
+                        const { data: fileRecord, error: fileError } = await serviceClient
+                          .from('chat_files')
+                          .insert({
+                            user_id: userId,
+                            conversation_id: conversationId,
+                            file_name: fileName,
+                            file_type: 'application/octet-stream',
+                            file_size: fileInfo.bytes || 0,
+                            openai_file_id: annotation.file_path.file_id,
+                            direction: 'download',
+                            status: 'ready'
+                          })
+                          .select()
+                          .single();
+
+                        if (fileError) {
+                          console.error('❌ Error inserting file record:', fileError.message);
+                          console.error('📌 Verifique se SUPABASE_SERVICE_ROLE_KEY está configurada corretamente');
                         }
+
+                        if (!fileError && fileRecord) {
+                          generatedFiles.push({
+                            file_id: fileRecord.id,
+                            file_name: fileName,
+                            file_type: 'application/pdf',
+                            file_size: fileInfo.bytes || 0,
+                            openai_file_id: annotation.file_path.file_id,
+                            direction: 'download'
+                          });
+                          console.log('✅ Generated file saved:', fileRecord.id);
+
+                          // Replace the annotation text with a clickable download indicator
+                          // The annotation.text contains something like "[filename](/mnt/data/file.pdf)"
+                          if (annotation.text) {
+                            const downloadText = `📎 **${fileName}** (arquivo disponível para download abaixo)`;
+                            assistantContent = assistantContent.replace(annotation.text, downloadText);
+                            console.log('🔗 Replaced annotation text with download indicator');
+                          }
+                        }
+                      } catch (fileErr) {
+                        console.error('⚠️ Error saving generated file reference:', fileErr.message);
                       }
-                    } catch (fileErr) {
-                      console.error('⚠️ Error saving generated file reference:', fileErr.message);
                     }
                   }
                 }
