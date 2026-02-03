@@ -17,7 +17,11 @@
   "rewrites": [
     {
       "source": "/chat-upload/download/:fileId",
-      "destination": "/api/chat-upload"
+      "destination": "/api/chat-upload/download/:fileId"
+    },
+    {
+      "source": "/chat-upload/:path*",
+      "destination": "/api/chat-upload/:path*"
     },
     {
       "source": "/chat-upload",
@@ -25,6 +29,10 @@
     },
     {
       "source": "/chat/:path*",
+      "destination": "/api/chat/:path*"
+    },
+    {
+      "source": "/chat",
       "destination": "/api/chat"
     },
     {
