@@ -215,12 +215,9 @@ module.exports = async function handler(req, res) {
         try {
           const openai = new OpenAI({ apiKey: openaiApiKey });
 
-          // Create a File object from the buffer
-          const blob = new Blob([fileContent], { type: uploadedFile.mimetype });
-          const file = new File([blob], fileName, { type: uploadedFile.mimetype });
-
+          // Use fs.createReadStream - compatível com Node.js
           const openaiFile = await openai.files.create({
-            file: file,
+            file: fs.createReadStream(uploadedFile.filepath),
             purpose: 'assistants'
           });
 
