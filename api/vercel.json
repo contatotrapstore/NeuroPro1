@@ -58,6 +58,14 @@
     {
       "src": "/institution-chat",
       "dest": "/institution-chat.js"
+    },
+    {
+      "src": "/chat-upload(.*)",
+      "dest": "/chat-upload.js"
+    },
+    {
+      "src": "/api/chat-upload(.*)",
+      "dest": "/chat-upload.js"
     }
   ]
 }
