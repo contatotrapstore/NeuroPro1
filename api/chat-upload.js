@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const formidable = require('formidable');
 const fs = require('fs');
 const OpenAI = require('openai');
+const { toFile } = require('openai');
 
 // Tipos de arquivo permitidos
 const ALLOWED_MIME_TYPES = [
@@ -215,16 +216,20 @@ module.exports = async function handler(req, res) {
         try {
           const openai = new OpenAI({ apiKey: openaiApiKey });
 
-          // Use fs.createReadStream - compatível com Node.js
+          // Usar toFile() para garantir metadados corretos (nome, tipo MIME)
           const openaiFile = await openai.files.create({
-            file: fs.createReadStream(uploadedFile.filepath),
+            file: await toFile(fileContent, fileName, { type: uploadedFile.mimetype }),
             purpose: 'assistants'
           });
 
           openaiFileId = openaiFile.id;
           console.log('✅ File uploaded to OpenAI:', openaiFileId);
         } catch (openaiErr) {
-          console.error('❌ OpenAI file upload error:', openaiErr.message);
+          console.error('❌ OpenAI file upload error:');
+          console.error('  Message:', openaiErr.message);
+          console.error('  Code:', openaiErr.code);
+          console.error('  Status:', openaiErr.status);
+          console.error('  Stack:', openaiErr.stack);
           // Clean up Supabase file if OpenAI fails
           if (supabasePath) {
             const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
