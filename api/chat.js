@@ -505,7 +505,29 @@ module.exports = async function handler(req, res) {
             }
           }
 
-          await openai.beta.threads.messages.create(workingThreadId, messageParams);
+          try {
+            await openai.beta.threads.messages.create(workingThreadId, messageParams);
+          } catch (threadError) {
+            // Thread not found (404) - create a new one and retry
+            if (threadError.status === 404) {
+              console.warn('⚠️ Thread not found (API key changed?). Creating new thread...');
+              const newThread = await openai.beta.threads.create();
+              workingThreadId = newThread.id;
+
+              // Update conversation with new thread_id
+              await userClient
+                .from('conversations')
+                .update({ thread_id: workingThreadId })
+                .eq('id', conversationId);
+
+              console.log('✅ New thread created (recovery):', workingThreadId);
+
+              // Retry message creation with new thread
+              await openai.beta.threads.messages.create(workingThreadId, messageParams);
+            } else {
+              throw threadError;
+            }
+          }
 
           // Create run (fixed parameters for Assistants API)
           console.log('▶️ Creating run with assistant...');
