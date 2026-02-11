@@ -16,30 +16,6 @@
   },
   "rewrites": [
     {
-      "source": "/chat-upload/download/:fileId",
-      "destination": "/api/chat-upload/download/:fileId"
-    },
-    {
-      "source": "/chat-upload/:path*",
-      "destination": "/api/chat-upload/:path*"
-    },
-    {
-      "source": "/chat-upload",
-      "destination": "/api/chat-upload"
-    },
-    {
-      "source": "/chat/:path*",
-      "destination": "/api/chat/:path*"
-    },
-    {
-      "source": "/chat",
-      "destination": "/api/chat"
-    },
-    {
-      "source": "/api/chat-upload/download/:fileId",
-      "destination": "/api/chat-upload"
-    },
-    {
       "source": "/api/institutions/:slug*/auth",
       "destination": "/api/institutions/[...slug]"
     },
@@ -65,69 +41,6 @@
     }
   ],
   "headers": [
-    {
-      "source": "/chat-upload/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        }
-      ]
-    },
-    {
-      "source": "/chat-upload",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        }
-      ]
-    },
-    {
-      "source": "/chat/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        }
-      ]
-    },
     {
       "source": "/api/(.*)",
       "headers": [
