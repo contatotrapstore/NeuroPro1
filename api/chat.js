@@ -529,28 +529,75 @@ module.exports = async function handler(req, res) {
             }
           }
 
-          // Create run (fixed parameters for Assistants API)
-          console.log('▶️ Creating run with assistant...');
-          const run = await openai.beta.threads.runs.create(workingThreadId, {
-            assistant_id: conversation.assistants.openai_assistant_id,
-            max_completion_tokens: 3000,
-            metadata: {
-              conversation_id: conversationId,
-              user_id: userId,
-              timestamp: new Date().toISOString()
+          // Create run - with assistant recovery on 404
+          console.log('▶️ Creating run with assistant:', conversation.assistants.openai_assistant_id);
+          let run;
+          let usedAssistantId = conversation.assistants.openai_assistant_id;
+          try {
+            run = await openai.beta.threads.runs.create(workingThreadId, {
+              assistant_id: usedAssistantId,
+              max_completion_tokens: 3000,
+              metadata: {
+                conversation_id: conversationId,
+                user_id: userId,
+                timestamp: new Date().toISOString()
+              }
+            });
+          } catch (runError) {
+            // Assistant not found - try to find by name in current project
+            if (runError.status === 404 && runError.message?.includes('assistant')) {
+              console.warn('⚠️ Assistant not found in OpenAI project, searching by name...');
+              const assistantName = conversation.assistants.name;
+              const list = await openai.beta.assistants.list({ limit: 100 });
+              const match = list.data.find(a => a.name === assistantName);
+
+              if (match) {
+                console.log('✅ Found matching assistant by name:', match.id, match.name);
+                usedAssistantId = match.id;
+
+                // Update in Supabase for future requests
+                const serviceClient = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+                await serviceClient
+                  .from('assistants')
+                  .update({ openai_assistant_id: match.id })
+                  .eq('id', conversation.assistant_id);
+
+                console.log('✅ Updated assistant ID in database:', conversation.assistant_id, '->', match.id);
+
+                // Retry run with correct ID
+                run = await openai.beta.threads.runs.create(workingThreadId, {
+                  assistant_id: match.id,
+                  max_completion_tokens: 3000,
+                  metadata: {
+                    conversation_id: conversationId,
+                    user_id: userId,
+                    timestamp: new Date().toISOString()
+                  }
+                });
+              } else {
+                // Log available assistants for diagnosis
+                console.error('❌ No matching assistant found by name "' + assistantName + '"');
+                console.error('   Available assistants in current OpenAI project:',
+                  list.data.map(a => ({ id: a.id, name: a.name }))
+                );
+                console.error('   The API key likely belongs to a different OpenAI project.');
+                throw runError;
+              }
+            } else {
+              throw runError;
             }
-          });
-          
-          console.log('✅ Run created:', { 
-            runId: run.id, 
+          }
+
+          console.log('✅ Run created:', {
+            runId: run.id,
             status: run.status
           });
 
           if (!run || !run.id) {
-            console.error('❌ Invalid run object returned from OpenAI:', { 
+            console.error('❌ Invalid run object returned from OpenAI:', {
               run,
               threadId: workingThreadId,
-              assistantId: conversation.assistants.openai_assistant_id
+              assistantId: usedAssistantId
             });
             throw new Error('Failed to create run - invalid response from OpenAI');
           }
@@ -829,8 +876,8 @@ module.exports = async function handler(req, res) {
             console.warn('⏱️ Request timeout - OpenAI took too long to respond');
             fallbackContent = `O processamento está demorando mais que o esperado. Por favor, tente novamente.`;
           } else if (isAssistantError) {
-            console.error('🚨 CRITICAL: Assistant configuration error - Invalid assistant_id:', conversation.assistants?.openai_assistant_id);
-            fallbackContent = `Desculpe, há um problema com a configuração deste assistente. Nossa equipe foi notificada.`;
+            console.error('🚨 Assistant não encontrado. Verifique se a API key pertence ao projeto correto na OpenAI. assistant_id:', conversation.assistants?.openai_assistant_id);
+            fallbackContent = `Este assistente não foi encontrado na configuração atual. Isso pode acontecer após uma troca de chave API. A equipe técnica foi notificada.`;
           }
           
           const { data: fallbackReply, error: fallbackError } = await userClient
